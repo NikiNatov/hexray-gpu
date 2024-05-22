@@ -32,6 +32,12 @@ project "hexray-gpu"
 		"%{wks.location}/src/**.h"
 	}
 
+	includedirs
+	{
+		"%{wks.location}/src",
+		"%{wks.location}/extern/spdlog/include",
+	}
+
 	filter "configurations:Debug"
 		runtime "Debug"
 		symbols "on"
