@@ -1,12 +1,12 @@
-#include "core/logger.h"
+#include "core/application.h"
 
 int main(int argc, char** argv)
 {
-    Logger::Initialize();
+    ApplicationDescription appDesc;
+    appDesc.CommandLineArgs.Count = argc;
+    appDesc.CommandLineArgs.Args = argv;
 
-    HEXRAY_TRACE("This is trace message!");
-    HEXRAY_INFO("This is info message!");
-    HEXRAY_WARNING("This is warning message!");
-    HEXRAY_ERROR("This is error message!");
-    HEXRAY_ASSERT(false, "This is assert {}", "msg");
+    Application* app = new Application(appDesc);
+    app->Run();
+    delete app;
 }
