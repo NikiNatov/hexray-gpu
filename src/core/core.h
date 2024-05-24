@@ -13,8 +13,12 @@
 #include <cstdint>
 #include <filesystem>
 #include <format>
+#include <functional>
+#include <memory>
 
+// Utils
 #define HEXRAY_MACRO_TO_STR(x) #x
+#define HEXRAY_BIND_FN(fn) [this](auto&&... args) -> decltype(auto) { return this->fn(std::forward<decltype(args)>(args)...); }
 
 // Asserts
 #if defined(HEXRAY_DEBUG)
