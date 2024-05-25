@@ -1,6 +1,7 @@
 #include "application.h"
 
 #include "core/logger.h"
+#include "core/timer.h"
 
 Application* Application::ms_Instance = nullptr;
 
@@ -36,12 +37,19 @@ void Application::Run()
 {
     m_IsRunning = true;
 
+    Timer frameTimer;
     while (m_IsRunning)
     {
+        frameTimer.Reset();
+
         m_Window->ProcessEvents();
 
         m_GraphicsContext->BeginFrame();
         m_GraphicsContext->EndFrame();
+
+        frameTimer.Stop();
+
+        HEXRAY_INFO("FPS {}", 1.0f / frameTimer.GetElapsedTime());
     }
 }
 
@@ -59,7 +67,6 @@ void Application::OnEvent(Event& event)
 // ------------------------------------------------------------------------------------------------------------------------------------
 bool Application::OnWindowClosed(WindowClosedEvent& event)
 {
-    HEXRAY_INFO("WindowClosed");
     m_IsRunning = false;
     return true;
 }
@@ -67,29 +74,26 @@ bool Application::OnWindowClosed(WindowClosedEvent& event)
 // ------------------------------------------------------------------------------------------------------------------------------------
 bool Application::OnWindowResized(WindowResizedEvent& event)
 {
-    HEXRAY_INFO("WindowResized: w: {}, h: {}", event.GetWidth(), event.GetHeight());
     if(m_GraphicsContext)
         m_GraphicsContext->ResizeSwapChain(event.GetWidth(), event.GetHeight());
+
     return true;
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
 bool Application::OnKeyPressed(KeyPressedEvent& event)
 {
-    HEXRAY_INFO("KeyPressed: {}", (uint32_t)event.GetKey());
     return true;
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
 bool Application::OnMouseButtonPressed(MouseButtonPressedEvent& event)
 {
-    HEXRAY_INFO("MouseButtonPress: {}", (uint32_t)event.GetButton());
     return true;
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
 bool Application::OnMouseScrolledPressed(MouseScrolledEvent& event)
 {
-    HEXRAY_INFO("MouseScrolled: dx: {}, dy: {}", event.GetXOffset(), event.GetYOffset());
     return true;
 }
