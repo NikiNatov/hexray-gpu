@@ -3,6 +3,7 @@
 #include "core/core.h"
 #include "core/event.h"
 #include "core/window.h"
+#include "rendering/graphicscontext.h"
 
 struct CommandLineArgs
 {
@@ -23,6 +24,7 @@ struct ApplicationDescription
     uint32_t WindowWidth = 1280;
     uint32_t WindowHeight = 720;
     bool VSync = true;
+    bool EnableAPIValidation = true;
 };
 
 class Application
@@ -36,6 +38,7 @@ public:
 
     const ApplicationDescription& GetDescription() const { return m_Description; }
     const Window* GetWindow() const { return m_Window.get(); }
+    inline GraphicsContext* GetGraphicsContext() { return m_GraphicsContext.get(); }
 
     inline static Application* GetInstance() { return ms_Instance; }
 private:
@@ -47,6 +50,7 @@ private:
 private:
     ApplicationDescription m_Description;
     std::unique_ptr<Window> m_Window;
+    std::unique_ptr<GraphicsContext> m_GraphicsContext;
 
     bool m_IsRunning = false;
 

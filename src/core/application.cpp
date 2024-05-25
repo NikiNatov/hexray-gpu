@@ -13,6 +13,7 @@ Application::Application(const ApplicationDescription& description)
 
     Logger::Initialize();
 
+    // Create window
     WindowDescription windowDesc;
     windowDesc.Title = m_Description.Name;
     windowDesc.Width = m_Description.WindowWidth;
@@ -21,6 +22,13 @@ Application::Application(const ApplicationDescription& description)
     windowDesc.EventCallback = HEXRAY_BIND_FN(OnEvent);
 
     m_Window = std::make_unique<Window>(windowDesc);
+
+    // Create d3d12 graphics context
+    GraphicsContextDescription gfxContextDesc;
+    gfxContextDesc.Window = m_Window.get();
+    gfxContextDesc.EnableDebugLayer = m_Description.EnableAPIValidation;
+
+    m_GraphicsContext = std::make_unique<GraphicsContext>(gfxContextDesc);
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
@@ -31,6 +39,9 @@ void Application::Run()
     while (m_IsRunning)
     {
         m_Window->ProcessEvents();
+
+        m_GraphicsContext->BeginFrame();
+        m_GraphicsContext->EndFrame();
     }
 }
 
@@ -57,6 +68,8 @@ bool Application::OnWindowClosed(WindowClosedEvent& event)
 bool Application::OnWindowResized(WindowResizedEvent& event)
 {
     HEXRAY_INFO("WindowResized: w: {}, h: {}", event.GetWidth(), event.GetHeight());
+    if(m_GraphicsContext)
+        m_GraphicsContext->ResizeSwapChain(event.GetWidth(), event.GetHeight());
     return true;
 }
 

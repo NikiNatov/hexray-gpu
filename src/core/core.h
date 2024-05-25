@@ -29,3 +29,5 @@
 #define HEXRAY_ASSERT(...)
 #define HEXRAY_ASSERT_MSG(...)
 #endif
+
+#define FRAMES_IN_FLIGHT 3

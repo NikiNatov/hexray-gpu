@@ -38,6 +38,13 @@ project "hexray-gpu"
 		"%{wks.location}/extern/spdlog/include",
 	}
 
+	links
+	{
+		"d3d12",
+		"dxgi",
+		"dxguid"
+	}
+
 	filter "configurations:Debug"
 		runtime "Debug"
 		symbols "on"

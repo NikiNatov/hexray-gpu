@@ -10,6 +10,11 @@ int main(int argc, char** argv)
     ApplicationDescription appDesc;
     appDesc.CommandLineArgs.Count = argc;
     appDesc.CommandLineArgs.Args = argv;
+#if defined(HEXRAY_DEBUG)
+    appDesc.EnableAPIValidation = true;
+#else
+    appDesc.EnableAPIValidation = false;
+#endif
 
     Application* app = new Application(appDesc);
     app->Run();
