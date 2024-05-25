@@ -275,6 +275,29 @@ void GraphicsContext::ProcessDeferredReleases(uint64_t frameIndex)
     m_DSVDescriptorHeap->ProcessDeferredReleases(frameIndex);
     m_ResourceDescriptorHeap->ProcessDeferredReleases(frameIndex);
     m_SamplerDescriptorHeap->ProcessDeferredReleases(frameIndex);
+
+    std::lock_guard<std::mutex> lock(m_DeferredReleaseMutex);
+
+    for (ID3D12Resource2* resource : m_DeferredReleaseResources[frameIndex])
+        resource->Release();
+
+    m_DeferredReleaseResources[frameIndex].clear();
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+void GraphicsContext::ReleaseResource(ID3D12Resource2* resource, bool deferredRelease)
+{
+    if (!resource)
+        return;
+
+    if (!deferredRelease)
+    {
+        resource->Release();
+        return;
+    }
+
+    std::lock_guard<std::mutex> lock(m_DeferredReleaseMutex);
+    m_DeferredReleaseResources[m_BackBufferIndex].push_back(resource);
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------

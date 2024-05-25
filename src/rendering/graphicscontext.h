@@ -22,6 +22,7 @@ public:
     void ResizeSwapChain(uint32_t width, uint32_t height);
     void WaitForGPU();
     void ProcessDeferredReleases(uint64_t frameIndex);
+    void ReleaseResource(ID3D12Resource2* resource, bool deferredRelease = true);
 
     inline bool IsDebugLayerEnabled() const { return m_Description.EnableDebugLayer; }
     inline bool IsHardwareRayTracingSupported() const { return m_HardwareRayTracingSupported; }
@@ -88,6 +89,10 @@ private:
     ComPtr<ID3D12Debug5> m_DebugLayer;
     ComPtr<IDXGIDebug1> m_DXGILayer;
     ComPtr<ID3D12InfoQueue> m_InfoQueue;
+
+    // Deferred release resources
+    std::vector<ID3D12Resource2*> m_DeferredReleaseResources[FRAMES_IN_FLIGHT];
+    std::mutex m_DeferredReleaseMutex;
 private:
     static GraphicsContext* ms_Instance;
 };
