@@ -2,7 +2,7 @@
 #include "rendering/graphicscontext.h"
 
 // ------------------------------------------------------------------------------------------------------------------------------------
-DescriptorHeap::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t capacity, const wchar_t* debugName)
+DescriptorHeapBase::DescriptorHeapBase(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t capacity, const wchar_t* debugName)
     : m_Type(type), m_Capacity(capacity), m_Size(0)
 {
 
@@ -29,17 +29,15 @@ DescriptorHeap::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t capacit
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
-CPUDescriptorHeap::CPUDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t capacity, const wchar_t* debugName)
-    : DescriptorHeap(type, capacity, debugName)
+StandardDescriptorHeap::StandardDescriptorHeap(const StandardDescriptorHeapDescription& description, const wchar_t* debugName)
+    : DescriptorHeapBase(description.Type, description.Capacity, debugName)
 {
-    HEXRAY_ASSERT(type == D3D12_DESCRIPTOR_HEAP_TYPE_RTV || type == D3D12_DESCRIPTOR_HEAP_TYPE_DSV)
-
-    for (uint32_t i = 0; i < capacity; i++)
+    for (uint32_t i = 0; i < description.Capacity; i++)
         m_FreeSlots.push(i);
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
-D3D12_CPU_DESCRIPTOR_HANDLE CPUDescriptorHeap::Allocate()
+DescriptorIndex StandardDescriptorHeap::Allocate()
 {
     std::lock_guard<std::mutex> lock(m_Mutex);
 
@@ -49,41 +47,32 @@ D3D12_CPU_DESCRIPTOR_HANDLE CPUDescriptorHeap::Allocate()
     m_FreeSlots.pop();
     m_Size++;
 
-    return CD3DX12_CPU_DESCRIPTOR_HANDLE(m_CPUStartHandle, descriptorIndex, m_DescriptorSize);
+    return descriptorIndex;
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
-void CPUDescriptorHeap::ReleaseDescriptor(D3D12_CPU_DESCRIPTOR_HANDLE descriptor, bool deferredRelease)
+void StandardDescriptorHeap::ReleaseDescriptor(DescriptorIndex descriptorIndex, bool deferredRelease)
 {
-    if (descriptor.ptr != 0)
+    std::lock_guard<std::mutex> lock(m_Mutex);
+
+    uint32_t currentFrameIndex = GraphicsContext::GetInstance()->GetBackBufferIndex();
+    if (deferredRelease)
     {
-        std::lock_guard<std::mutex> lock(m_Mutex);
-
-        HEXRAY_ASSERT_MSG((descriptor.ptr - m_CPUStartHandle.ptr) % m_DescriptorSize == 0, "Descriptor has different type than the heap!");
-        HEXRAY_ASSERT_MSG(descriptor.ptr >= m_CPUStartHandle.ptr && descriptor.ptr < m_CPUStartHandle.ptr + m_DescriptorSize * m_Capacity, "Descriptor does not belong to this heap!");
-
-        // Add the index to the free slots array
-        uint32_t descriptorIndex = (descriptor.ptr - m_CPUStartHandle.ptr) / m_DescriptorSize;
-        uint32_t currentFrameIndex = GraphicsContext::GetInstance()->GetBackBufferIndex();
-
-        if (deferredRelease)
-        {
-            m_DeferredReleaseDescriptors[currentFrameIndex].push_back(descriptorIndex);
-        }
-        else
-        {
-            m_Size--;
-            m_FreeSlots.push(descriptorIndex);
-        }
+        m_DeferredReleaseDescriptors[currentFrameIndex].push_back(descriptorIndex);
+    }
+    else
+    {
+        m_Size--;
+        m_FreeSlots.push(descriptorIndex);
     }
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
-void CPUDescriptorHeap::ProcessDeferredReleases(uint32_t frameIndex)
+void StandardDescriptorHeap::ProcessDeferredReleases(uint32_t frameIndex)
 {
     std::lock_guard<std::mutex> lock(m_Mutex);
 
-    for (uint32_t index : m_DeferredReleaseDescriptors[frameIndex])
+    for (DescriptorIndex index : m_DeferredReleaseDescriptors[frameIndex])
     {
         m_Size--;
         m_FreeSlots.push(index);
@@ -93,150 +82,91 @@ void CPUDescriptorHeap::ProcessDeferredReleases(uint32_t frameIndex)
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
-ResourceDescriptorHeap::ResourceDescriptorHeap(uint32_t texture2DTableSize, uint32_t textureCubeTableSize, const wchar_t* debugName)
-    : DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, texture2DTableSize + textureCubeTableSize, debugName),
-    m_Texture2DTableSize(texture2DTableSize), m_TextureCubeTableSize(textureCubeTableSize)
+SegregatedDescriptorHeap::SegregatedDescriptorHeap(const SegregatedDescriptorHeapDescription& description, const wchar_t* debugName)
+    : DescriptorHeapBase(
+        description.Type,
+        description.DescriptorTableSizes[ROTexture2D] + description.DescriptorTableSizes[RWTexture2D] +
+        description.DescriptorTableSizes[ROTextureCube] + description.DescriptorTableSizes[RWTextureCube] +
+        description.DescriptorTableSizes[ROBuffer] + description.DescriptorTableSizes[RWBuffer],
+        debugName
+    ), m_Description(description)
 {
-    for (uint32_t i = 0; i < texture2DTableSize; i++)
-        m_FreeTexture2DSlots.push(i);
+    HEXRAY_ASSERT_MSG(description.Type != D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, "Segrageted heaps do not currently support sampler type");
 
-    for (uint32_t i = 0; i < textureCubeTableSize; i++)
-        m_FreeTextureCubeSlots.push(i);
-}
-
-// ------------------------------------------------------------------------------------------------------------------------------------
-D3D12_GPU_DESCRIPTOR_HANDLE ResourceDescriptorHeap::AllocateTexture2D()
-{
-    std::lock_guard<std::mutex> lock(m_Mutex);
-
-    HEXRAY_ASSERT_MSG(!m_FreeTexture2DSlots.empty(), "Texture2D descriptor table is full");
-
-    uint32_t descriptorIndex = m_FreeTexture2DSlots.front();
-    m_FreeTexture2DSlots.pop();
-    m_Size++;
-
-    return CD3DX12_GPU_DESCRIPTOR_HANDLE(m_GPUStartHandle, descriptorIndex, m_DescriptorSize);
-}
-
-// ------------------------------------------------------------------------------------------------------------------------------------
-D3D12_GPU_DESCRIPTOR_HANDLE ResourceDescriptorHeap::AllocateTextureCube()
-{
-    std::lock_guard<std::mutex> lock(m_Mutex);
-
-    HEXRAY_ASSERT_MSG(!m_FreeTextureCubeSlots.empty(), "TextureCube descriptor table is full");
-
-    uint32_t descriptorIndex = m_FreeTextureCubeSlots.front();
-    m_FreeTextureCubeSlots.pop();
-    m_Size++;
-
-    return CD3DX12_GPU_DESCRIPTOR_HANDLE(m_GPUStartHandle, descriptorIndex + m_Texture2DTableSize, m_DescriptorSize);
-}
-
-// ------------------------------------------------------------------------------------------------------------------------------------
-void ResourceDescriptorHeap::ReleaseDescriptor(D3D12_GPU_DESCRIPTOR_HANDLE descriptor, bool deferredRelease)
-{
-    if (descriptor.ptr != 0)
+    uint32_t currentOffset = 0;
+    for (uint32_t type = 0; type < NumDescriptorTypes; type++)
     {
-        std::lock_guard<std::mutex> lock(m_Mutex);
+        m_DescriptorTableOffsets[type] = currentOffset;
 
-        HEXRAY_ASSERT_MSG((descriptor.ptr - m_GPUStartHandle.ptr) % m_DescriptorSize == 0, "Descriptor has different type than the heap!");
-        HEXRAY_ASSERT_MSG(descriptor.ptr >= m_GPUStartHandle.ptr && descriptor.ptr < m_GPUStartHandle.ptr + m_DescriptorSize * m_Capacity, "Descriptor does not belong to this heap!");
-
-        // Add the index to the free slots array
-        uint32_t descriptorIndex = (descriptor.ptr - m_GPUStartHandle.ptr) / m_DescriptorSize;
-        uint32_t currentFrameIndex = GraphicsContext::GetInstance()->GetBackBufferIndex();
-
-        if (deferredRelease)
+        for (uint32_t j = 0; j < description.DescriptorTableSizes[type]; j++)
         {
-            m_DeferredReleaseDescriptors[currentFrameIndex].push_back(descriptorIndex);
+            m_FreeSlots[type].push(j);
         }
-        else
-        {
-            m_Size--;
-
-            if(descriptorIndex < m_Texture2DTableSize)
-                m_FreeTexture2DSlots.push(descriptorIndex);
-            else
-                m_FreeTextureCubeSlots.push(descriptorIndex);
-        }
+        
+        currentOffset += description.DescriptorTableSizes[type];
     }
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
-void ResourceDescriptorHeap::ProcessDeferredReleases(uint32_t frameIndex)
+DescriptorIndex SegregatedDescriptorHeap::Allocate(DescriptorType descriptorType)
 {
     std::lock_guard<std::mutex> lock(m_Mutex);
 
-    for (uint32_t index : m_DeferredReleaseDescriptors[frameIndex])
+    HEXRAY_ASSERT_MSG(!m_FreeSlots[descriptorType].empty(), "Descriptor table for type {} is full", descriptorType);
+
+    uint32_t descriptorIndex = m_FreeSlots[descriptorType].front();
+    m_FreeSlots[descriptorType].pop();
+    m_Size++;
+
+    return descriptorIndex + m_DescriptorTableOffsets[descriptorType];
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+void SegregatedDescriptorHeap::ReleaseDescriptor(DescriptorIndex descriptorIndex, bool deferredRelease)
+{
+    std::lock_guard<std::mutex> lock(m_Mutex);
+
+    uint32_t currentFrameIndex = GraphicsContext::GetInstance()->GetBackBufferIndex();
+    if (deferredRelease)
     {
+        m_DeferredReleaseDescriptors[currentFrameIndex].push_back(descriptorIndex);
+    }
+    else
+    {
+        DescriptorType descriptorType = ROTexture2D;
+        for (uint32_t type = 0; type < NumDescriptorTypes; type++)
+        {
+            if (m_DescriptorTableOffsets[type] <= descriptorIndex && descriptorIndex < m_DescriptorTableOffsets[type] + m_Description.DescriptorTableSizes[type])
+            {
+                descriptorType = (DescriptorType)type;
+                break;
+            }
+        }
+
         m_Size--;
-
-        if (index < m_Texture2DTableSize)
-            m_FreeTexture2DSlots.push(index);
-        else
-            m_FreeTextureCubeSlots.push(index);
-    }
-
-    m_DeferredReleaseDescriptors[frameIndex].clear();
-}
-
-// ------------------------------------------------------------------------------------------------------------------------------------
-SamplerDescriptorHeap::SamplerDescriptorHeap(uint32_t capacity, const wchar_t* debugName)
-    : DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, capacity, debugName)
-{
-    for (uint32_t i = 0; i < capacity; i++)
-        m_FreeSlots.push(i);
-}
-
-// ------------------------------------------------------------------------------------------------------------------------------------
-D3D12_GPU_DESCRIPTOR_HANDLE SamplerDescriptorHeap::Allocate()
-{
-    std::lock_guard<std::mutex> lock(m_Mutex);
-
-    HEXRAY_ASSERT_MSG(!m_FreeSlots.empty(), "Heap is full");
-
-    uint32_t descriptorIndex = m_FreeSlots.front();
-    m_FreeSlots.pop();
-    m_Size++;
-
-    return CD3DX12_GPU_DESCRIPTOR_HANDLE(m_GPUStartHandle, descriptorIndex, m_DescriptorSize);
-}
-
-// ------------------------------------------------------------------------------------------------------------------------------------
-void SamplerDescriptorHeap::ReleaseDescriptor(D3D12_GPU_DESCRIPTOR_HANDLE descriptor, bool deferredRelease)
-{
-    if (descriptor.ptr != 0)
-    {
-        std::lock_guard<std::mutex> lock(m_Mutex);
-
-        HEXRAY_ASSERT_MSG((descriptor.ptr - m_GPUStartHandle.ptr) % m_DescriptorSize == 0, "Descriptor has different type than the heap!");
-        HEXRAY_ASSERT_MSG(descriptor.ptr >= m_GPUStartHandle.ptr && descriptor.ptr < m_GPUStartHandle.ptr + m_DescriptorSize * m_Capacity, "Descriptor does not belong to this heap!");
-
-        // Add the index to the free slots array
-        uint32_t descriptorIndex = (descriptor.ptr - m_GPUStartHandle.ptr) / m_DescriptorSize;
-        uint32_t currentFrameIndex = GraphicsContext::GetInstance()->GetBackBufferIndex();
-
-        if (deferredRelease)
-        {
-            m_DeferredReleaseDescriptors[currentFrameIndex].push_back(descriptorIndex);
-        }
-        else
-        {
-            m_Size--;
-            m_FreeSlots.push(descriptorIndex);
-        }
+        m_FreeSlots[descriptorType].push(descriptorIndex - m_DescriptorTableOffsets[descriptorType]);
     }
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
-void SamplerDescriptorHeap::ProcessDeferredReleases(uint32_t frameIndex)
+void SegregatedDescriptorHeap::ProcessDeferredReleases(uint32_t frameIndex)
 {
     std::lock_guard<std::mutex> lock(m_Mutex);
 
-    for (uint32_t index : m_DeferredReleaseDescriptors[frameIndex])
+    for (DescriptorIndex index : m_DeferredReleaseDescriptors[frameIndex])
     {
+        DescriptorType descriptorType = ROTexture2D;
+        for (uint32_t type = 0; type < NumDescriptorTypes; type++)
+        {
+            if (m_DescriptorTableOffsets[type] <= index && index < m_DescriptorTableOffsets[type] + m_Description.DescriptorTableSizes[type])
+            {
+                descriptorType = (DescriptorType)type;
+                break;
+            }
+        }
+
         m_Size--;
-        m_FreeSlots.push(index);
+        m_FreeSlots[descriptorType].push(index - m_DescriptorTableOffsets[descriptorType]);
     }
 
     m_DeferredReleaseDescriptors[frameIndex].clear();

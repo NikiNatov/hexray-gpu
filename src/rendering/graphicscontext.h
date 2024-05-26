@@ -36,10 +36,10 @@ public:
     inline const ComPtr<ID3D12CommandQueue>& GetGraphicsQueue() const { return m_GraphicsQueue; }
     inline const ComPtr<ID3D12CommandList>& GetCommandList() const { return m_CommandList; }
 
-    inline CPUDescriptorHeap* GetRTVDescriptorHeap() const { return m_RTVDescriptorHeap.get(); }
-    inline CPUDescriptorHeap* GetDSVDescriptorHeap() const { return m_DSVDescriptorHeap.get(); }
-    inline ResourceDescriptorHeap* GetResourceDescriptorHeap() const { return m_ResourceDescriptorHeap.get(); }
-    inline SamplerDescriptorHeap* GetSamplerDescriptorHeap() const { return m_SamplerDescriptorHeap.get(); }
+    inline StandardDescriptorHeap* GetRTVDescriptorHeap() const { return m_RTVDescriptorHeap.get(); }
+    inline StandardDescriptorHeap* GetDSVDescriptorHeap() const { return m_DSVDescriptorHeap.get(); }
+    inline SegregatedDescriptorHeap* GetResourceDescriptorHeap() const { return m_ResourceDescriptorHeap.get(); }
+    inline StandardDescriptorHeap* GetSamplerDescriptorHeap() const { return m_SamplerDescriptorHeap.get(); }
 
     inline const ComPtr<IDXGISwapChain4>& GetSwapChain() const { return m_SwapChain; }
     inline uint64_t GetBackBufferIndex() const { return m_BackBufferIndex; }
@@ -70,15 +70,15 @@ private:
     HANDLE m_FrameFenceEvent;
 
     // Descriptor heap objects
-    std::unique_ptr<CPUDescriptorHeap> m_RTVDescriptorHeap;
-    std::unique_ptr<CPUDescriptorHeap> m_DSVDescriptorHeap;
-    std::unique_ptr<ResourceDescriptorHeap> m_ResourceDescriptorHeap;
-    std::unique_ptr<SamplerDescriptorHeap> m_SamplerDescriptorHeap;
+    std::unique_ptr<StandardDescriptorHeap> m_RTVDescriptorHeap;
+    std::unique_ptr<StandardDescriptorHeap> m_DSVDescriptorHeap;
+    std::unique_ptr<SegregatedDescriptorHeap> m_ResourceDescriptorHeap;
+    std::unique_ptr<StandardDescriptorHeap> m_SamplerDescriptorHeap;
 
     // Swap chain objects
     ComPtr<IDXGISwapChain4> m_SwapChain;
     ComPtr<ID3D12Resource2> m_BackBuffers[FRAMES_IN_FLIGHT];
-    D3D12_CPU_DESCRIPTOR_HANDLE m_BackBufferRTVs[FRAMES_IN_FLIGHT];
+    DescriptorIndex m_BackBufferRTVs[FRAMES_IN_FLIGHT];
     uint32_t m_SwapChainWidth;
     uint32_t m_SwapChainHeight;
     uint64_t m_BackBufferIndex;

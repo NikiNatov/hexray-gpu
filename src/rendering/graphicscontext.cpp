@@ -109,10 +109,39 @@ GraphicsContext::GraphicsContext(const GraphicsContextDescription& description)
     DXCall(m_CommandList->Close());
 
     // Create descriptor heaps
-    m_RTVDescriptorHeap = std::make_unique<CPUDescriptorHeap>(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 1024, L"RTV Descriptor Heap");
-    m_DSVDescriptorHeap = std::make_unique<CPUDescriptorHeap>(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1024, L"DSV Descriptor Heap");
-    m_ResourceDescriptorHeap = std::make_unique<ResourceDescriptorHeap>(4096, 4096, L"Resource Descriptor Heap");
-    m_SamplerDescriptorHeap = std::make_unique<SamplerDescriptorHeap>(128, L"Sampler Descriptor Heap");
+    {
+        StandardDescriptorHeapDescription heapDesc;
+        heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+        heapDesc.Capacity = 1024;
+
+        m_RTVDescriptorHeap = std::make_unique<StandardDescriptorHeap>(heapDesc, L"RTV Descriptor Heap");
+    }
+    {
+        StandardDescriptorHeapDescription heapDesc;
+        heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+        heapDesc.Capacity = 1024;
+
+        m_DSVDescriptorHeap = std::make_unique<StandardDescriptorHeap>(heapDesc, L"DSV Descriptor Heap");
+    }
+    {
+        SegregatedDescriptorHeapDescription heapDesc;
+        heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+        heapDesc.DescriptorTableSizes[ROTexture2D] = 4096;
+        heapDesc.DescriptorTableSizes[ROTextureCube] = 4096;
+        heapDesc.DescriptorTableSizes[ROBuffer] = 1024;
+        heapDesc.DescriptorTableSizes[RWTexture2D] = 2048;
+        heapDesc.DescriptorTableSizes[RWTextureCube] = 2048;
+        heapDesc.DescriptorTableSizes[RWBuffer] = 1024;
+
+        m_ResourceDescriptorHeap = std::make_unique<SegregatedDescriptorHeap>(heapDesc, L"Resource Descriptor Heap");
+    }
+    {
+        StandardDescriptorHeapDescription heapDesc;
+        heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
+        heapDesc.Capacity = 128;
+
+        m_SamplerDescriptorHeap = std::make_unique<StandardDescriptorHeap>(heapDesc, L"Sampler Descriptor Heap");
+    }
 
     // Create synchronization objects
     m_FenceValue = 0;
@@ -215,7 +244,7 @@ void GraphicsContext::BeginFrame()
     m_CommandList->ResourceBarrier(1, &barrier);
 
     const float clearColor[] = { 0.8f, 0.3f, 0.1f, 1.0f };
-    m_CommandList->ClearRenderTargetView(m_BackBufferRTVs[m_BackBufferIndex], clearColor, 1, &m_ScissorRect);
+    m_CommandList->ClearRenderTargetView(m_RTVDescriptorHeap->GetCPUHandle(m_BackBufferRTVs[m_BackBufferIndex]), clearColor, 1, &m_ScissorRect);
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
@@ -313,7 +342,7 @@ void GraphicsContext::RecreateRenderTargetViews(uint32_t width, uint32_t height)
         rtvDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
         rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
 
-        m_Device->CreateRenderTargetView(m_BackBuffers[i].Get(), &rtvDesc, m_BackBufferRTVs[i]);
+        m_Device->CreateRenderTargetView(m_BackBuffers[i].Get(), &rtvDesc, m_RTVDescriptorHeap->GetCPUHandle(m_BackBufferRTVs[i]));
     }
 
     // Recreate viewport
