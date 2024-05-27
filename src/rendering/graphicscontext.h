@@ -39,14 +39,21 @@ public:
     inline StandardDescriptorHeap* GetRTVDescriptorHeap() const { return m_RTVDescriptorHeap.get(); }
     inline StandardDescriptorHeap* GetDSVDescriptorHeap() const { return m_DSVDescriptorHeap.get(); }
     inline SegregatedDescriptorHeap* GetResourceDescriptorHeap() const { return m_ResourceDescriptorHeap.get(); }
-    inline StandardDescriptorHeap* GetSamplerDescriptorHeap() const { return m_SamplerDescriptorHeap.get(); }
 
     inline const ComPtr<IDXGISwapChain4>& GetSwapChain() const { return m_SwapChain; }
     inline uint64_t GetBackBufferIndex() const { return m_BackBufferIndex; }
+
+    inline const ComPtr<ID3D12RootSignature>& GetBindlessRootSignature() const { return m_BindlessRootSignature; }
 public:
     static GraphicsContext* GetInstance() { return ms_Instance; }
 private:
     void RecreateRenderTargetViews(uint32_t width, uint32_t height);
+
+    void CreateDevice();
+    void CreateCommandQueues();
+    void CreateDescriptorHeaps();
+    void CreateSwapChainAndSyncPrimitives();
+    void CreateRootSignatures();
 private:
     GraphicsContextDescription m_Description;
     bool m_HardwareRayTracingSupported;
@@ -73,7 +80,6 @@ private:
     std::unique_ptr<StandardDescriptorHeap> m_RTVDescriptorHeap;
     std::unique_ptr<StandardDescriptorHeap> m_DSVDescriptorHeap;
     std::unique_ptr<SegregatedDescriptorHeap> m_ResourceDescriptorHeap;
-    std::unique_ptr<StandardDescriptorHeap> m_SamplerDescriptorHeap;
 
     // Swap chain objects
     ComPtr<IDXGISwapChain4> m_SwapChain;
@@ -93,6 +99,10 @@ private:
     // Deferred release resources
     std::vector<ID3D12Resource2*> m_DeferredReleaseResources[FRAMES_IN_FLIGHT];
     std::mutex m_DeferredReleaseMutex;
+
+    // Root signatures:
+    // Since we use bindless resources, we only need one root signature that is shared across all pipelines
+    ComPtr<ID3D12RootSignature> m_BindlessRootSignature;
 private:
     static GraphicsContext* ms_Instance;
 };

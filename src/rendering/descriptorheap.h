@@ -78,6 +78,8 @@ public:
 
     void ReleaseDescriptor(DescriptorIndex descriptor, bool deferredRelease);
     void ProcessDeferredReleases(uint32_t frameIndex);
+
+    inline const SegregatedDescriptorHeapDescription& GetDescription() const { return m_Description; }
 private:
     SegregatedDescriptorHeapDescription m_Description;
     uint32_t m_DescriptorTableOffsets[NumDescriptorTypes];
