@@ -20,6 +20,8 @@
 #define HEXRAY_MACRO_TO_STR(x) #x
 #define HEXRAY_BIND_FN(fn) [this](auto&&... args) -> decltype(auto) { return this->fn(std::forward<decltype(args)>(args)...); }
 
+#define Align(size, alignment) ((size + (alignment - 1)) & ~(alignment - 1))
+
 // Asserts
 #if defined(HEXRAY_DEBUG)
 #define HEXRAY_ASSERT_IMPL(condition, msg, ...) { if(!(condition)) { HEXRAY_CRITICAL(msg, __VA_ARGS__); __debugbreak(); } }
