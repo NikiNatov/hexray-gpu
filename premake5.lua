@@ -36,6 +36,7 @@ project "hexray-gpu"
 	{
 		"%{wks.location}/src",
 		"%{wks.location}/extern/spdlog/include",
+		"%{wks.location}/extern/glm/glm",
 	}
 
 	links
