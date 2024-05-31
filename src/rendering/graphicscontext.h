@@ -4,6 +4,8 @@
 #include "core/window.h"
 #include "rendering/directx12.h"
 #include "rendering/descriptorheap.h"
+#include "rendering/buffer.h"
+#include "rendering/mesh.h"
 
 struct GraphicsContextDescription
 {
@@ -23,6 +25,8 @@ public:
     void WaitForGPU();
     void ProcessDeferredReleases(uint64_t frameIndex);
     void ReleaseResource(ID3D12Resource2* resource, bool deferredRelease = true);
+    void UploadBufferData(Buffer* destBuffer, const void* data);
+    std::shared_ptr<Buffer> BuildBottomLevelAccelerationStructure(const Mesh* mesh);
 
     inline bool IsDebugLayerEnabled() const { return m_Description.EnableDebugLayer; }
     inline bool IsHardwareRayTracingSupported() const { return m_HardwareRayTracingSupported; }
@@ -67,6 +71,7 @@ private:
 
     // Command queue objects
     ComPtr<ID3D12CommandQueue> m_GraphicsQueue;
+    ComPtr<ID3D12CommandQueue> m_CopyQueue;
     ComPtr<ID3D12CommandAllocator> m_CommandAllocators[FRAMES_IN_FLIGHT];
     ComPtr<ID3D12GraphicsCommandList> m_CommandList;
 

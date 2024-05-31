@@ -42,6 +42,7 @@ GraphicsContext::~GraphicsContext()
 
     m_CommandList.Reset();
     m_GraphicsQueue.Reset();
+    m_CopyQueue.Reset();
 
     m_Device.Reset();
     m_Adapter.Reset();
@@ -127,6 +128,10 @@ void GraphicsContext::WaitForGPU()
     DXCall(waitFence->SetEventOnCompletion(1, waitFenceEvent));
     WaitForSingleObjectEx(waitFenceEvent, INFINITE, FALSE);
 
+    DXCall(m_CopyQueue->Signal(waitFence.Get(), 2));
+    DXCall(waitFence->SetEventOnCompletion(2, waitFenceEvent));
+    WaitForSingleObjectEx(waitFenceEvent, INFINITE, FALSE);
+
     CloseHandle(waitFenceEvent);
 }
 
@@ -159,6 +164,143 @@ void GraphicsContext::ReleaseResource(ID3D12Resource2* resource, bool deferredRe
 
     std::lock_guard<std::mutex> lock(m_DeferredReleaseMutex);
     m_DeferredReleaseResources[m_BackBufferIndex].push_back(resource);
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+void GraphicsContext::UploadBufferData(Buffer* destBuffer, const void* data)
+{
+    if (data)
+    {
+        // Create an upload buffer that is large enough to contain the source data
+        BufferDescription uploadBufferDesc;
+        uploadBufferDesc.ElementCount = GetRequiredIntermediateSize(destBuffer->GetResource().Get(), 0, 1);
+        uploadBufferDesc.ElementSize = sizeof(uint8_t);
+        uploadBufferDesc.HeapType = D3D12_HEAP_TYPE_UPLOAD;
+        uploadBufferDesc.InitialState = D3D12_RESOURCE_STATE_GENERIC_READ;
+
+        std::unique_ptr<Buffer> uploadBuffer = std::make_unique<Buffer>(uploadBufferDesc, L"Upload Buffer");
+
+        // Create a new copy command list and execute the upload operation
+        HANDLE waitFenceEvent = CreateEvent(0, false, false, 0);
+        ComPtr<ID3D12Fence1> waitFence;
+        DXCall(m_Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&waitFence)));
+        DXCall(waitFence->SetName(L"Upload Wait Fence"));
+
+        ComPtr<ID3D12CommandAllocator> allocator;
+        DXCall(m_Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_COPY, IID_PPV_ARGS(&allocator)));
+        DXCall(allocator->SetName(L"Upload Command Allocator"));
+
+        ComPtr<ID3D12GraphicsCommandList6> copyCmdList;
+        DXCall(m_Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_COPY, allocator.Get(), nullptr, IID_PPV_ARGS(&copyCmdList)));
+        DXCall(copyCmdList->SetName(L"Upload Command List"));
+        DXCall(copyCmdList->Close());
+        DXCall(copyCmdList->Reset(allocator.Get(), nullptr));
+
+        D3D12_SUBRESOURCE_DATA subresourceData = {};
+        subresourceData.pData = data;
+        subresourceData.RowPitch = destBuffer->GetSize();
+        subresourceData.SlicePitch = subresourceData.RowPitch;
+
+        UpdateSubresources<1>(copyCmdList.Get(), destBuffer->GetResource().Get(), uploadBuffer->GetResource().Get(), 0, 0, 1, &subresourceData);
+
+        DXCall(copyCmdList->Close());
+
+        ID3D12CommandList* copyCommandLists[] = { copyCmdList.Get() };
+        m_CopyQueue->ExecuteCommandLists(1, copyCommandLists);
+
+        // Wait for the upload to finish on the GPU before we continue
+        DXCall(m_CopyQueue->Signal(waitFence.Get(), 1));
+        DXCall(waitFence->SetEventOnCompletion(1, waitFenceEvent));
+        WaitForSingleObjectEx(waitFenceEvent, INFINITE, FALSE);
+
+        CloseHandle(waitFenceEvent);
+    }
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+std::shared_ptr<Buffer> GraphicsContext::BuildBottomLevelAccelerationStructure(const Mesh* mesh)
+{
+    // Create a geometry descriptor for each submesh
+    std::vector<D3D12_RAYTRACING_GEOMETRY_DESC> submeshDescs;
+    submeshDescs.reserve(mesh->GetSubmeshes().size());
+
+    for (const Submesh& submesh : mesh->GetSubmeshes())
+    {
+        D3D12_RAYTRACING_GEOMETRY_DESC& submeshDesc = submeshDescs.emplace_back();
+        submeshDesc.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
+        submeshDesc.Triangles.IndexFormat = DXGI_FORMAT_R32_UINT;
+        submeshDesc.Triangles.IndexBuffer = mesh->GetIndexBuffer()->GetResource()->GetGPUVirtualAddress() + submesh.StartIndex * mesh->GetIndexBuffer()->GetElementSize();
+        submeshDesc.Triangles.IndexCount = submesh.IndexCount;
+        submeshDesc.Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
+        submeshDesc.Triangles.VertexBuffer.StartAddress = mesh->GetVertexBuffer()->GetResource()->GetGPUVirtualAddress() + submesh.StartVertex * mesh->GetVertexBuffer()->GetElementSize();
+        submeshDesc.Triangles.VertexCount = submesh.VertexCount;
+        submeshDesc.Triangles.VertexBuffer.StrideInBytes = mesh->GetVertexBuffer()->GetElementSize();
+        submeshDesc.Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE; // TODO: Return to this when we have support for transparent materials
+    }
+
+    // Initialize structure's build info
+    D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC buildDesc;
+    buildDesc.Inputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL;
+    buildDesc.Inputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
+    buildDesc.Inputs.NumDescs = submeshDescs.size();
+    buildDesc.Inputs.pGeometryDescs = submeshDescs.data();
+    buildDesc.Inputs.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE;
+
+    D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO prebuildInfo;
+    m_Device->GetRaytracingAccelerationStructurePrebuildInfo(&buildDesc.Inputs, &prebuildInfo);
+
+    BufferDescription scratchBufferDesc;
+    scratchBufferDesc.ElementCount = prebuildInfo.ScratchDataSizeInBytes;
+    scratchBufferDesc.ElementSize = sizeof(uint8_t);
+    scratchBufferDesc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
+    scratchBufferDesc.InitialState = D3D12_RESOURCE_STATE_COMMON;
+
+    std::unique_ptr<Buffer> scratchBuffer = std::make_unique<Buffer>(scratchBufferDesc, L"AS Scratch Buffer");
+
+    BufferDescription accelerationStructureBufferDesc;
+    accelerationStructureBufferDesc.ElementCount = prebuildInfo.ResultDataMaxSizeInBytes;
+    accelerationStructureBufferDesc.ElementSize = sizeof(uint8_t);
+    accelerationStructureBufferDesc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
+    accelerationStructureBufferDesc.InitialState = D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
+    accelerationStructureBufferDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+
+    std::shared_ptr<Buffer> accelerationStructure = std::make_shared<Buffer>(accelerationStructureBufferDesc, L"Acceleration Structure");
+
+    buildDesc.ScratchAccelerationStructureData = scratchBuffer->GetResource()->GetGPUVirtualAddress();
+    buildDesc.DestAccelerationStructureData = accelerationStructure->GetResource()->GetGPUVirtualAddress();
+    buildDesc.SourceAccelerationStructureData = 0;
+
+    // Create a command list and build the acceleration structure
+    HANDLE waitFenceEvent = CreateEvent(0, false, false, 0);
+    ComPtr<ID3D12Fence1> waitFence;
+    DXCall(m_Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&waitFence)));
+    DXCall(waitFence->SetName(L"BLAS Wait Fence"));
+
+    ComPtr<ID3D12CommandAllocator> allocator;
+    DXCall(m_Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&allocator)));
+    DXCall(allocator->SetName(L"BLAS Command Allocator"));
+
+    ComPtr<ID3D12GraphicsCommandList6> cmdList;
+    DXCall(m_Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, allocator.Get(), nullptr, IID_PPV_ARGS(&cmdList)));
+    DXCall(cmdList->SetName(L"BLAS Command List"));
+    DXCall(cmdList->Close());
+    DXCall(cmdList->Reset(allocator.Get(), nullptr));
+
+    cmdList->BuildRaytracingAccelerationStructure(&buildDesc, 0, nullptr);
+
+    DXCall(cmdList->Close());
+
+    ID3D12CommandList* cmdLists[] = { cmdList.Get() };
+    m_GraphicsQueue->ExecuteCommandLists(1, cmdLists);
+
+    // Wait for the build to finish on the GPU before we continue
+    DXCall(m_GraphicsQueue->Signal(waitFence.Get(), 1));
+    DXCall(waitFence->SetEventOnCompletion(1, waitFenceEvent));
+    WaitForSingleObjectEx(waitFenceEvent, INFINITE, FALSE);
+
+    CloseHandle(waitFenceEvent);
+
+    return accelerationStructure;
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
@@ -283,6 +425,10 @@ void GraphicsContext::CreateCommandQueues()
     commandQueueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
     DXCall(m_Device->CreateCommandQueue(&commandQueueDesc, IID_PPV_ARGS(&m_GraphicsQueue)));
     DXCall(m_GraphicsQueue->SetName(L"Graphics Queue"));
+
+    commandQueueDesc.Type = D3D12_COMMAND_LIST_TYPE_COPY;
+    DXCall(m_Device->CreateCommandQueue(&commandQueueDesc, IID_PPV_ARGS(&m_CopyQueue)));
+    DXCall(m_CopyQueue->SetName(L"Copy Queue"));
 
     for (uint32_t i = 0; i < FRAMES_IN_FLIGHT; i++)
     {
