@@ -24,6 +24,11 @@ Buffer::Buffer(const BufferDescription& description, const wchar_t* debugName)
     DXCall(d3dDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &resourceDesc, initialState, nullptr, IID_PPV_ARGS(&m_Resource)));
     DXCall(m_Resource->SetName(debugName));
 
+    if (m_Description.HeapType != D3D12_HEAP_TYPE_READBACK)
+    {
+        CreateViews();
+    }
+
     if (m_Description.HeapType == D3D12_HEAP_TYPE_UPLOAD)
     {
         // CPU write-only
@@ -50,5 +55,74 @@ Buffer::~Buffer()
         m_Resource->Unmap(0, &writtenRange);
     }
 
+    if (m_Description.HeapType != D3D12_HEAP_TYPE_READBACK)
+    {
+        if ((m_Description.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE) == 0)
+        {
+            GraphicsContext::GetInstance()->GetResourceDescriptorHeap()->ReleaseDescriptor(m_SRVDescriptor, true);
+        }
+
+        if (m_Description.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS)
+        {
+            GraphicsContext::GetInstance()->GetResourceDescriptorHeap()->ReleaseDescriptor(m_UAVDescriptor, true);
+        }
+    }
+
     GraphicsContext::GetInstance()->ReleaseResource(m_Resource.Detach());
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+DescriptorIndex Buffer::GetSRV() const
+{
+    if (m_Description.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE)
+        return InvalidDescriptorIndex;
+
+    return m_SRVDescriptor;
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+DescriptorIndex Buffer::GetUAV() const
+{
+    if ((m_Description.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS) == 0)
+        return InvalidDescriptorIndex;
+
+    return m_UAVDescriptor;
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+void Buffer::CreateViews()
+{
+    auto d3dDevice = GraphicsContext::GetInstance()->GetDevice();
+    SegregatedDescriptorHeap* resourceHeap = GraphicsContext::GetInstance()->GetResourceDescriptorHeap();
+
+    // SRV
+    m_SRVDescriptor = InvalidDescriptorIndex;
+    if ((m_Description.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE) == 0)
+    {
+        D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+        srvDesc.Format = DXGI_FORMAT_UNKNOWN;
+        srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+        srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+        srvDesc.Buffer.FirstElement = 0;
+        srvDesc.Buffer.NumElements = m_Description.ElementCount;
+        srvDesc.Buffer.StructureByteStride = m_Description.ElementSize;
+
+        m_SRVDescriptor = resourceHeap->Allocate(ROBuffer);
+        d3dDevice->CreateShaderResourceView(m_Resource.Get(), &srvDesc, resourceHeap->GetCPUHandle(m_SRVDescriptor));
+    }
+
+    // UAV
+    m_UAVDescriptor = InvalidDescriptorIndex;
+    if (m_Description.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS)
+    {
+        D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
+        uavDesc.Format = DXGI_FORMAT_UNKNOWN;
+        uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+        uavDesc.Buffer.FirstElement = 0;
+        uavDesc.Buffer.NumElements = m_Description.ElementCount;
+        uavDesc.Buffer.StructureByteStride = m_Description.ElementSize;
+
+        m_UAVDescriptor = resourceHeap->Allocate(RWBuffer);
+        d3dDevice->CreateUnorderedAccessView(m_Resource.Get(), nullptr, &uavDesc, resourceHeap->GetCPUHandle(m_UAVDescriptor));
+    }
 }

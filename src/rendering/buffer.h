@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/core.h"
+#include "rendering/descriptorheap.h"
 #include "directx12.h"
 
 struct BufferDescription
@@ -18,6 +19,9 @@ public:
     Buffer(const BufferDescription& description, const wchar_t* debugName = L"Unnamed Buffer");
     ~Buffer();
 
+    DescriptorIndex GetSRV() const;
+    DescriptorIndex GetUAV() const;
+
     inline uint32_t GetSize() const { return m_Description.ElementCount * m_Description.ElementSize; }
     inline uint32_t GetElementSize() const { return m_Description.ElementSize; }
     inline uint32_t GetElementCount() const { return m_Description.ElementCount; }
@@ -27,7 +31,11 @@ public:
     inline void* GetMappedData() const { return m_MappedData; }
     inline const ComPtr<ID3D12Resource2>& GetResource() const { return m_Resource; }
 private:
+    void CreateViews();
+private:
     BufferDescription m_Description;
     ComPtr<ID3D12Resource2> m_Resource;
     void* m_MappedData;
+    DescriptorIndex m_SRVDescriptor;
+    DescriptorIndex m_UAVDescriptor;
 };
