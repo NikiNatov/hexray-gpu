@@ -59,12 +59,12 @@ Buffer::~Buffer()
     {
         if ((m_Description.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE) == 0)
         {
-            GraphicsContext::GetInstance()->GetResourceDescriptorHeap()->ReleaseDescriptor(m_SRVDescriptor, true);
+            GraphicsContext::GetInstance()->GetResourceDescriptorHeap()->ReleaseDescriptor(m_SRVDescriptor, ROBuffer, true);
         }
 
         if (m_Description.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS)
         {
-            GraphicsContext::GetInstance()->GetResourceDescriptorHeap()->ReleaseDescriptor(m_UAVDescriptor, true);
+            GraphicsContext::GetInstance()->GetResourceDescriptorHeap()->ReleaseDescriptor(m_UAVDescriptor, RWBuffer, true);
         }
     }
 
@@ -108,7 +108,7 @@ void Buffer::CreateViews()
         srvDesc.Buffer.StructureByteStride = m_Description.ElementSize;
 
         m_SRVDescriptor = resourceHeap->Allocate(ROBuffer);
-        d3dDevice->CreateShaderResourceView(m_Resource.Get(), &srvDesc, resourceHeap->GetCPUHandle(m_SRVDescriptor));
+        d3dDevice->CreateShaderResourceView(m_Resource.Get(), &srvDesc, resourceHeap->GetCPUHandle(m_SRVDescriptor, ROBuffer));
     }
 
     // UAV
@@ -123,6 +123,6 @@ void Buffer::CreateViews()
         uavDesc.Buffer.StructureByteStride = m_Description.ElementSize;
 
         m_UAVDescriptor = resourceHeap->Allocate(RWBuffer);
-        d3dDevice->CreateUnorderedAccessView(m_Resource.Get(), nullptr, &uavDesc, resourceHeap->GetCPUHandle(m_UAVDescriptor));
+        d3dDevice->CreateUnorderedAccessView(m_Resource.Get(), nullptr, &uavDesc, resourceHeap->GetCPUHandle(m_UAVDescriptor, RWBuffer));
     }
 }

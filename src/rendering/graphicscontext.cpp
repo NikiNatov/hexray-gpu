@@ -464,6 +464,9 @@ void GraphicsContext::CreateDescriptorHeaps()
     resourceHeapDesc.DescriptorTableSizes[RWTexture2D] = 2048;
     resourceHeapDesc.DescriptorTableSizes[RWTextureCube] = 2048;
     resourceHeapDesc.DescriptorTableSizes[RWBuffer] = 1024;
+    resourceHeapDesc.DescriptorTableSizes[AccelerationStructure] = 1;
+    resourceHeapDesc.DescriptorTableSizes[VertexBuffer] = 4096;
+    resourceHeapDesc.DescriptorTableSizes[IndexBuffer] = resourceHeapDesc.DescriptorTableSizes[VertexBuffer];
 
     m_ResourceDescriptorHeap = std::make_unique<SegregatedDescriptorHeap>(resourceHeapDesc, L"Resource Descriptor Heap");
 }
@@ -515,41 +518,21 @@ void GraphicsContext::CreateSwapChainAndSyncPrimitives()
 void GraphicsContext::CreateRootSignatures()
 {
     // Root params
-    std::vector<D3D12_ROOT_PARAMETER1> rootParams;
-
-    D3D12_ROOT_PARAMETER1& constantBufferParam = rootParams.emplace_back();
-    constantBufferParam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-    constantBufferParam.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-    constantBufferParam.Descriptor.ShaderRegister = 0;
-    constantBufferParam.Descriptor.RegisterSpace = 0;
-    constantBufferParam.Descriptor.Flags = D3D12_ROOT_DESCRIPTOR_FLAG_DATA_VOLATILE;
-
     std::vector<D3D12_DESCRIPTOR_RANGE1> resourceBindlessTableRanges;
-
-    for (uint32_t descriptorType = 0; descriptorType < DescriptorType::NumDescriptorTypes; descriptorType++)
+    for (uint32_t i = 0; i < DescriptorType::NumDescriptorTypes; i++)
     {
-        bool isReadOnly = descriptorType == ROTexture2D || descriptorType == ROTextureCube || descriptorType == ROBuffer;
-        uint32_t registerSpace = 0;
-
-        if (descriptorType == ROTextureCube || descriptorType == RWTextureCube)
-        {
-            registerSpace = 1;
-        }
-        else if (descriptorType == ROBuffer || descriptorType == RWBuffer)
-        {
-            registerSpace = 2;
-        }
+        DescriptorType descriptorType = (DescriptorType)i;
 
         D3D12_DESCRIPTOR_RANGE1& range = resourceBindlessTableRanges.emplace_back();
-        range.RangeType = isReadOnly ? D3D12_DESCRIPTOR_RANGE_TYPE_SRV : D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
-        range.RegisterSpace = registerSpace;
+        range.RangeType = SegregatedDescriptorHeap::IsDescriptorTypeReadOnly(descriptorType) ? D3D12_DESCRIPTOR_RANGE_TYPE_SRV : D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+        range.RegisterSpace = SegregatedDescriptorHeap::GetShaderSpaceForDescriptorType(descriptorType);
         range.BaseShaderRegister = 0;
         range.NumDescriptors = m_ResourceDescriptorHeap->GetDescription().DescriptorTableSizes[descriptorType];
         range.Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE;
         range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
     }
 
-    D3D12_ROOT_PARAMETER1& resourceBindlessTableParam = rootParams.emplace_back();
+    D3D12_ROOT_PARAMETER1 resourceBindlessTableParam;
     resourceBindlessTableParam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
     resourceBindlessTableParam.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
     resourceBindlessTableParam.DescriptorTable.NumDescriptorRanges = resourceBindlessTableRanges.size();
@@ -641,8 +624,8 @@ void GraphicsContext::CreateRootSignatures()
 
     D3D12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc = {};
     rootSignatureDesc.Version = D3D_ROOT_SIGNATURE_VERSION_1_1;
-    rootSignatureDesc.Desc_1_1.NumParameters = rootParams.size();
-    rootSignatureDesc.Desc_1_1.pParameters = rootParams.data();
+    rootSignatureDesc.Desc_1_1.NumParameters = 1;
+    rootSignatureDesc.Desc_1_1.pParameters = &resourceBindlessTableParam;
     rootSignatureDesc.Desc_1_1.NumStaticSamplers = staticSamplerDescs.size();
     rootSignatureDesc.Desc_1_1.pStaticSamplers = staticSamplerDescs.data();
     rootSignatureDesc.Desc_1_1.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;

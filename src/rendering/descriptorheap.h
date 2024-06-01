@@ -16,8 +16,6 @@ public:
     inline D3D12_DESCRIPTOR_HEAP_TYPE GetType() const { return m_Type; }
     inline uint32_t GetDescriptorSize() const { return m_DescriptorSize; }
     inline uint32_t GetCapacity() const { return m_Capacity; }
-    inline D3D12_CPU_DESCRIPTOR_HANDLE GetCPUHandle(DescriptorIndex index) const { return CD3DX12_CPU_DESCRIPTOR_HANDLE(m_CPUStartHandle, index, m_DescriptorSize); }
-    inline D3D12_GPU_DESCRIPTOR_HANDLE GetGPUHandle(DescriptorIndex index) const { return CD3DX12_GPU_DESCRIPTOR_HANDLE(m_GPUStartHandle, index, m_DescriptorSize); }
     inline const ComPtr<ID3D12DescriptorHeap>& GetHeap() const { return m_Heap; }
 protected:
     DescriptorHeapBase(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t capacity, const wchar_t* debugName = L"Unnamed Descriptor Heap");
@@ -46,6 +44,9 @@ public:
 
     void ReleaseDescriptor(DescriptorIndex descriptorIndex, bool deferredRelease);
     void ProcessDeferredReleases(uint32_t frameIndex);
+
+    inline D3D12_CPU_DESCRIPTOR_HANDLE GetCPUHandle(DescriptorIndex index) const { return CD3DX12_CPU_DESCRIPTOR_HANDLE(m_CPUStartHandle, index, m_DescriptorSize); }
+    inline D3D12_GPU_DESCRIPTOR_HANDLE GetGPUHandle(DescriptorIndex index) const { return CD3DX12_GPU_DESCRIPTOR_HANDLE(m_GPUStartHandle, index, m_DescriptorSize); }
 private:
     std::queue<DescriptorIndex> m_FreeSlots;
     std::vector<DescriptorIndex> m_DeferredReleaseDescriptors[FRAMES_IN_FLIGHT];
@@ -60,13 +61,16 @@ enum DescriptorType
     RWTextureCube,
     ROBuffer,
     RWBuffer,
+    AccelerationStructure,
+    VertexBuffer,
+    IndexBuffer,
     NumDescriptorTypes
 };
 
 struct SegregatedDescriptorHeapDescription
 {
     D3D12_DESCRIPTOR_HEAP_TYPE Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-    uint32_t DescriptorTableSizes[NumDescriptorTypes] = { 4096, 2048, 4096, 2048, 1024, 512 };
+    uint32_t DescriptorTableSizes[NumDescriptorTypes];
 };
 
 class SegregatedDescriptorHeap : public DescriptorHeapBase
@@ -76,14 +80,19 @@ public:
 
     DescriptorIndex Allocate(DescriptorType descriptorType);
 
-    void ReleaseDescriptor(DescriptorIndex descriptor, bool deferredRelease);
+    void ReleaseDescriptor(DescriptorIndex descriptor, DescriptorType descriptorType, bool deferredRelease);
     void ProcessDeferredReleases(uint32_t frameIndex);
 
     inline const SegregatedDescriptorHeapDescription& GetDescription() const { return m_Description; }
+    inline D3D12_CPU_DESCRIPTOR_HANDLE GetCPUHandle(DescriptorIndex index, DescriptorType type) const { return CD3DX12_CPU_DESCRIPTOR_HANDLE(m_CPUStartHandle, index + m_DescriptorTableOffsets[type], m_DescriptorSize); }
+    inline D3D12_GPU_DESCRIPTOR_HANDLE GetGPUHandle(DescriptorIndex index, DescriptorType type) const { return CD3DX12_GPU_DESCRIPTOR_HANDLE(m_GPUStartHandle, index + m_DescriptorTableOffsets[type], m_DescriptorSize); }
+public:
+    static uint32_t GetShaderSpaceForDescriptorType(DescriptorType type);
+    static bool IsDescriptorTypeReadOnly(DescriptorType type);
 private:
     SegregatedDescriptorHeapDescription m_Description;
     uint32_t m_DescriptorTableOffsets[NumDescriptorTypes];
     std::queue<DescriptorIndex> m_FreeSlots[NumDescriptorTypes];
-    std::vector<DescriptorIndex> m_DeferredReleaseDescriptors[FRAMES_IN_FLIGHT];
+    std::vector<std::pair<DescriptorIndex, DescriptorType>> m_DeferredReleaseDescriptors[FRAMES_IN_FLIGHT];
     std::mutex m_Mutex;
 };

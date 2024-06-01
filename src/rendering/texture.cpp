@@ -40,13 +40,13 @@ Texture::~Texture()
 {
     if ((m_Description.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE) == 0)
     {
-        GraphicsContext::GetInstance()->GetResourceDescriptorHeap()->ReleaseDescriptor(m_SRVDescriptor, true);
+        GraphicsContext::GetInstance()->GetResourceDescriptorHeap()->ReleaseDescriptor(m_SRVDescriptor, ROTexture2D, true);
     }
 
     if (m_Description.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS)
     {
         for (uint32_t mip = 0; mip < m_Description.MipLevels; mip++)
-            GraphicsContext::GetInstance()->GetResourceDescriptorHeap()->ReleaseDescriptor(m_MipUAVDescriptors[mip], true);
+            GraphicsContext::GetInstance()->GetResourceDescriptorHeap()->ReleaseDescriptor(m_MipUAVDescriptors[mip], RWTexture2D, true);
     }
 
     if (m_Description.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET)
@@ -144,7 +144,7 @@ void Texture::CreateViews()
             m_SRVDescriptor = resourceHeap->Allocate(ROTexture2D);
         }
 
-        d3dDevice->CreateShaderResourceView(m_Resource.Get(), &srvDesc, resourceHeap->GetCPUHandle(m_SRVDescriptor));
+        d3dDevice->CreateShaderResourceView(m_Resource.Get(), &srvDesc, resourceHeap->GetCPUHandle(m_SRVDescriptor, ROTexture2D));
     }
 
     // UAV
@@ -184,7 +184,7 @@ void Texture::CreateViews()
                 m_MipUAVDescriptors[mip] = resourceHeap->Allocate(RWTexture2D);
             }
 
-            d3dDevice->CreateUnorderedAccessView(m_Resource.Get(), nullptr, &uavDesc, resourceHeap->GetCPUHandle(m_MipUAVDescriptors[mip]));
+            d3dDevice->CreateUnorderedAccessView(m_Resource.Get(), nullptr, &uavDesc, resourceHeap->GetCPUHandle(m_MipUAVDescriptors[mip], RWTexture2D));
         }
     }
 

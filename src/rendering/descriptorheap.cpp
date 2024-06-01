@@ -87,7 +87,8 @@ SegregatedDescriptorHeap::SegregatedDescriptorHeap(const SegregatedDescriptorHea
         description.Type,
         description.DescriptorTableSizes[ROTexture2D] + description.DescriptorTableSizes[RWTexture2D] +
         description.DescriptorTableSizes[ROTextureCube] + description.DescriptorTableSizes[RWTextureCube] +
-        description.DescriptorTableSizes[ROBuffer] + description.DescriptorTableSizes[RWBuffer],
+        description.DescriptorTableSizes[ROBuffer] + description.DescriptorTableSizes[RWBuffer] +
+        description.DescriptorTableSizes[VertexBuffer] + description.DescriptorTableSizes[IndexBuffer] + description.DescriptorTableSizes[AccelerationStructure],
         debugName
     ), m_Description(description)
 {
@@ -102,7 +103,7 @@ SegregatedDescriptorHeap::SegregatedDescriptorHeap(const SegregatedDescriptorHea
         {
             m_FreeSlots[type].push(j);
         }
-        
+
         currentOffset += description.DescriptorTableSizes[type];
     }
 }
@@ -118,33 +119,23 @@ DescriptorIndex SegregatedDescriptorHeap::Allocate(DescriptorType descriptorType
     m_FreeSlots[descriptorType].pop();
     m_Size++;
 
-    return descriptorIndex + m_DescriptorTableOffsets[descriptorType];
+    return descriptorIndex;
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
-void SegregatedDescriptorHeap::ReleaseDescriptor(DescriptorIndex descriptorIndex, bool deferredRelease)
+void SegregatedDescriptorHeap::ReleaseDescriptor(DescriptorIndex descriptorIndex, DescriptorType descriptorType, bool deferredRelease)
 {
     std::lock_guard<std::mutex> lock(m_Mutex);
 
     uint32_t currentFrameIndex = GraphicsContext::GetInstance()->GetBackBufferIndex();
     if (deferredRelease)
     {
-        m_DeferredReleaseDescriptors[currentFrameIndex].push_back(descriptorIndex);
+        m_DeferredReleaseDescriptors[currentFrameIndex].push_back({ descriptorIndex, descriptorType });
     }
     else
     {
-        DescriptorType descriptorType = ROTexture2D;
-        for (uint32_t type = 0; type < NumDescriptorTypes; type++)
-        {
-            if (m_DescriptorTableOffsets[type] <= descriptorIndex && descriptorIndex < m_DescriptorTableOffsets[type] + m_Description.DescriptorTableSizes[type])
-            {
-                descriptorType = (DescriptorType)type;
-                break;
-            }
-        }
-
         m_Size--;
-        m_FreeSlots[descriptorType].push(descriptorIndex - m_DescriptorTableOffsets[descriptorType]);
+        m_FreeSlots[descriptorType].push(descriptorIndex);
     }
 }
 
@@ -153,21 +144,53 @@ void SegregatedDescriptorHeap::ProcessDeferredReleases(uint32_t frameIndex)
 {
     std::lock_guard<std::mutex> lock(m_Mutex);
 
-    for (DescriptorIndex index : m_DeferredReleaseDescriptors[frameIndex])
+    for (auto& [descriptorIndex, descriptorType] : m_DeferredReleaseDescriptors[frameIndex])
     {
-        DescriptorType descriptorType = ROTexture2D;
-        for (uint32_t type = 0; type < NumDescriptorTypes; type++)
-        {
-            if (m_DescriptorTableOffsets[type] <= index && index < m_DescriptorTableOffsets[type] + m_Description.DescriptorTableSizes[type])
-            {
-                descriptorType = (DescriptorType)type;
-                break;
-            }
-        }
-
         m_Size--;
-        m_FreeSlots[descriptorType].push(index - m_DescriptorTableOffsets[descriptorType]);
+        m_FreeSlots[descriptorType].push(descriptorIndex);
     }
 
     m_DeferredReleaseDescriptors[frameIndex].clear();
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+uint32_t SegregatedDescriptorHeap::GetShaderSpaceForDescriptorType(DescriptorType type)
+{
+    switch (type)
+    {
+        case DescriptorType::ROTexture2D: return 0;
+        case DescriptorType::ROTextureCube: return 1;
+        case DescriptorType::ROBuffer: return 2;
+        case DescriptorType::AccelerationStructure: return 3;
+        case DescriptorType::VertexBuffer: return 4;
+        case DescriptorType::IndexBuffer: return 5;
+        case DescriptorType::RWTexture2D: return 0;
+        case DescriptorType::RWTextureCube: return 1;
+        case DescriptorType::RWBuffer: return 2;
+    }
+
+    HEXRAY_ASSERT_MSG(false, "Unknown descriptor type");
+    return -1;
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+bool SegregatedDescriptorHeap::IsDescriptorTypeReadOnly(DescriptorType type)
+{
+    switch (type)
+    {
+        case DescriptorType::ROTexture2D:
+        case DescriptorType::ROTextureCube:
+        case DescriptorType::ROBuffer:
+        case DescriptorType::AccelerationStructure:
+        case DescriptorType::VertexBuffer:
+        case DescriptorType::IndexBuffer:
+            return true;
+        case DescriptorType::RWTexture2D:
+        case DescriptorType::RWTextureCube:
+        case DescriptorType::RWBuffer:
+            return false;
+    }
+
+    HEXRAY_ASSERT_MSG(false, "Unknown descriptor type");
+    return false;
 }
