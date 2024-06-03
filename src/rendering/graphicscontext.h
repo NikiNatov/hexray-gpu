@@ -6,6 +6,7 @@
 #include "rendering/descriptorheap.h"
 #include "rendering/buffer.h"
 #include "rendering/mesh.h"
+#include "rendering/renderer.h"
 
 struct GraphicsContextDescription
 {
@@ -26,7 +27,10 @@ public:
     void ProcessDeferredReleases(uint64_t frameIndex);
     void ReleaseResource(ID3D12Resource2* resource, bool deferredRelease = true);
     void UploadBufferData(Buffer* destBuffer, const void* data);
-    std::shared_ptr<Buffer> BuildBottomLevelAccelerationStructure(const Mesh* mesh);
+    void DispatchRays(uint32_t width, uint32_t height, const ResourceBindTable& resourceBindings, const RaytracingPipeline* pipeline);
+    void CopyTextureToSwapChain(Texture* texture, D3D12_RESOURCE_STATES textureCurrentState);
+    std::shared_ptr<Buffer> BuildBottomLevelAccelerationStructure(const Submesh& submesh);
+    std::shared_ptr<Buffer> BuildTopLevelAccelerationStructure(const std::vector<MeshInstance>& meshInstances);
 
     inline bool IsDebugLayerEnabled() const { return m_Description.EnableDebugLayer; }
     inline bool IsHardwareRayTracingSupported() const { return m_HardwareRayTracingSupported; }
@@ -38,7 +42,7 @@ public:
     inline const ComPtr<ID3D12Device6>& GetDevice() const { return m_Device; }
 
     inline const ComPtr<ID3D12CommandQueue>& GetGraphicsQueue() const { return m_GraphicsQueue; }
-    inline const ComPtr<ID3D12CommandList>& GetCommandList() const { return m_CommandList; }
+    inline const ComPtr<ID3D12GraphicsCommandList6>& GetCommandList() const { return m_CommandList; }
 
     inline StandardDescriptorHeap* GetRTVDescriptorHeap() const { return m_RTVDescriptorHeap.get(); }
     inline StandardDescriptorHeap* GetDSVDescriptorHeap() const { return m_DSVDescriptorHeap.get(); }
@@ -73,7 +77,7 @@ private:
     ComPtr<ID3D12CommandQueue> m_GraphicsQueue;
     ComPtr<ID3D12CommandQueue> m_CopyQueue;
     ComPtr<ID3D12CommandAllocator> m_CommandAllocators[FRAMES_IN_FLIGHT];
-    ComPtr<ID3D12GraphicsCommandList> m_CommandList;
+    ComPtr<ID3D12GraphicsCommandList6> m_CommandList;
 
     // Synchronization objects
     ComPtr<ID3D12Fence1> m_FrameFence;

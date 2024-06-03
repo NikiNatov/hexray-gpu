@@ -4,6 +4,8 @@
 #include "core/event.h"
 #include "core/window.h"
 #include "rendering/graphicscontext.h"
+#include "rendering/renderer.h"
+#include "scene/scene.h"
 
 struct CommandLineArgs
 {
@@ -51,6 +53,8 @@ private:
     ApplicationDescription m_Description;
     std::unique_ptr<Window> m_Window;
     std::unique_ptr<GraphicsContext> m_GraphicsContext;
+    std::unique_ptr<Scene> m_Scene;
+    std::shared_ptr<Renderer> m_SceneRenderer;
 
     bool m_IsRunning = false;
 

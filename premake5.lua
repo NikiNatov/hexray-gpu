@@ -37,13 +37,26 @@ project "hexray-gpu"
 		"%{wks.location}/src",
 		"%{wks.location}/extern/spdlog/include",
 		"%{wks.location}/extern/glm/glm",
+		"%{wks.location}/extern/entt/include",
+		"%{wks.location}/extern/pix/include",
+	}
+
+	libdirs
+	{
+		"%{wks.location}/extern/pix/lib"
 	}
 
 	links
 	{
 		"d3d12",
 		"dxgi",
-		"dxguid"
+		"dxguid",
+		"WinPixEventRuntime"
+	}
+
+	postbuildcommands
+	{
+		"XCOPY %{wks.location}\\extern\\pix\\lib\\WinPixEventRuntime.dll \"%{cfg.targetdir}\"  /S /Y"
 	}
 
 	filter "configurations:Debug"

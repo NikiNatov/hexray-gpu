@@ -57,36 +57,18 @@ Buffer::~Buffer()
 
     if (m_Description.HeapType != D3D12_HEAP_TYPE_READBACK)
     {
-        if ((m_Description.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE) == 0)
+        if (m_SRVDescriptor != InvalidDescriptorIndex)
         {
-            GraphicsContext::GetInstance()->GetResourceDescriptorHeap()->ReleaseDescriptor(m_SRVDescriptor, ROBuffer, true);
+            GraphicsContext::GetInstance()->GetResourceDescriptorHeap()->ReleaseDescriptor(m_SRVDescriptor, m_Description.IsAccelerationStructure ? AccelerationStructure : ROBuffer, true);
         }
 
-        if (m_Description.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS)
+        if (m_UAVDescriptor != InvalidDescriptorIndex)
         {
             GraphicsContext::GetInstance()->GetResourceDescriptorHeap()->ReleaseDescriptor(m_UAVDescriptor, RWBuffer, true);
         }
     }
 
     GraphicsContext::GetInstance()->ReleaseResource(m_Resource.Detach());
-}
-
-// ------------------------------------------------------------------------------------------------------------------------------------
-DescriptorIndex Buffer::GetSRV() const
-{
-    if (m_Description.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE)
-        return InvalidDescriptorIndex;
-
-    return m_SRVDescriptor;
-}
-
-// ------------------------------------------------------------------------------------------------------------------------------------
-DescriptorIndex Buffer::GetUAV() const
-{
-    if ((m_Description.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS) == 0)
-        return InvalidDescriptorIndex;
-
-    return m_UAVDescriptor;
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
@@ -101,19 +83,31 @@ void Buffer::CreateViews()
     {
         D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
         srvDesc.Format = DXGI_FORMAT_UNKNOWN;
-        srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
         srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-        srvDesc.Buffer.FirstElement = 0;
-        srvDesc.Buffer.NumElements = m_Description.ElementCount;
-        srvDesc.Buffer.StructureByteStride = m_Description.ElementSize;
 
-        m_SRVDescriptor = resourceHeap->Allocate(ROBuffer);
-        d3dDevice->CreateShaderResourceView(m_Resource.Get(), &srvDesc, resourceHeap->GetCPUHandle(m_SRVDescriptor, ROBuffer));
+        if (m_Description.IsAccelerationStructure)
+        {
+            srvDesc.ViewDimension = D3D12_SRV_DIMENSION_RAYTRACING_ACCELERATION_STRUCTURE;
+            srvDesc.RaytracingAccelerationStructure.Location = m_Resource->GetGPUVirtualAddress();
+
+            m_SRVDescriptor = resourceHeap->Allocate(AccelerationStructure);
+            d3dDevice->CreateShaderResourceView(nullptr, &srvDesc, resourceHeap->GetCPUHandle(m_SRVDescriptor, AccelerationStructure));
+        }
+        else
+        {
+            srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+            srvDesc.Buffer.FirstElement = 0;
+            srvDesc.Buffer.NumElements = m_Description.ElementCount;
+            srvDesc.Buffer.StructureByteStride = m_Description.ElementSize;
+
+            m_SRVDescriptor = resourceHeap->Allocate(ROBuffer);
+            d3dDevice->CreateShaderResourceView(m_Resource.Get(), &srvDesc, resourceHeap->GetCPUHandle(m_SRVDescriptor, ROBuffer));
+        }
     }
 
     // UAV
     m_UAVDescriptor = InvalidDescriptorIndex;
-    if (m_Description.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS)
+    if (!m_Description.IsAccelerationStructure && (m_Description.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS))
     {
         D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
         uavDesc.Format = DXGI_FORMAT_UNKNOWN;

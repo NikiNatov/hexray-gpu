@@ -88,7 +88,7 @@ SegregatedDescriptorHeap::SegregatedDescriptorHeap(const SegregatedDescriptorHea
         description.DescriptorTableSizes[ROTexture2D] + description.DescriptorTableSizes[RWTexture2D] +
         description.DescriptorTableSizes[ROTextureCube] + description.DescriptorTableSizes[RWTextureCube] +
         description.DescriptorTableSizes[ROBuffer] + description.DescriptorTableSizes[RWBuffer] +
-        description.DescriptorTableSizes[VertexBuffer] + description.DescriptorTableSizes[IndexBuffer] + description.DescriptorTableSizes[AccelerationStructure],
+        description.DescriptorTableSizes[AccelerationStructure],
         debugName
     ), m_Description(description)
 {
@@ -162,8 +162,6 @@ uint32_t SegregatedDescriptorHeap::GetShaderSpaceForDescriptorType(DescriptorTyp
         case DescriptorType::ROTextureCube: return 1;
         case DescriptorType::ROBuffer: return 2;
         case DescriptorType::AccelerationStructure: return 3;
-        case DescriptorType::VertexBuffer: return 4;
-        case DescriptorType::IndexBuffer: return 5;
         case DescriptorType::RWTexture2D: return 0;
         case DescriptorType::RWTextureCube: return 1;
         case DescriptorType::RWBuffer: return 2;
@@ -182,8 +180,6 @@ bool SegregatedDescriptorHeap::IsDescriptorTypeReadOnly(DescriptorType type)
         case DescriptorType::ROTextureCube:
         case DescriptorType::ROBuffer:
         case DescriptorType::AccelerationStructure:
-        case DescriptorType::VertexBuffer:
-        case DescriptorType::IndexBuffer:
             return true;
         case DescriptorType::RWTexture2D:
         case DescriptorType::RWTextureCube:

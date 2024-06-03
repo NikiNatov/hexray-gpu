@@ -2,24 +2,25 @@
 
 #include "core/core.h"
 #include "rendering/buffer.h"
+#include "rendering/material.h"
 
 #include <glm.hpp>
 
-struct Vertex
-{
-    glm::vec3 Position;
-    glm::vec2 TexCoord;
-    glm::vec3 Normal;
-    glm::vec3 Tangent;
-    glm::vec3 Bitangent;
-};
-
-struct Submesh
+struct SubmeshDescription
 {
     uint32_t StartVertex;
     uint32_t VertexCount;
     uint32_t StartIndex;
     uint32_t IndexCount;
+    uint32_t MaterialIndex;
+};
+
+struct Submesh
+{
+    std::shared_ptr<Buffer> VertexBuffer;
+    std::shared_ptr<Buffer> IndexBuffer;
+    std::shared_ptr<Material> Material;
+    std::shared_ptr<Buffer> AccelerationStructure;
 };
 
 struct MeshDescription
@@ -30,7 +31,8 @@ struct MeshDescription
     std::vector<glm::vec3> Tangents;
     std::vector<glm::vec3> Bitangents;
     std::vector<uint32_t> Indices;
-    std::vector<Submesh> Submeshes;
+    std::vector<std::shared_ptr<Material>> Materials;
+    std::vector<SubmeshDescription> Submeshes;
 };
 
 class Mesh
@@ -38,13 +40,11 @@ class Mesh
 public:
     Mesh(const MeshDescription& description, const wchar_t* debugName = L"Unnamed Mesh");
 
-    inline const std::vector<Submesh>& GetSubmeshes() const { return m_Submeshes; }
-    inline const std::shared_ptr<Buffer>& GetVertexBuffer() const { return m_VertexBuffer; }
-    inline const std::shared_ptr<Buffer>& GetIndexBuffer() const { return m_IndexBuffer; }
-    inline const std::shared_ptr<Buffer>& GetAccelerationStructure() const { return m_AccelerationStructure; }
+    inline uint32_t GetSubmeshCount() const { return m_Submeshes.size(); }
+    inline const std::shared_ptr<Buffer>& GetVertexBuffer(uint32_t submeshIndex) const { return m_Submeshes[submeshIndex].VertexBuffer; }
+    inline const std::shared_ptr<Buffer>& GetIndexBuffer(uint32_t submeshIndex) const { return m_Submeshes[submeshIndex].IndexBuffer; }
+    inline const std::shared_ptr<Material>& GetMaterial(uint32_t submeshIndex) const { return m_Submeshes[submeshIndex].Material; }
+    inline const std::shared_ptr<Buffer>& GetAccelerationStructure(uint32_t submeshIndex) const { return m_Submeshes[submeshIndex].AccelerationStructure; }
 private:
     std::vector<Submesh> m_Submeshes;
-    std::shared_ptr<Buffer> m_VertexBuffer;
-    std::shared_ptr<Buffer> m_IndexBuffer;
-    std::shared_ptr<Buffer> m_AccelerationStructure;
 };

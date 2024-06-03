@@ -11,6 +11,7 @@ struct BufferDescription
     D3D12_RESOURCE_FLAGS Flags = D3D12_RESOURCE_FLAG_NONE;
     D3D12_RESOURCE_STATES InitialState = D3D12_RESOURCE_STATE_COMMON;
     D3D12_HEAP_TYPE HeapType = D3D12_HEAP_TYPE_DEFAULT;
+    bool IsAccelerationStructure = false;
 };
 
 class Buffer
@@ -19,8 +20,8 @@ public:
     Buffer(const BufferDescription& description, const wchar_t* debugName = L"Unnamed Buffer");
     ~Buffer();
 
-    DescriptorIndex GetSRV() const;
-    DescriptorIndex GetUAV() const;
+    inline DescriptorIndex GetSRV() const { return m_SRVDescriptor; }
+    inline DescriptorIndex GetUAV() const { return m_UAVDescriptor; }
 
     inline uint32_t GetSize() const { return m_Description.ElementCount * m_Description.ElementSize; }
     inline uint32_t GetElementSize() const { return m_Description.ElementSize; }

@@ -1,5 +1,7 @@
 #include "graphicscontext.h"
 
+#include <pix3.h>
+
 GraphicsContext* GraphicsContext::ms_Instance = nullptr;
 
 // ------------------------------------------------------------------------------------------------------------------------------------
@@ -74,6 +76,8 @@ void GraphicsContext::BeginFrame()
     DXCall(m_CommandAllocators[m_BackBufferIndex]->Reset());
     DXCall(m_CommandList->Reset(m_CommandAllocators[m_BackBufferIndex].Get(), nullptr));
 
+    PIXBeginEvent(m_CommandList.Get(), 0, "BeginFrame");
+
     D3D12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(m_BackBuffers[m_BackBufferIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);;
     m_CommandList->ResourceBarrier(1, &barrier);
 
@@ -86,6 +90,8 @@ void GraphicsContext::EndFrame()
 {
     D3D12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(m_BackBuffers[m_BackBufferIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);;
     m_CommandList->ResourceBarrier(1, &barrier);
+
+    PIXEndEvent(m_CommandList.Get());
 
     DXCall(m_CommandList->Close());
 
@@ -218,35 +224,86 @@ void GraphicsContext::UploadBufferData(Buffer* destBuffer, const void* data)
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
-std::shared_ptr<Buffer> GraphicsContext::BuildBottomLevelAccelerationStructure(const Mesh* mesh)
+void GraphicsContext::DispatchRays(uint32_t width, uint32_t height, const ResourceBindTable& resourceBindings, const RaytracingPipeline* pipeline)
 {
-    // Create a geometry descriptor for each submesh
-    std::vector<D3D12_RAYTRACING_GEOMETRY_DESC> submeshDescs;
-    submeshDescs.reserve(mesh->GetSubmeshes().size());
+    ID3D12DescriptorHeap* heaps[] = { m_ResourceDescriptorHeap->GetHeap().Get() };
+    m_CommandList->SetDescriptorHeaps(1, heaps);
+    m_CommandList->SetPipelineState1(pipeline->GetStateObject().Get());
+    m_CommandList->SetComputeRootSignature(m_BindlessRootSignature.Get());
+    m_CommandList->SetComputeRoot32BitConstants(0, sizeof(resourceBindings) / sizeof(uint32_t), &resourceBindings, 0);
+    m_CommandList->SetComputeRootDescriptorTable(1, m_ResourceDescriptorHeap->GetBaseGPUHandle());
 
-    for (const Submesh& submesh : mesh->GetSubmeshes())
+    D3D12_DISPATCH_RAYS_DESC dispatchRaysDesc = {};
+    dispatchRaysDesc.Width = width;
+    dispatchRaysDesc.Height = height;
+    dispatchRaysDesc.Depth = 1;
+    dispatchRaysDesc.RayGenerationShaderRecord.StartAddress = pipeline->GetRayGenTable()->GetResource()->GetGPUVirtualAddress();
+    dispatchRaysDesc.RayGenerationShaderRecord.SizeInBytes = pipeline->GetRayGenTable()->GetSize();
+    dispatchRaysDesc.HitGroupTable.StartAddress = pipeline->GetHitGroupTable()->GetResource()->GetGPUVirtualAddress();
+    dispatchRaysDesc.HitGroupTable.SizeInBytes = pipeline->GetHitGroupTable()->GetSize();
+    dispatchRaysDesc.HitGroupTable.StrideInBytes = pipeline->GetShaderRecordSize();
+    dispatchRaysDesc.MissShaderTable.StartAddress = pipeline->GetMissTableBuffer()->GetResource()->GetGPUVirtualAddress();
+    dispatchRaysDesc.MissShaderTable.SizeInBytes = pipeline->GetMissTableBuffer()->GetSize();
+    dispatchRaysDesc.MissShaderTable.StrideInBytes = pipeline->GetShaderRecordSize();
+
+    m_CommandList->DispatchRays(&dispatchRaysDesc);
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+void GraphicsContext::CopyTextureToSwapChain(Texture* texture, D3D12_RESOURCE_STATES textureCurrentState)
+{
+    if (!texture)
+        return;
+
+    D3D12_RESOURCE_BARRIER preCopyBarriers[] = {
+        CD3DX12_RESOURCE_BARRIER::Transition(m_BackBuffers[m_BackBufferIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COPY_DEST),
+        CD3DX12_RESOURCE_BARRIER::Transition(texture->GetResource().Get(), textureCurrentState, D3D12_RESOURCE_STATE_COPY_SOURCE)
+    };
+
+    D3D12_RESOURCE_BARRIER postCopyBarriers[] = {
+        CD3DX12_RESOURCE_BARRIER::Transition(m_BackBuffers[m_BackBufferIndex].Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_RENDER_TARGET),
+        CD3DX12_RESOURCE_BARRIER::Transition(texture->GetResource().Get(), D3D12_RESOURCE_STATE_COPY_SOURCE, textureCurrentState)
+    };
+
+    m_CommandList->ResourceBarrier(2, preCopyBarriers);
+    m_CommandList->CopyResource(m_BackBuffers[m_BackBufferIndex].Get(), texture->GetResource().Get());
+    m_CommandList->ResourceBarrier(2, postCopyBarriers);
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+std::shared_ptr<Buffer> GraphicsContext::BuildBottomLevelAccelerationStructure(const Submesh& submesh)
+{
+    D3D12_RAYTRACING_GEOMETRY_DESC geometryDesc = {};
+    geometryDesc.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
+    geometryDesc.Triangles.IndexFormat = DXGI_FORMAT_R32_UINT;
+    geometryDesc.Triangles.IndexBuffer = submesh.IndexBuffer->GetResource()->GetGPUVirtualAddress();
+    geometryDesc.Triangles.IndexCount = submesh.IndexBuffer->GetElementCount();
+    geometryDesc.Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
+    geometryDesc.Triangles.VertexBuffer.StartAddress = submesh.VertexBuffer->GetResource()->GetGPUVirtualAddress();
+    geometryDesc.Triangles.VertexCount = submesh.VertexBuffer->GetElementCount();
+    geometryDesc.Triangles.VertexBuffer.StrideInBytes = submesh.VertexBuffer->GetElementSize();
+    geometryDesc.Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_NONE;
+
+    if (!submesh.Material->GetFlag(MaterialFlags::Transparent))
     {
-        D3D12_RAYTRACING_GEOMETRY_DESC& submeshDesc = submeshDescs.emplace_back();
-        submeshDesc.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
-        submeshDesc.Triangles.IndexFormat = DXGI_FORMAT_R32_UINT;
-        submeshDesc.Triangles.IndexBuffer = mesh->GetIndexBuffer()->GetResource()->GetGPUVirtualAddress() + submesh.StartIndex * mesh->GetIndexBuffer()->GetElementSize();
-        submeshDesc.Triangles.IndexCount = submesh.IndexCount;
-        submeshDesc.Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
-        submeshDesc.Triangles.VertexBuffer.StartAddress = mesh->GetVertexBuffer()->GetResource()->GetGPUVirtualAddress() + submesh.StartVertex * mesh->GetVertexBuffer()->GetElementSize();
-        submeshDesc.Triangles.VertexCount = submesh.VertexCount;
-        submeshDesc.Triangles.VertexBuffer.StrideInBytes = mesh->GetVertexBuffer()->GetElementSize();
-        submeshDesc.Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE; // TODO: Return to this when we have support for transparent materials
+        geometryDesc.Flags |= D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;
+    }
+
+    if (submesh.Material->GetFlag(MaterialFlags::TwoSided))
+    {
+        // Make sure the any hit shader is ran only ones per primitive since we don't care if it is a front or a back face
+        geometryDesc.Flags |= D3D12_RAYTRACING_GEOMETRY_FLAG_NO_DUPLICATE_ANYHIT_INVOCATION;
     }
 
     // Initialize structure's build info
-    D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC buildDesc;
+    D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC buildDesc = {};
     buildDesc.Inputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL;
     buildDesc.Inputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
-    buildDesc.Inputs.NumDescs = submeshDescs.size();
-    buildDesc.Inputs.pGeometryDescs = submeshDescs.data();
+    buildDesc.Inputs.NumDescs = 1;
+    buildDesc.Inputs.pGeometryDescs = &geometryDesc;
     buildDesc.Inputs.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE;
 
-    D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO prebuildInfo;
+    D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO prebuildInfo = {};
     m_Device->GetRaytracingAccelerationStructurePrebuildInfo(&buildDesc.Inputs, &prebuildInfo);
 
     BufferDescription scratchBufferDesc;
@@ -263,8 +320,125 @@ std::shared_ptr<Buffer> GraphicsContext::BuildBottomLevelAccelerationStructure(c
     accelerationStructureBufferDesc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
     accelerationStructureBufferDesc.InitialState = D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
     accelerationStructureBufferDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+    accelerationStructureBufferDesc.IsAccelerationStructure = true;
 
     std::shared_ptr<Buffer> accelerationStructure = std::make_shared<Buffer>(accelerationStructureBufferDesc, L"Acceleration Structure");
+
+    buildDesc.ScratchAccelerationStructureData = scratchBuffer->GetResource()->GetGPUVirtualAddress();
+    buildDesc.DestAccelerationStructureData = accelerationStructure->GetResource()->GetGPUVirtualAddress();
+    buildDesc.SourceAccelerationStructureData = 0;
+
+    // Create a command list and build the acceleration structure
+    HANDLE waitFenceEvent = CreateEvent(0, false, false, 0);
+    ComPtr<ID3D12Fence1> waitFence;
+    DXCall(m_Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&waitFence)));
+    DXCall(waitFence->SetName(L"BLAS Wait Fence"));
+
+    ComPtr<ID3D12CommandAllocator> allocator;
+    DXCall(m_Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&allocator)));
+    DXCall(allocator->SetName(L"BLAS Command Allocator"));
+
+    ComPtr<ID3D12GraphicsCommandList6> cmdList;
+    DXCall(m_Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, allocator.Get(), nullptr, IID_PPV_ARGS(&cmdList)));
+    DXCall(cmdList->SetName(L"BLAS Command List"));
+    DXCall(cmdList->Close());
+    DXCall(cmdList->Reset(allocator.Get(), nullptr));
+
+    cmdList->BuildRaytracingAccelerationStructure(&buildDesc, 0, nullptr);
+
+    DXCall(cmdList->Close());
+
+    ID3D12CommandList* cmdLists[] = { cmdList.Get() };
+    m_GraphicsQueue->ExecuteCommandLists(1, cmdLists);
+
+    // Wait for the build to finish on the GPU before we continue
+    DXCall(m_GraphicsQueue->Signal(waitFence.Get(), 1));
+    DXCall(waitFence->SetEventOnCompletion(1, waitFenceEvent));
+    WaitForSingleObjectEx(waitFenceEvent, INFINITE, FALSE);
+
+    CloseHandle(waitFenceEvent);
+
+    return accelerationStructure;
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+std::shared_ptr<Buffer> GraphicsContext::BuildTopLevelAccelerationStructure(const std::vector<MeshInstance>& meshInstances)
+{
+    std::vector<D3D12_RAYTRACING_INSTANCE_DESC> instanceDescs;
+    instanceDescs.reserve(meshInstances.size());
+
+    for (const MeshInstance& instance : meshInstances)
+    {
+        for (uint32_t i = 0; i < instance.Mesh->GetSubmeshCount(); i++)
+        {
+            D3D12_RAYTRACING_INSTANCE_DESC& instanceDesc = instanceDescs.emplace_back();
+
+            for (uint32_t i = 0; i < 3; i++)
+            {
+                for (uint32_t j = 0; j < 4; j++)
+                {
+                    instanceDesc.Transform[i][j] = instance.Transform[j][i];
+                }
+            }
+
+            instanceDesc.InstanceID = instanceDescs.size() - 1;
+            instanceDesc.InstanceMask = 1;
+            instanceDesc.InstanceContributionToHitGroupIndex = 0;
+            instanceDesc.AccelerationStructure = instance.Mesh->GetAccelerationStructure(i)->GetResource()->GetGPUVirtualAddress();
+            instanceDesc.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_NONE;
+
+            if (instance.Mesh->GetMaterial(i)->GetFlag(MaterialFlags::Transparent))
+            {
+                instanceDesc.Flags |= D3D12_RAYTRACING_INSTANCE_FLAG_FORCE_NON_OPAQUE;
+            }
+            else
+            {
+                instanceDesc.Flags |= D3D12_RAYTRACING_INSTANCE_FLAG_FORCE_OPAQUE;
+            }
+
+            if (instance.Mesh->GetMaterial(i)->GetFlag(MaterialFlags::TwoSided))
+            {
+                instanceDesc.Flags |= D3D12_RAYTRACING_INSTANCE_FLAG_TRIANGLE_CULL_DISABLE;
+            }
+        }
+    }
+
+    BufferDescription instanceBufferDesc;
+    instanceBufferDesc.ElementCount = instanceDescs.size();
+    instanceBufferDesc.ElementSize = sizeof(D3D12_RAYTRACING_INSTANCE_DESC);
+    instanceBufferDesc.HeapType = D3D12_HEAP_TYPE_UPLOAD;
+
+    std::unique_ptr<Buffer> instanceBuffer = std::make_unique<Buffer>(instanceBufferDesc, L"Top Level AS Instance Buffer");
+    memcpy(instanceBuffer->GetMappedData(), instanceDescs.data(), instanceDescs.size() * sizeof(D3D12_RAYTRACING_INSTANCE_DESC));
+
+    // Initialize structure's build info
+    D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC buildDesc = {};
+    buildDesc.Inputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
+    buildDesc.Inputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
+    buildDesc.Inputs.NumDescs = instanceBuffer->GetElementCount();
+    buildDesc.Inputs.InstanceDescs = instanceBuffer->GetResource()->GetGPUVirtualAddress();
+    buildDesc.Inputs.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_BUILD | D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_UPDATE;
+
+    D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO prebuildInfo = {};
+    m_Device->GetRaytracingAccelerationStructurePrebuildInfo(&buildDesc.Inputs, &prebuildInfo);
+
+    BufferDescription scratchBufferDesc;
+    scratchBufferDesc.ElementCount = prebuildInfo.ScratchDataSizeInBytes;
+    scratchBufferDesc.ElementSize = sizeof(uint8_t);
+    scratchBufferDesc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
+    scratchBufferDesc.InitialState = D3D12_RESOURCE_STATE_COMMON;
+
+    std::unique_ptr<Buffer> scratchBuffer = std::make_unique<Buffer>(scratchBufferDesc, L"Top Level AS Scratch Buffer");
+
+    BufferDescription accelerationStructureBufferDesc;
+    accelerationStructureBufferDesc.ElementCount = prebuildInfo.ResultDataMaxSizeInBytes;
+    accelerationStructureBufferDesc.ElementSize = sizeof(uint8_t);
+    accelerationStructureBufferDesc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
+    accelerationStructureBufferDesc.InitialState = D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
+    accelerationStructureBufferDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+    accelerationStructureBufferDesc.IsAccelerationStructure = true;
+
+    std::shared_ptr<Buffer> accelerationStructure = std::make_shared<Buffer>(accelerationStructureBufferDesc, L"Top Level Acceleration Structure");
 
     buildDesc.ScratchAccelerationStructureData = scratchBuffer->GetResource()->GetGPUVirtualAddress();
     buildDesc.DestAccelerationStructureData = accelerationStructure->GetResource()->GetGPUVirtualAddress();
@@ -460,13 +634,11 @@ void GraphicsContext::CreateDescriptorHeaps()
     resourceHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     resourceHeapDesc.DescriptorTableSizes[ROTexture2D] = 4096;
     resourceHeapDesc.DescriptorTableSizes[ROTextureCube] = 4096;
-    resourceHeapDesc.DescriptorTableSizes[ROBuffer] = 1024;
+    resourceHeapDesc.DescriptorTableSizes[ROBuffer] = 4096;
     resourceHeapDesc.DescriptorTableSizes[RWTexture2D] = 2048;
     resourceHeapDesc.DescriptorTableSizes[RWTextureCube] = 2048;
     resourceHeapDesc.DescriptorTableSizes[RWBuffer] = 1024;
-    resourceHeapDesc.DescriptorTableSizes[AccelerationStructure] = 1;
-    resourceHeapDesc.DescriptorTableSizes[VertexBuffer] = 4096;
-    resourceHeapDesc.DescriptorTableSizes[IndexBuffer] = resourceHeapDesc.DescriptorTableSizes[VertexBuffer];
+    resourceHeapDesc.DescriptorTableSizes[AccelerationStructure] = 256;
 
     m_ResourceDescriptorHeap = std::make_unique<SegregatedDescriptorHeap>(resourceHeapDesc, L"Resource Descriptor Heap");
 }
@@ -518,6 +690,16 @@ void GraphicsContext::CreateSwapChainAndSyncPrimitives()
 void GraphicsContext::CreateRootSignatures()
 {
     // Root params
+    std::vector<D3D12_ROOT_PARAMETER1> rootParams;
+
+    D3D12_ROOT_PARAMETER1& rootConstants = rootParams.emplace_back();
+    rootConstants.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+    rootConstants.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+    rootConstants.Constants.Num32BitValues = sizeof(ResourceBindTable) / sizeof(uint32_t);
+    rootConstants.Constants.ShaderRegister = 0;
+    rootConstants.Constants.RegisterSpace = 0;
+
+    // Bindless resource table
     std::vector<D3D12_DESCRIPTOR_RANGE1> resourceBindlessTableRanges;
     for (uint32_t i = 0; i < DescriptorType::NumDescriptorTypes; i++)
     {
@@ -532,7 +714,7 @@ void GraphicsContext::CreateRootSignatures()
         range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
     }
 
-    D3D12_ROOT_PARAMETER1 resourceBindlessTableParam;
+    D3D12_ROOT_PARAMETER1& resourceBindlessTableParam = rootParams.emplace_back();
     resourceBindlessTableParam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
     resourceBindlessTableParam.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
     resourceBindlessTableParam.DescriptorTable.NumDescriptorRanges = resourceBindlessTableRanges.size();
@@ -624,8 +806,8 @@ void GraphicsContext::CreateRootSignatures()
 
     D3D12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc = {};
     rootSignatureDesc.Version = D3D_ROOT_SIGNATURE_VERSION_1_1;
-    rootSignatureDesc.Desc_1_1.NumParameters = 1;
-    rootSignatureDesc.Desc_1_1.pParameters = &resourceBindlessTableParam;
+    rootSignatureDesc.Desc_1_1.NumParameters = rootParams.size();
+    rootSignatureDesc.Desc_1_1.pParameters = rootParams.data();
     rootSignatureDesc.Desc_1_1.NumStaticSamplers = staticSamplerDescs.size();
     rootSignatureDesc.Desc_1_1.pStaticSamplers = staticSamplerDescs.data();
     rootSignatureDesc.Desc_1_1.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
@@ -637,4 +819,5 @@ void GraphicsContext::CreateRootSignatures()
     HEXRAY_ASSERT_MSG(!(errorBlob && errorBlob->GetBufferSize()), "Root signature serialization failed: {}", (char*)errorBlob->GetBufferPointer());
 
     DXCall(m_Device->CreateRootSignature(0, rootSigBlob->GetBufferPointer(), rootSigBlob->GetBufferSize(), IID_PPV_ARGS(&m_BindlessRootSignature)));
+    DXCall(m_BindlessRootSignature->SetName(L"Bindless Root Signature"));
 }

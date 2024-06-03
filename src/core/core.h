@@ -22,6 +22,34 @@
 
 #define Align(size, alignment) ((size + (alignment - 1)) & ~(alignment - 1))
 
+#define ENUM_FLAGS(EnumType) \
+static EnumType operator&(EnumType a, EnumType b) \
+{ \
+    return (EnumType)((uint32_t)a & (uint32_t)b); \
+} \
+static EnumType operator|(EnumType a, EnumType b) \
+{ \
+    return (EnumType)((uint32_t)a | (uint32_t)b); \
+} \
+static EnumType operator~(EnumType a) \
+{ \
+    return (EnumType)(~(uint32_t)a); \
+} \
+static EnumType& operator|=(EnumType& a, EnumType b) \
+{ \
+    a = (EnumType)((uint32_t)a | (uint32_t)b); \
+    return a; \
+} \
+static EnumType& operator&=(EnumType& a, EnumType b) \
+{ \
+    a = (EnumType)((uint32_t)a & (uint32_t)b); \
+    return a; \
+} \
+static bool IsSet(EnumType flags, EnumType value) \
+{ \
+    return ((uint32_t)flags & (uint32_t)value) == (uint32_t)value; \
+} \
+
 // Asserts
 #if defined(HEXRAY_DEBUG)
 #define HEXRAY_ASSERT_IMPL(condition, msg, ...) { if(!(condition)) { HEXRAY_CRITICAL(msg, __VA_ARGS__); __debugbreak(); } }

@@ -13,6 +13,8 @@ class DescriptorHeapBase
 public:
     virtual ~DescriptorHeapBase() = default;
 
+    inline D3D12_CPU_DESCRIPTOR_HANDLE GetBaseCPUHandle() const { return m_CPUStartHandle; }
+    inline D3D12_GPU_DESCRIPTOR_HANDLE GetBaseGPUHandle() const { return m_GPUStartHandle; }
     inline D3D12_DESCRIPTOR_HEAP_TYPE GetType() const { return m_Type; }
     inline uint32_t GetDescriptorSize() const { return m_DescriptorSize; }
     inline uint32_t GetCapacity() const { return m_Capacity; }
@@ -62,8 +64,6 @@ enum DescriptorType
     ROBuffer,
     RWBuffer,
     AccelerationStructure,
-    VertexBuffer,
-    IndexBuffer,
     NumDescriptorTypes
 };
 
