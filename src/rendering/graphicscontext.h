@@ -27,6 +27,7 @@ public:
     void ProcessDeferredReleases(uint64_t frameIndex);
     void ReleaseResource(ID3D12Resource2* resource, bool deferredRelease = true);
     void UploadBufferData(Buffer* destBuffer, const void* data);
+    void UploadTextureData(Texture* destTexture, const void* data, uint32_t mip = 0, uint32_t face = 0);
     void DispatchRays(uint32_t width, uint32_t height, const ResourceBindTable& resourceBindings, const RaytracingPipeline* pipeline);
     void CopyTextureToSwapChain(Texture* texture, D3D12_RESOURCE_STATES textureCurrentState);
     std::shared_ptr<Buffer> BuildBottomLevelAccelerationStructure(const Submesh& submesh);

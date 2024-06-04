@@ -224,6 +224,86 @@ void GraphicsContext::UploadBufferData(Buffer* destBuffer, const void* data)
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
+void GraphicsContext::UploadTextureData(Texture* destTexture, const void* data, uint32_t mip, uint32_t face)
+{
+    if (data)
+    {
+        uint32_t subresourceIdx = D3D12CalcSubresource(mip, face, 0, destTexture->GetMipLevels(), destTexture->IsCubeMap() ? 6 : 1);
+
+        BufferDescription uploadBufferDesc;
+        uploadBufferDesc.ElementCount = GetRequiredIntermediateSize(destTexture->GetResource().Get(), subresourceIdx, 1);
+        uploadBufferDesc.ElementSize = sizeof(uint8_t);
+        uploadBufferDesc.HeapType = D3D12_HEAP_TYPE_UPLOAD;
+        uploadBufferDesc.InitialState = D3D12_RESOURCE_STATE_GENERIC_READ;
+
+        std::unique_ptr<Buffer> uploadBuffer = std::make_unique<Buffer>(uploadBufferDesc, L"Upload Buffer");
+
+        uint32_t width = std::max(destTexture->GetWidth() >> mip, 1u);
+        uint32_t height = std::max(destTexture->GetHeight() >> mip, 1u);
+
+        uint32_t formatSize = 0;
+        switch (destTexture->GetFormat())
+        {
+            case DXGI_FORMAT_R8_UNORM:
+                formatSize = 1;
+                break;
+            case DXGI_FORMAT_R8G8B8A8_UNORM:
+                formatSize = 4;
+                break;
+            case DXGI_FORMAT_R16G16_FLOAT:
+                formatSize = 4;
+                break;
+            case DXGI_FORMAT_R32G32_FLOAT:
+                formatSize = 8;
+                break;
+            case DXGI_FORMAT_R16G16B16A16_FLOAT:
+                formatSize = 8;
+                break;
+            case DXGI_FORMAT_R32G32B32A32_FLOAT:
+                formatSize = 16;
+                break;
+            default:
+                HEXRAY_ASSERT(false, "Unsupported format");
+        }
+
+        D3D12_SUBRESOURCE_DATA subresourceData = {};
+        subresourceData.pData = data;
+        subresourceData.RowPitch = ((width * formatSize + 255) / 256) * 256;
+        subresourceData.SlicePitch = height * subresourceData.RowPitch;
+
+        // Create a new copy command list and execute the upload operation
+        HANDLE waitFenceEvent = CreateEvent(0, false, false, 0);
+        ComPtr<ID3D12Fence1> waitFence;
+        DXCall(m_Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&waitFence)));
+        DXCall(waitFence->SetName(L"Upload Wait Fence"));
+
+        ComPtr<ID3D12CommandAllocator> allocator;
+        DXCall(m_Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_COPY, IID_PPV_ARGS(&allocator)));
+        DXCall(allocator->SetName(L"Upload Command Allocator"));
+
+        ComPtr<ID3D12GraphicsCommandList6> copyCmdList;
+        DXCall(m_Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_COPY, allocator.Get(), nullptr, IID_PPV_ARGS(&copyCmdList)));
+        DXCall(copyCmdList->SetName(L"Upload Command List"));
+        DXCall(copyCmdList->Close());
+        DXCall(copyCmdList->Reset(allocator.Get(), nullptr));
+
+        UpdateSubresources<1>(copyCmdList.Get(), destTexture->GetResource().Get(), uploadBuffer->GetResource().Get(), 0, subresourceIdx, 1, &subresourceData);
+
+        DXCall(copyCmdList->Close());
+
+        ID3D12CommandList* copyCommandLists[] = { copyCmdList.Get() };
+        m_CopyQueue->ExecuteCommandLists(1, copyCommandLists);
+
+        // Wait for the upload to finish on the GPU before we continue
+        DXCall(m_CopyQueue->Signal(waitFence.Get(), 1));
+        DXCall(waitFence->SetEventOnCompletion(1, waitFenceEvent));
+        WaitForSingleObjectEx(waitFenceEvent, INFINITE, FALSE);
+
+        CloseHandle(waitFenceEvent);
+    }
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
 void GraphicsContext::DispatchRays(uint32_t width, uint32_t height, const ResourceBindTable& resourceBindings, const RaytracingPipeline* pipeline)
 {
     ID3D12DescriptorHeap* heaps[] = { m_ResourceDescriptorHeap->GetHeap().Get() };

@@ -4,6 +4,7 @@
 #include "core/timer.h"
 #include "core/input.h"
 #include "scene/component.h"
+#include "rendering/defaultresources.h"
 
 #include <sstream>
 
@@ -37,6 +38,8 @@ Application::Application(const ApplicationDescription& description)
 
     m_GraphicsContext = std::make_unique<GraphicsContext>(gfxContextDesc);
 
+    DefaultResources::Initialize();
+
     // Create renderer
     RendererDescription rendererDesc;
     rendererDesc.RayRecursionDepth = 3;
@@ -44,24 +47,21 @@ Application::Application(const ApplicationDescription& description)
     m_SceneRenderer = std::make_shared<Renderer>(rendererDesc);
     m_SceneRenderer->SetViewportSize(m_Window->GetWidth(), m_Window->GetHeight());
 
-    // Create triangle mesh
-    MeshDescription desc;
-    desc.Indices = { 0, 1, 2 };
-    desc.Positions = {
-        {  0.0f,  0.5f, 1.0f },
-        { -0.5f, -0.5f, 1.0f },
-        {  0.5f, -0.5f, 1.0f }
-    };
-    desc.Submeshes = { SubmeshDescription{ 0, 3, 0, 3 } };
-    desc.Materials = {
-        std::make_shared<Material>(MaterialFlags::TwoSided | MaterialFlags::Transparent)
-    };
-
     // Create scene
     m_Scene = std::make_unique<Scene>("Test scene");
 
     Entity triangle = m_Scene->CreateEntity("Triangle");
-    triangle.AddComponent<MeshComponent>().MeshObject = std::make_unique<Mesh>(desc);
+    triangle.AddComponent<MeshComponent>().MeshObject = DefaultResources::TriangleMesh;
+
+    Entity quad = m_Scene->CreateEntity("Quad");
+    quad.AddComponent<MeshComponent>().MeshObject = DefaultResources::QuadMesh;
+    quad.GetComponent<TransformComponent>().Translation.z = -3.0f;
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+Application::~Application()
+{
+    DefaultResources::Shutdown();
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
