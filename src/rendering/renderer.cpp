@@ -41,14 +41,14 @@ Renderer::~Renderer()
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
-void Renderer::BeginScene(const Camera& camera, const glm::mat4& cameraTransform, const std::shared_ptr<Texture>& environmentMap)
+void Renderer::BeginScene(const Camera& camera, const std::shared_ptr<Texture>& environmentMap)
 {
     uint32_t currentFrameIdx = GraphicsContext::GetInstance()->GetBackBufferIndex();
 
-    m_SceneConstants.ViewMatrix = glm::inverse(cameraTransform);
+    m_SceneConstants.ViewMatrix = camera.GetViewMatrix();
     m_SceneConstants.ProjectionMatrix = camera.GetProjection();
     m_SceneConstants.InvViewProjMatrix = glm::inverse(m_SceneConstants.ProjectionMatrix * m_SceneConstants.ViewMatrix);
-    m_SceneConstants.CameraPosition = cameraTransform[3];
+    m_SceneConstants.CameraPosition = camera.GetPosition();
     m_SceneConstants.NumLights = 0;
     m_SceneConstants.EnvironmentMap = environmentMap ? environmentMap->GetSRV() : InvalidDescriptorIndex;
 

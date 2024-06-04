@@ -64,14 +64,6 @@ struct TransformComponent
 	}
 };
 
-struct CameraComponent
-{
-	Camera Camera;
-
-	CameraComponent() = default;
-	CameraComponent(const CameraComponent& other) = default;
-};
-
 struct MeshComponent
 {
 	std::shared_ptr<Mesh> MeshObject = nullptr;

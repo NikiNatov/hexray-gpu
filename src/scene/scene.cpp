@@ -94,42 +94,12 @@ Entity Scene::FindEntityByName(const std::string& name)
 // ------------------------------------------------------------------------------------------------------------------------------------
 void Scene::OnUpdate(float dt)
 {
-    // TODO: Update camera
+    m_Camera.OnUpdate(dt);
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
 void Scene::OnRender(const std::shared_ptr<Renderer>& renderer)
 {
-    auto view = m_Registry.view<CameraComponent, TransformComponent, SceneHierarchyComponent>();
-    entt::entity cameraEntity = view.back();
-
-    if (cameraEntity == entt::null)
-    {
-        HEXRAY_WARNING("Trying to render a scene with no camera entity");
-        return;
-    }
-
-    auto [cc, tc, shc] = view.get<CameraComponent, TransformComponent, SceneHierarchyComponent>(cameraEntity);
-    glm::mat4 cameraTransform;
-
-    if (shc.Parent)
-    {
-        Entity currentParent = FindEntityByUUID(shc.Parent);
-        auto accumulatedTransform = currentParent.GetComponent<TransformComponent>().GetTransform();
-
-        while (currentParent.GetComponent<SceneHierarchyComponent>().Parent)
-        {
-            currentParent = FindEntityByUUID(currentParent.GetComponent<SceneHierarchyComponent>().Parent);
-            accumulatedTransform = currentParent.GetComponent<TransformComponent>().GetTransform() * accumulatedTransform;
-        }
-
-        cameraTransform = accumulatedTransform * tc.GetTransform();
-    }
-    else
-    {
-        cameraTransform = tc.GetTransform();
-    }
-
     // Sky light
     std::shared_ptr<Texture> environmentMap = nullptr;
     {
@@ -149,7 +119,7 @@ void Scene::OnRender(const std::shared_ptr<Renderer>& renderer)
         }
     }
 
-    renderer->BeginScene(cc.Camera, cameraTransform, environmentMap);
+    renderer->BeginScene(m_Camera, environmentMap);
 
     // Submit directional lights
     {
@@ -215,11 +185,5 @@ void Scene::OnRender(const std::shared_ptr<Renderer>& renderer)
 // ------------------------------------------------------------------------------------------------------------------------------------
 void Scene::OnViewportResize(uint32_t width, uint32_t height)
 {
-    auto view = m_Registry.view<CameraComponent>();
-    entt::entity cameraEntity = view.back();
-
-    if (cameraEntity == entt::null)
-        return;
-
-    view.get<CameraComponent>(cameraEntity).Camera.SetViewportSize(width, height);
+    m_Camera.SetViewportSize(width, height);
 }

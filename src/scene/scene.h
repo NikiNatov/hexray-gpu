@@ -27,4 +27,5 @@ private:
     std::string m_Name;
     entt::registry m_Registry;
     std::unordered_map<Uuid, Entity> m_EntitiesByID;
+    Camera m_Camera;
 };

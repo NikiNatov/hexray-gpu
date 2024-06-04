@@ -2,6 +2,7 @@
 
 #include "core/logger.h"
 #include "core/timer.h"
+#include "core/input.h"
 #include "scene/component.h"
 
 #include <sstream>
@@ -27,6 +28,8 @@ Application::Application(const ApplicationDescription& description)
 
     m_Window = std::make_unique<Window>(windowDesc);
 
+    Input::Initialize(m_Window->GetWindowHandle());
+
     // Create d3d12 graphics context
     GraphicsContextDescription gfxContextDesc;
     gfxContextDesc.Window = m_Window.get();
@@ -45,9 +48,9 @@ Application::Application(const ApplicationDescription& description)
     MeshDescription desc;
     desc.Indices = { 0, 1, 2 };
     desc.Positions = {
-        {  0.0f, -0.5f, 1.0f },
-        { -0.5f,  0.5f, 1.0f },
-        {  0.5f,  0.5f, 1.0f }
+        {  0.0f,  0.5f, 1.0f },
+        { -0.5f, -0.5f, 1.0f },
+        {  0.5f, -0.5f, 1.0f }
     };
     desc.Submeshes = { SubmeshDescription{ 0, 3, 0, 3 } };
     desc.Materials = {
@@ -59,9 +62,6 @@ Application::Application(const ApplicationDescription& description)
 
     Entity triangle = m_Scene->CreateEntity("Triangle");
     triangle.AddComponent<MeshComponent>().MeshObject = std::make_unique<Mesh>(desc);
-
-    Entity camera = m_Scene->CreateEntity("Camera");
-    camera.AddComponent<CameraComponent>();
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
