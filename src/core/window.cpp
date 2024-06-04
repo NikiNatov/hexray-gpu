@@ -77,6 +77,12 @@ void Window::ToggleVSync()
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
+void Window::SetTitle(const std::string& title)
+{
+	SetWindowText(m_WindowHandle, title.c_str());
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
 LRESULT WINAPI Window::WindowProcSetup(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 {
 	if (Msg == WM_CREATE)

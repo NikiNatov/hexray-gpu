@@ -24,6 +24,7 @@ public:
     void SwapBuffers();
     void SetMinimized(bool state);
     void ToggleVSync();
+    void SetTitle(const std::string& title);
 
     inline const std::string& GetTitle() const { return m_Description.Title; }
     inline uint32_t GetWidth() const { return m_Description.Width; }

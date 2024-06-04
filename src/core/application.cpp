@@ -4,6 +4,8 @@
 #include "core/timer.h"
 #include "scene/component.h"
 
+#include <sstream>
+
 Application* Application::ms_Instance = nullptr;
 
 // ------------------------------------------------------------------------------------------------------------------------------------
@@ -67,6 +69,8 @@ void Application::Run()
 {
     m_IsRunning = true;
 
+    std::string newTitleStart = m_Window->GetTitle();
+
     Timer frameTimer;
     while (m_IsRunning)
     {
@@ -85,7 +89,12 @@ void Application::Run()
 
         frameTimer.Stop();
 
-        HEXRAY_INFO("FPS {}", 1.0f / frameTimer.GetElapsedTime());
+        std::stringstream newTitle;
+        newTitle << newTitleStart;
+        newTitle << " ";
+        newTitle << std::fixed << std::setprecision(0) << std::ceil(1.0f / frameTimer.GetElapsedTime());
+        newTitle << "FPS";
+        m_Window->SetTitle(newTitle.str());
     }
 }
 

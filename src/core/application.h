@@ -56,6 +56,8 @@ private:
     std::unique_ptr<Scene> m_Scene;
     std::shared_ptr<Renderer> m_SceneRenderer;
 
+
+
     bool m_IsRunning = false;
 
     static Application* ms_Instance;
