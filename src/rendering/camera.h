@@ -46,7 +46,7 @@ private:
 	float m_PerspectiveFOV = 45.0f;
 	float m_PerspectiveNear = 0.1f;
 	float m_PerspectiveFar = 1000.0f;
-	float m_Distance = 0.0f;
+	float m_Distance = 30.0f;
 	float m_YawAngle = 0.0f;
 	float m_PitchAngle = 0.0f;
 	float m_PanSpeed = 1.0f;
