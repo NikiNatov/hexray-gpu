@@ -33,6 +33,8 @@ struct MeshDescription
     std::vector<uint32_t> Indices;
     std::vector<std::shared_ptr<Material>> Materials;
     std::vector<SubmeshDescription> Submeshes;
+
+    static MeshDescription CreateQuad();
 };
 
 class Mesh

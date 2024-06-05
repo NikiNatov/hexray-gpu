@@ -5,6 +5,7 @@
 #include "core/input.h"
 #include "scene/component.h"
 #include "rendering/defaultresources.h"
+#include "resourceloaders/textureloader.h"
 
 #include <sstream>
 
@@ -50,12 +51,21 @@ Application::Application(const ApplicationDescription& description)
     // Create scene
     m_Scene = std::make_unique<Scene>("Test scene");
 
-    Entity triangle = m_Scene->CreateEntity("Triangle");
-    triangle.AddComponent<MeshComponent>().MeshObject = DefaultResources::TriangleMesh;
+    //Entity triangle = m_Scene->CreateEntity("Triangle");
+    //triangle.AddComponent<MeshComponent>().MeshObject = DefaultResources::TriangleMesh;
 
     Entity quad = m_Scene->CreateEntity("Quad");
-    quad.AddComponent<MeshComponent>().MeshObject = DefaultResources::QuadMesh;
     quad.GetComponent<TransformComponent>().Translation.z = -3.0f;
+
+    {
+        MeshComponent& quadMesh = quad.AddComponent<MeshComponent>();
+        std::shared_ptr<Material> japaneseDiffuseOnly = std::make_shared<Material>(MaterialFlags::TwoSided);
+        japaneseDiffuseOnly->SetAlbedoMap(TextureLoader::LoadFromFile("data/textures/japanese.png"));
+        
+        MeshDescription quadMeshDesc = MeshDescription::CreateQuad();
+        quadMeshDesc.Materials = { japaneseDiffuseOnly };
+        quadMesh.MeshObject = std::make_shared<Mesh>(quadMeshDesc);
+    }
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------

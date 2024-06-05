@@ -7,9 +7,12 @@
 struct TextureDescription
 {
     DXGI_FORMAT Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    D3D12_RESOURCE_DIMENSION Type = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
     uint32_t Width = 1;
     uint32_t Height = 1;
+    uint32_t Depth = 1;
     uint32_t MipLevels = 0;
+    uint32_t ArrayLevels = 1;
     D3D12_RESOURCE_FLAGS Flags = D3D12_RESOURCE_FLAG_NONE;
     D3D12_CLEAR_VALUE ClearValue = {};
     D3D12_RESOURCE_STATES InitialState = D3D12_RESOURCE_STATE_COMMON;
@@ -30,7 +33,9 @@ public:
     inline DXGI_FORMAT GetFormat() const { return m_Description.Format; }
     inline uint32_t GetWidth() const { return m_Description.Width; }
     inline uint32_t GetHeight() const { return m_Description.Height; }
+    inline uint32_t GetDepth() const { return m_Description.Depth; }
     inline uint32_t GetMipLevels() const { return m_Description.MipLevels; }
+    inline uint32_t GetArrayLevels() const { return m_Description.ArrayLevels; }
     inline D3D12_RESOURCE_FLAGS GetFlags() const { return m_Description.Flags; }
     inline const D3D12_CLEAR_VALUE& GetClearValue() const { return m_Description.ClearValue; }
     inline D3D12_RESOURCE_STATES GetInitialState() const { return m_Description.InitialState; }
@@ -38,6 +43,7 @@ public:
     inline const ComPtr<ID3D12Resource2>& GetResource() const { return m_Resource; }
 public:
     static uint32_t CalculateMaxMipCount(uint32_t width, uint32_t height);
+
 private:
     void CreateViews();
 private:

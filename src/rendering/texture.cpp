@@ -13,11 +13,11 @@ Texture::Texture(const TextureDescription& description, const wchar_t* debugName
     auto d3dDevice = GraphicsContext::GetInstance()->GetDevice();
 
     D3D12_RESOURCE_DESC resourceDesc = {};
-    resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+    resourceDesc.Dimension = m_Description.Type;
     resourceDesc.Format = m_Description.Format;
     resourceDesc.Width = m_Description.Width;
     resourceDesc.Height = m_Description.Height;
-    resourceDesc.DepthOrArraySize = m_Description.IsCubeMap ? 6 : 1;
+    resourceDesc.DepthOrArraySize = m_Description.IsCubeMap ? 6 : (m_Description.Depth != 1 ? m_Description.Depth : m_Description.ArrayLevels);
     resourceDesc.MipLevels = m_Description.MipLevels;
     resourceDesc.SampleDesc.Count = 1;
     resourceDesc.SampleDesc.Quality = 0;

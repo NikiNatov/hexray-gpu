@@ -3,6 +3,27 @@
 #include "rendering/graphicscontext.h"
 
 // ------------------------------------------------------------------------------------------------------------------------------------
+MeshDescription MeshDescription::CreateQuad()
+{
+    MeshDescription quadMeshDesc;
+    quadMeshDesc.Indices = { 0, 1, 2, 2, 3, 0 };
+    quadMeshDesc.Positions = {
+        { -1.0f, -1.0f, 0.0f },
+        {  1.0f, -1.0f, 0.0f },
+        {  1.0f,  1.0f, 0.0f },
+        { -1.0f,  1.0f, 0.0f }
+    };
+    quadMeshDesc.UVs = {
+        { 0.0f, 1.0f },
+        { 1.0f, 1.0f },
+        { 1.0f, 0.0f },
+        { 0.0f, 0.0f }
+    };
+    quadMeshDesc.Submeshes = { SubmeshDescription{ 0, 4, 0, 6 } };
+    return quadMeshDesc;
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
 Mesh::Mesh(const MeshDescription& description, const wchar_t* debugName)
 {
     HEXRAY_ASSERT(description.Submeshes.size() == description.Materials.size());

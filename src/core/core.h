@@ -60,4 +60,8 @@ static bool IsSet(EnumType flags, EnumType value) \
 #define HEXRAY_ASSERT_MSG(...)
 #endif
 
+#define UNREACHED HEXRAY_ASSERT(!"This shouldn't be reached")
+#define NOT_IMPLEMENTED HEXRAY_ASSERT(!"This is not implemented")
+#define NOT_IMPLEMENTED_BECAUSE(...) HEXRAY_ASSERT(!"This is not implemented" && __VA_ARGS__)
+
 #define FRAMES_IN_FLIGHT 3
