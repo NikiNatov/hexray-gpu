@@ -42,8 +42,19 @@ void RayGenShader()
 [shader("closesthit")]
 void ClosestHitShader(inout RayPayload payload, in BuiltInTriangleIntersectionAttributes attr)
 {
-    float3 barycentrics = float3(1 - attr.barycentrics.x - attr.barycentrics.y, attr.barycentrics.x, attr.barycentrics.y);
-    payload.Color = float4(barycentrics, 1);
+    GeometryConstants geometry = g_Buffers[g_ResourceIndices.GeometryBufferIndex].Load<GeometryConstants>(0);
+    MaterialConstants material = g_Buffers[g_ResourceIndices.MaterialBufferIndex].Load<MaterialConstants>(0);
+    
+    Vertex v0 = g_Buffers[geometry.StartIndex + 0].Load<Vertex>(0);
+    Vertex v1 = g_Buffers[geometry.StartIndex + 1].Load<Vertex>(0);
+    Vertex v2 = g_Buffers[geometry.StartIndex + 2].Load<Vertex>(0);
+    
+    float3 bary = float3(1.0 - attr.barycentrics.x - attr.barycentrics.y, attr.barycentrics.x, attr.barycentrics.y);
+    float2 texCoord = bary.x * v0.TexCoord + bary.y * v1.TexCoord + bary.z * v2.TexCoord;
+    
+    // Note: Seems like diffuse.Sample is not supported
+    Texture2D diffuse = g_Textures[material.AlbedoMapIndex];
+    payload.Color = diffuse.SampleLevel(g_AnisoWrapSampler, texCoord, 0);
 }
 
 [shader("miss")]

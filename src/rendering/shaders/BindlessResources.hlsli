@@ -4,6 +4,7 @@
 #define RESOURCE_INDICES_SPACE space0
 #define ROTEXTURE2D_SPACE space0
 #define ROTEXTURECUBE_SPACE space1
+#define SAMPLERSTATE_SPACE space0
 #define ROBUFFERS_SPACE space2
 #define ACCELERATION_STRUCTURES_SPACE space3
 #define RWTEXTURE2D_SPACE space0
@@ -67,6 +68,7 @@ struct ResourceIndices
     uint AccelerationStructureIndex;
 };
 
+SamplerState                    g_AnisoWrapSampler         : register(s4, SAMPLERSTATE_SPACE);
 ConstantBuffer<ResourceIndices> g_ResourceIndices          : register(b0, RESOURCE_INDICES_SPACE);
 RaytracingAccelerationStructure g_AccelerationStructures[] : register(t0, ACCELERATION_STRUCTURES_SPACE);
 ByteAddressBuffer               g_Buffers[]                : register(t0, ROBUFFERS_SPACE);
