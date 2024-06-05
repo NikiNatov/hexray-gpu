@@ -35,6 +35,7 @@ struct MeshInstance
 
 struct ResourceBindTable
 {
+    DescriptorIndex EnvironmentMap = InvalidDescriptorIndex;
     DescriptorIndex RenderTarget = InvalidDescriptorIndex;
     DescriptorIndex SceneBuffer = InvalidDescriptorIndex;
     DescriptorIndex LightsBuffer = InvalidDescriptorIndex;
@@ -71,7 +72,6 @@ private:
         glm::mat4 InvViewProjMatrix = glm::mat4(1.0f);
         glm::vec3 CameraPosition = glm::vec3(0.0f);
         uint32_t NumLights = 0;
-        DescriptorIndex EnvironmentMap = InvalidDescriptorIndex;
     };
 
     struct MaterialConstants

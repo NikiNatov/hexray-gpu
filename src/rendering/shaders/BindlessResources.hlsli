@@ -60,6 +60,7 @@ struct Light
 
 struct ResourceIndices
 {
+    uint EnvironmentMapIndex;
     uint RenderTargetIndex;
     uint SceneBufferIndex;
     uint LightsBufferIndex;

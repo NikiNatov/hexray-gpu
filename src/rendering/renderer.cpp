@@ -1,5 +1,6 @@
 #include "renderer.h"
 #include "rendering/graphicscontext.h"
+#include "rendering/defaultresources.h"
 
 // ------------------------------------------------------------------------------------------------------------------------------------
 Renderer::Renderer(const RendererDescription& description)
@@ -50,7 +51,8 @@ void Renderer::BeginScene(const Camera& camera, const std::shared_ptr<Texture>& 
     m_SceneConstants.InvViewProjMatrix = glm::inverse(m_SceneConstants.ProjectionMatrix * m_SceneConstants.ViewMatrix);
     m_SceneConstants.CameraPosition = camera.GetPosition();
     m_SceneConstants.NumLights = 0;
-    m_SceneConstants.EnvironmentMap = environmentMap ? environmentMap->GetSRV() : InvalidDescriptorIndex;
+    
+    m_ResourceBindTable.EnvironmentMap = environmentMap ? environmentMap->GetSRV() : DefaultResources::BlackTextureCube->GetSRV();
 
     m_Lights.clear();
     m_MeshInstances.clear();
