@@ -82,11 +82,11 @@ void Buffer::CreateViews()
     if ((m_Description.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE) == 0)
     {
         D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-        srvDesc.Format = DXGI_FORMAT_UNKNOWN;
         srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
         if (m_Description.IsAccelerationStructure)
         {
+            srvDesc.Format = DXGI_FORMAT_UNKNOWN;
             srvDesc.ViewDimension = D3D12_SRV_DIMENSION_RAYTRACING_ACCELERATION_STRUCTURE;
             srvDesc.RaytracingAccelerationStructure.Location = m_Resource->GetGPUVirtualAddress();
 
@@ -95,10 +95,11 @@ void Buffer::CreateViews()
         }
         else
         {
+            srvDesc.Format = DXGI_FORMAT_R32_TYPELESS;
             srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
             srvDesc.Buffer.FirstElement = 0;
-            srvDesc.Buffer.NumElements = m_Description.ElementCount;
-            srvDesc.Buffer.StructureByteStride = m_Description.ElementSize;
+            srvDesc.Buffer.NumElements = m_Description.ElementCount * m_Description.ElementSize / 4;
+            srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
 
             m_SRVDescriptor = resourceHeap->Allocate(ROBuffer);
             d3dDevice->CreateShaderResourceView(m_Resource.Get(), &srvDesc, resourceHeap->GetCPUHandle(m_SRVDescriptor, ROBuffer));
@@ -110,11 +111,11 @@ void Buffer::CreateViews()
     if (!m_Description.IsAccelerationStructure && (m_Description.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS))
     {
         D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
-        uavDesc.Format = DXGI_FORMAT_UNKNOWN;
+        uavDesc.Format = DXGI_FORMAT_R32_TYPELESS;
         uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
         uavDesc.Buffer.FirstElement = 0;
-        uavDesc.Buffer.NumElements = m_Description.ElementCount;
-        uavDesc.Buffer.StructureByteStride = m_Description.ElementSize;
+        uavDesc.Buffer.NumElements = m_Description.ElementCount * m_Description.ElementSize / 4;
+        uavDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
 
         m_UAVDescriptor = resourceHeap->Allocate(RWBuffer);
         d3dDevice->CreateUnorderedAccessView(m_Resource.Get(), nullptr, &uavDesc, resourceHeap->GetCPUHandle(m_UAVDescriptor, RWBuffer));
