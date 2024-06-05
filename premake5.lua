@@ -29,7 +29,7 @@ project "hexray-gpu"
 	files
 	{
 		"%{wks.location}/src/**.cpp",
-		"%{wks.location}/src/**.h"
+		"%{wks.location}/src/**.h",
 	}
 
 	includedirs
@@ -39,6 +39,8 @@ project "hexray-gpu"
 		"%{wks.location}/extern/glm/glm",
 		"%{wks.location}/extern/entt/include",
 		"%{wks.location}/extern/pix/include",
+		"%{wks.location}/extern/stb",
+		"%{wks.location}/extern",
 	}
 
 	libdirs
