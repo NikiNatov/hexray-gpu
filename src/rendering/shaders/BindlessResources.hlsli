@@ -26,12 +26,13 @@ struct SceneConstants
 {
     matrix ViewMatrix;
     matrix ProjectionMatrix;
-    matrix InvViewProjMatrix;
+    matrix InvProjMatrix;
+    matrix InvViewMatrix;
     float3 CameraPosition;
     uint NumLights;
 };
 
-static const uint c_SceneConstantsStructSize = 208;
+static const uint c_SceneConstantsStructSize = 272;
 
 struct MaterialConstants
 {
@@ -44,7 +45,7 @@ struct MaterialConstants
     uint MetalnessMapIndex;
 };
 
-static const uint c_MaterialConstantsStructSize = 36;
+static const uint c_MaterialConstantsStructSize = 40;
 
 struct GeometryConstants
 {

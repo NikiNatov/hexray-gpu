@@ -113,6 +113,9 @@ void GraphicsContext::ResizeSwapChain(uint32_t width, uint32_t height)
     {
         WaitForGPU();
 
+        m_SwapChainWidth = width;
+        m_SwapChainHeight = height;
+
         for (uint32_t i = 0; i < FRAMES_IN_FLIGHT; i++)
             m_BackBuffers[i].Reset();
 

@@ -69,7 +69,8 @@ private:
     {
         glm::mat4 ViewMatrix = glm::mat4(1.0f);
         glm::mat4 ProjectionMatrix = glm::mat4(1.0f);
-        glm::mat4 InvViewProjMatrix = glm::mat4(1.0f);
+        glm::mat4 InvProjectionMatrix = glm::mat4(1.0f);
+        glm::mat4 InvViewMatrix = glm::mat4(1.0f);
         glm::vec3 CameraPosition = glm::vec3(0.0f);
         uint32_t NumLights = 0;
     };

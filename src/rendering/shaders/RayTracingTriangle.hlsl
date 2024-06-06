@@ -5,19 +5,21 @@ struct RayPayload
     float4 Color;
 };
 
-inline float3 GenerateCameraRay(uint2 index, in float3 cameraPosition, in float4x4 projectionToWorld)
+inline RayDesc GenerateCameraRay(in float3 cameraPosition, in float4x4 invProjMatrix, in float4x4 invViewMatrix)
 {
-    float2 xy = index + 0.5f; // center in the middle of the pixel.
-    float2 screenPos = xy / DispatchRaysDimensions().xy * 2.0 - 1.0;
-
-    // Invert Y for DirectX-style coordinates.
+    float2 screenPos = (float2)DispatchRaysIndex().xy / (float2) DispatchRaysDimensions().xy * 2.0 - 1.0; // Clip Space [-1, 1]
     screenPos.y = -screenPos.y;
+    
+    float4 positionVS = mul(invProjMatrix, float4(screenPos, 0.0, 1.0)); // To View Space
+    float3 rayDirectionWS = mul(invViewMatrix, float4(normalize(positionVS.xyz / positionVS.w), 0.0)).xyz; // To World Space
 
-    // Unproject the pixel coordinate into a world positon.
-    float4 world = mul(projectionToWorld, float4(screenPos, 0, 1));
-    world.xyz /= world.w;
-
-    return normalize(world.xyz - cameraPosition);
+    RayDesc ray;
+    ray.Origin = cameraPosition;
+    ray.Direction = rayDirectionWS;
+    ray.TMin = 0.001;
+    ray.TMax = 1000.0;
+    
+    return ray;
 }
 
 [shader("raygeneration")]
@@ -27,13 +29,9 @@ void RayGenShader()
     RaytracingAccelerationStructure accelerationStructure = g_AccelerationStructures[g_ResourceIndices.AccelerationStructureIndex];
     SceneConstants sceneConstants = g_Buffers[g_ResourceIndices.SceneBufferIndex].Load<SceneConstants>(0);
     
-    RayDesc ray;
-    ray.Origin = sceneConstants.CameraPosition;
-    ray.Direction = GenerateCameraRay(DispatchRaysIndex().xy, sceneConstants.CameraPosition, sceneConstants.InvViewProjMatrix);
-    ray.TMin = 0.001;
-    ray.TMax = 1000.0;
-    
+    RayDesc ray = GenerateCameraRay(sceneConstants.CameraPosition, sceneConstants.InvProjMatrix, sceneConstants.InvViewMatrix);
     RayPayload payload = { float4(0, 0, 0, 0) };
+    
     TraceRay(accelerationStructure, RAY_FLAG_CULL_BACK_FACING_TRIANGLES, ~0, 0, 1, 0, ray, payload);
 
     renderTarget[DispatchRaysIndex().xy] = payload.Color;
@@ -61,7 +59,7 @@ void ClosestHitShader(inout RayPayload payload, in BuiltInTriangleIntersectionAt
     
     // Note: Seems like diffuse.Sample is not supported
     Texture2D diffuse = g_Textures[material.AlbedoMapIndex];
-    payload.Color = diffuse.SampleLevel(g_LinearWrapSampler, texCoord, 0) * material.AlbedoColor;
+    payload.Color = diffuse.SampleLevel(g_LinearWrapSampler, texCoord, 0);
 }
 
 [shader("miss")]

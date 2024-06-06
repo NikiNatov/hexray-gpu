@@ -52,14 +52,13 @@ Application::Application(const ApplicationDescription& description)
     // Create scene
     m_Scene = std::make_unique<Scene>("Test scene");
 
-    Entity avocado = m_Scene->CreateEntity("Avocado");
+    Entity sponza = m_Scene->CreateEntity("Sponza");
 
-    TransformComponent& avocadoTransform = avocado.GetComponent<TransformComponent>();
-    avocadoTransform.Scale = { 0.3f, 0.3f, 0.3f };
-    avocadoTransform.Rotation.y = 180.0f;
+    TransformComponent& sponzaTransform = sponza.GetComponent<TransformComponent>();
+    sponzaTransform.Scale = { 0.05f, 0.05f, 0.05f };
 
-    MeshComponent& avocadoMesh = avocado.AddComponent<MeshComponent>();
-    avocadoMesh.MeshObject = MeshLoader::LoadFromFile("data/meshes/avocado.fbx");
+    MeshComponent& sponzaMesh = sponza.AddComponent<MeshComponent>();
+    sponzaMesh.MeshObject = MeshLoader::LoadFromFile("data/meshes/Sponza/Sponza.fbx");
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
@@ -123,6 +122,13 @@ bool Application::OnWindowClosed(WindowClosedEvent& event)
 // ------------------------------------------------------------------------------------------------------------------------------------
 bool Application::OnWindowResized(WindowResizedEvent& event)
 {
+    if (m_Window && m_Window->IsMinimized())
+    {
+        // We don't want to resize anything if the window is minimized since its dimensions become 0 which causes a crash
+        // in the swapchain
+        return true;
+    }
+
     if(m_GraphicsContext)
         m_GraphicsContext->ResizeSwapChain(event.GetWidth(), event.GetHeight());
 
