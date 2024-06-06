@@ -1,4 +1,5 @@
 #include "graphicscontext.h"
+#include "rendering/textureutils.h"
 
 #include <pix3.h>
 
@@ -241,35 +242,10 @@ void GraphicsContext::UploadTextureData(Texture* destTexture, const void* data, 
         uint32_t width = std::max(destTexture->GetWidth() >> mip, 1u);
         uint32_t height = std::max(destTexture->GetHeight() >> mip, 1u);
 
-        uint32_t formatSize = 0;
-        switch (destTexture->GetFormat())
-        {
-            case DXGI_FORMAT_R8_UNORM:
-                formatSize = 1;
-                break;
-            case DXGI_FORMAT_R8G8B8A8_UNORM:
-                formatSize = 4;
-                break;
-            case DXGI_FORMAT_R16G16_FLOAT:
-                formatSize = 4;
-                break;
-            case DXGI_FORMAT_R32G32_FLOAT:
-                formatSize = 8;
-                break;
-            case DXGI_FORMAT_R16G16B16A16_FLOAT:
-                formatSize = 8;
-                break;
-            case DXGI_FORMAT_R32G32B32A32_FLOAT:
-                formatSize = 16;
-                break;
-            default:
-                HEXRAY_ASSERT(false, "Unsupported format");
-        }
-
         D3D12_SUBRESOURCE_DATA subresourceData = {};
         subresourceData.pData = data;
-        subresourceData.RowPitch = ((width * formatSize + 255) / 256) * 256;
-        subresourceData.SlicePitch = height * subresourceData.RowPitch;
+        subresourceData.RowPitch = CalculateRowPitch(width, destTexture->GetFormat());
+        subresourceData.SlicePitch = CalculateSlicePitch(width, height, destTexture->GetFormat());
 
         // Create a new copy command list and execute the upload operation
         HANDLE waitFenceEvent = CreateEvent(0, false, false, 0);

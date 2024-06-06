@@ -1,33 +1,41 @@
 #include "textureloader.h"
 #include "resourceloaders/ddsloader.h"
 #include "rendering/graphicscontext.h"
+#include "rendering/textureutils.h"
 
 #define STB_IMAGE_IMPLEMENTATION
+
+#define STBI_MALLOC(Size)           malloc(Size)
+#define STBI_REALLOC(Ptr, Size)     realloc(Ptr, Size)
+#define STBI_FREE(Ptr)              free(Ptr)
 
 #include <fstream>
 #include <stb/stb_image.h>
 
 
+// ------------------------------------------------------------------------------------------------------------------------------------
 bool TextureLoader::LoadFromFile(const std::string& file, Result& outResult)
 {
 	std::ifstream ifs(file, std::ios::in | std::ios::binary | std::ios::ate);
-	HEXRAY_ASSERT_MSG(ifs, "Could not texture file: {}", file);
+	HEXRAY_ASSERT_MSG(ifs, "Could not read texture file: {}", file);
 
 	uint32_t dataSize = ifs.tellg();
-	uint8_t* data = new uint8_t[dataSize];
+
+	std::vector<uint8_t> fileContents(dataSize);
 
 	ifs.seekg(0, std::ios::beg);
-	ifs.read((char*)data, dataSize);
+	ifs.read((char*)fileContents.data(), dataSize);
 	ifs.close();
 
 	if (file.find(".dds") != std::string::npos)
 	{
-		return LoadDDS(data, dataSize, outResult);
+		return LoadDDS(fileContents.data(), dataSize, outResult);
 	}
 
-	return LoadSTBI(data, dataSize, outResult);
+	return LoadSTBI(fileContents.data(), dataSize, outResult);
 }
 
+// ------------------------------------------------------------------------------------------------------------------------------------
 std::shared_ptr<Texture> TextureLoader::LoadFromFile(const std::string& file)
 {
 	TextureLoader::Result result;
@@ -37,13 +45,23 @@ std::shared_ptr<Texture> TextureLoader::LoadFromFile(const std::string& file)
 	}
 
 	std::shared_ptr<Texture> texture = std::make_shared<Texture>(result);
-	GraphicsContext::GetInstance()->UploadTextureData(texture.get(), result.Pixels);
+
+	uint32_t offset = 0;
+	for (uint32_t level = 0; level < texture->GetArrayLevels(); level++)
+	{
+		for (uint32_t mip = 0; mip < texture->GetMipLevels(); mip++)
+		{
+			GraphicsContext::GetInstance()->UploadTextureData(texture.get(), result.Pixels + offset, mip, level);
+			offset = CalculateMipOffset(result, level, mip);
+		}
+	}
 
 	// todo: will lead to terrible bugs if we don't wait for upload to finish
-	delete[] result.Pixels;
+	free(result.Pixels);
 	return texture;
 }
 
+// ------------------------------------------------------------------------------------------------------------------------------------
 bool TextureLoader::LoadDDS(uint8_t* data, uint32_t size, Result& outResult)
 {
 	const DDSContents* dds = DDSContents::FromData(data, size);
@@ -58,16 +76,16 @@ bool TextureLoader::LoadDDS(uint8_t* data, uint32_t size, Result& outResult)
 		outResult.MipLevels = dds->GetMipCount();
 		outResult.IsCubeMap = dds->IsCubemap();
 
-		NOT_IMPLEMENTED_BECAUSE("Need to calc bytes");
-		uint32_t calculatedBytes = dds->GetTotalBytes();
-		outResult.Pixels = new uint8_t[calculatedBytes];
-		memcpy(outResult.Pixels, dds->GetPixels(), calculatedBytes);
+		uint32_t textureBytes = CalculateTextureSize(outResult);
+		outResult.Pixels = (uint8_t*)malloc(textureBytes);
+		memcpy(outResult.Pixels, dds->GetPixels(), textureBytes);
 		return true;
 	}
 
 	return false;
 }
 
+// ------------------------------------------------------------------------------------------------------------------------------------
 bool TextureLoader::LoadSTBI(uint8_t* data, uint32_t size, Result& outResult)
 {
 	outResult.Type = D3D12_RESOURCE_DIMENSION_TEXTURE2D;

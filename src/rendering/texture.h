@@ -11,7 +11,7 @@ struct TextureDescription
     uint32_t Width = 1;
     uint32_t Height = 1;
     uint32_t Depth = 1;
-    uint32_t MipLevels = 0;
+    uint32_t MipLevels = 1;
     uint32_t ArrayLevels = 1;
     D3D12_RESOURCE_FLAGS Flags = D3D12_RESOURCE_FLAG_NONE;
     D3D12_CLEAR_VALUE ClearValue = {};
@@ -41,8 +41,6 @@ public:
     inline D3D12_RESOURCE_STATES GetInitialState() const { return m_Description.InitialState; }
     inline bool IsCubeMap() const { return m_Description.IsCubeMap; }
     inline const ComPtr<ID3D12Resource2>& GetResource() const { return m_Resource; }
-public:
-    static uint32_t CalculateMaxMipCount(uint32_t width, uint32_t height);
 
 private:
     void CreateViews();

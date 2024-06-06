@@ -1,5 +1,6 @@
 #include "texture.h"
 #include "rendering/graphicscontext.h"
+#include "rendering/textureutils.h"
 
 #include <cmath>
 
@@ -262,10 +263,4 @@ void Texture::CreateViews()
             d3dDevice->CreateDepthStencilView(m_Resource.Get(), &dsvDesc, dsvHeap->GetCPUHandle(m_MipDSVDescriptors[mip]));
         }
     }
-}
-
-// ------------------------------------------------------------------------------------------------------------------------------------
-uint32_t Texture::CalculateMaxMipCount(uint32_t width, uint32_t height)
-{
-    return (uint32_t)log2(std::max(width, height)) + 1;
 }

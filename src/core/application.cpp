@@ -51,6 +51,7 @@ Application::Application(const ApplicationDescription& description)
     // Create scene
     m_Scene = std::make_unique<Scene>("Test scene");
 
+    static auto cube = TextureLoader::LoadFromFile("data/textures/skybox.dds");
     Entity quad = m_Scene->CreateEntity("Quad");
     {
         std::shared_ptr<Material> japaneseDiffuseOnly = std::make_shared<Material>(MaterialFlags::TwoSided);
