@@ -35,6 +35,7 @@ project "hexray-gpu"
 	includedirs
 	{
 		"%{wks.location}/src",
+		"%{wks.location}/extern/assimp/include",
 		"%{wks.location}/extern/spdlog/include",
 		"%{wks.location}/extern/glm/glm",
 		"%{wks.location}/extern/entt/include",
@@ -45,7 +46,8 @@ project "hexray-gpu"
 
 	libdirs
 	{
-		"%{wks.location}/extern/pix/lib"
+		"%{wks.location}/extern/pix/lib",
+		"%{wks.location}/extern/assimp/lib"
 	}
 
 	links
@@ -71,6 +73,16 @@ project "hexray-gpu"
 			"_DEBUG"
 		}
 
+		links
+		{
+			"assimp-vc143-mtd",
+		}
+
+		postbuildcommands
+		{
+			"XCOPY %{wks.location}\\extern\\assimp\\lib\\assimp-vc143-mtd.dll \"%{cfg.targetdir}\"  /S /Y"
+		}
+
 	filter "configurations:Release"
 		runtime "Release"
 		optimize "on"
@@ -79,4 +91,14 @@ project "hexray-gpu"
 		{
 			"HEXRAY_RELEASE",
 			"NDEBUG"
+		}
+
+		links
+		{
+			"assimp-vc143-mt",
+		}
+
+		postbuildcommands
+		{
+			"XCOPY %{wks.location}\\extern\\assimp\\lib\\assimp-vc143-mt.dll \"%{cfg.targetdir}\"  /S /Y"
 		}

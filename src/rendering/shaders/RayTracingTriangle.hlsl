@@ -61,7 +61,7 @@ void ClosestHitShader(inout RayPayload payload, in BuiltInTriangleIntersectionAt
     
     // Note: Seems like diffuse.Sample is not supported
     Texture2D diffuse = g_Textures[material.AlbedoMapIndex];
-    payload.Color = diffuse.SampleLevel(g_LinearWrapSampler, texCoord, 0) * float4(material.AlbedoColor, 1.0);
+    payload.Color = diffuse.SampleLevel(g_LinearWrapSampler, texCoord, 0) * material.AlbedoColor;
 }
 
 [shader("miss")]

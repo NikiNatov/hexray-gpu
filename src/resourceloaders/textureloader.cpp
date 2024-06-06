@@ -62,6 +62,23 @@ std::shared_ptr<Texture> TextureLoader::LoadFromFile(const std::string& file)
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
+std::shared_ptr<Texture> TextureLoader::LoadFromCompressedData(uint8_t* data, uint32_t dataSize)
+{
+	TextureLoader::Result result;
+	if (!LoadSTBI(data, dataSize, result))
+	{
+		HEXRAY_ERROR("Failed to decompress texture data");
+		return nullptr;
+	}
+
+	std::shared_ptr<Texture> texture = std::make_shared<Texture>(result);
+	GraphicsContext::GetInstance()->UploadTextureData(texture.get(), result.Pixels);
+
+	free(result.Pixels);
+	return texture;
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
 bool TextureLoader::LoadDDS(uint8_t* data, uint32_t size, Result& outResult)
 {
 	const DDSContents* dds = DDSContents::FromData(data, size);

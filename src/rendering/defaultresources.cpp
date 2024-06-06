@@ -90,12 +90,12 @@ void DefaultResources::Initialize()
 
     // Default material
     DefaultMaterial = std::make_shared<Material>(MaterialFlags::TwoSided);
-    DefaultMaterial->SetAlbedoColor(glm::vec3(1.0f, 1.0f, 1.0f));
+    DefaultMaterial->SetAlbedoColor(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
     DefaultMaterial->SetMetalness(0.5f);
     DefaultMaterial->SetRoughness(0.5f);
 
     ErrorMaterial = std::make_shared<Material>(MaterialFlags::TwoSided);
-    ErrorMaterial->SetAlbedoColor(glm::vec3(1.0f, 0.0f, 1.0f));
+    ErrorMaterial->SetAlbedoColor(glm::vec4(1.0f, 0.0f, 1.0f, 1.0f));
     ErrorMaterial->SetMetalness(0.0f);
     ErrorMaterial->SetRoughness(1.0f);
 

@@ -35,7 +35,7 @@ static const uint c_SceneConstantsStructSize = 208;
 
 struct MaterialConstants
 {
-    float3 AlbedoColor;
+    float4 AlbedoColor;
     float Roughness;
     float Metalness;
     uint AlbedoMapIndex;

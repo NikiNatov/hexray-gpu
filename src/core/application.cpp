@@ -6,6 +6,7 @@
 #include "scene/component.h"
 #include "rendering/defaultresources.h"
 #include "resourceloaders/textureloader.h"
+#include "resourceloaders/meshloader.h"
 
 #include <sstream>
 
@@ -51,16 +52,14 @@ Application::Application(const ApplicationDescription& description)
     // Create scene
     m_Scene = std::make_unique<Scene>("Test scene");
 
-    Entity quad = m_Scene->CreateEntity("Quad");
-    {
-        std::shared_ptr<Material> japaneseDiffuseOnly = std::make_shared<Material>(MaterialFlags::TwoSided);
-        japaneseDiffuseOnly->SetAlbedoColor(glm::vec3(0.8f, 0.4f, 0.2f));
-        japaneseDiffuseOnly->SetAlbedoMap(TextureLoader::LoadFromFile("data/textures/japanese.png"));
-        
-        MeshComponent& quadMesh = quad.AddComponent<MeshComponent>();
-        quadMesh.MeshObject = DefaultResources::QuadMesh;
-        quadMesh.MeshObject->SetMaterial(0, japaneseDiffuseOnly);
-    }
+    Entity avocado = m_Scene->CreateEntity("Avocado");
+
+    TransformComponent& avocadoTransform = avocado.GetComponent<TransformComponent>();
+    avocadoTransform.Scale = { 0.3f, 0.3f, 0.3f };
+    avocadoTransform.Rotation.y = 180.0f;
+
+    MeshComponent& avocadoMesh = avocado.AddComponent<MeshComponent>();
+    avocadoMesh.MeshObject = MeshLoader::LoadFromFile("data/meshes/avocado.fbx");
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------

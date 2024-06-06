@@ -76,7 +76,7 @@ private:
 
     struct MaterialConstants
     {
-        glm::vec3 AlbedoColor = glm::vec3(1.0f);
+        glm::vec4 AlbedoColor = glm::vec4(1.0f);
         float Roughness = 0.5f;
         float Metalness = 0.5f;
         DescriptorIndex AlbedoMap = InvalidDescriptorIndex;
