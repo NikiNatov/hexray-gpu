@@ -895,7 +895,7 @@ void GraphicsContext::CreateRootSignatures()
     ComPtr<ID3DBlob> rootSigBlob = nullptr;
     ComPtr<ID3DBlob> errorBlob = nullptr;
 
-    DXCall(D3DX12SerializeVersionedRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1_1, &rootSigBlob, &errorBlob));
+    D3DX12SerializeVersionedRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1_1, &rootSigBlob, &errorBlob);
     HEXRAY_ASSERT_MSG(!(errorBlob && errorBlob->GetBufferSize()), "Root signature serialization failed: {}", (char*)errorBlob->GetBufferPointer());
 
     DXCall(m_Device->CreateRootSignature(0, rootSigBlob->GetBufferPointer(), rootSigBlob->GetBufferSize(), IID_PPV_ARGS(&m_BindlessRootSignature)));

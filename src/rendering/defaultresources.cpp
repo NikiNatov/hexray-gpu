@@ -101,7 +101,21 @@ void DefaultResources::Initialize()
 
     // Quad mesh
     {
-        MeshDescription quadMeshDesc = MeshDescription::CreateQuad();
+        MeshDescription quadMeshDesc;
+        quadMeshDesc.Indices = { 0, 1, 2, 2, 3, 0 };
+        quadMeshDesc.Positions = {
+            { -1.0f, -1.0f, 0.0f },
+            {  1.0f, -1.0f, 0.0f },
+            {  1.0f,  1.0f, 0.0f },
+            { -1.0f,  1.0f, 0.0f }
+        };
+        quadMeshDesc.UVs = {
+            { 0.0f, 1.0f },
+            { 1.0f, 1.0f },
+            { 1.0f, 0.0f },
+            { 0.0f, 0.0f }
+        };
+        quadMeshDesc.Submeshes = { SubmeshDescription{ 0, 4, 0, 6 } };
         quadMeshDesc.Materials = { DefaultMaterial };
 
         QuadMesh = std::make_shared<Mesh>(quadMeshDesc);

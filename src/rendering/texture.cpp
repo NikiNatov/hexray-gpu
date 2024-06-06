@@ -134,6 +134,8 @@ void Texture::CreateViews()
             srvDesc.TextureCube.MipLevels = m_Description.MipLevels;
 
             m_SRVDescriptor = resourceHeap->Allocate(ROTextureCube);
+
+            d3dDevice->CreateShaderResourceView(m_Resource.Get(), &srvDesc, resourceHeap->GetCPUHandle(m_SRVDescriptor, ROTextureCube));
         }
         else
         {
@@ -142,9 +144,9 @@ void Texture::CreateViews()
             srvDesc.Texture2D.MipLevels = m_Description.MipLevels;
 
             m_SRVDescriptor = resourceHeap->Allocate(ROTexture2D);
-        }
 
-        d3dDevice->CreateShaderResourceView(m_Resource.Get(), &srvDesc, resourceHeap->GetCPUHandle(m_SRVDescriptor, ROTexture2D));
+            d3dDevice->CreateShaderResourceView(m_Resource.Get(), &srvDesc, resourceHeap->GetCPUHandle(m_SRVDescriptor, ROTexture2D));
+        }
     }
 
     // UAV
@@ -176,15 +178,17 @@ void Texture::CreateViews()
                 uavDesc.Texture2DArray.ArraySize = 6;
 
                 m_MipUAVDescriptors[mip] = resourceHeap->Allocate(RWTextureCube);
+
+                d3dDevice->CreateUnorderedAccessView(m_Resource.Get(), nullptr, &uavDesc, resourceHeap->GetCPUHandle(m_MipUAVDescriptors[mip], RWTextureCube));
             }
             else
             {
                 uavDesc.Texture2D.MipSlice = mip;
 
                 m_MipUAVDescriptors[mip] = resourceHeap->Allocate(RWTexture2D);
-            }
 
-            d3dDevice->CreateUnorderedAccessView(m_Resource.Get(), nullptr, &uavDesc, resourceHeap->GetCPUHandle(m_MipUAVDescriptors[mip], RWTexture2D));
+                d3dDevice->CreateUnorderedAccessView(m_Resource.Get(), nullptr, &uavDesc, resourceHeap->GetCPUHandle(m_MipUAVDescriptors[mip], RWTexture2D));
+            }
         }
     }
 

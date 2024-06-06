@@ -188,10 +188,10 @@ void Renderer::Render()
             materialConstants.AlbedoColor = material->GetAlbedoColor();
             materialConstants.Roughness = material->GetRoughness();
             materialConstants.Metalness = material->GetMetalness();
-            materialConstants.AlbedoMap = material->GetMetalnessMap() ? material->GetMetalnessMap()->GetSRV() : InvalidDescriptorIndex;
-            materialConstants.NormalMap = material->GetNormalMap() ? material->GetNormalMap()->GetSRV() : InvalidDescriptorIndex;
-            materialConstants.RoughnessMap = material->GetRoughnessMap() ? material->GetRoughnessMap()->GetSRV() : InvalidDescriptorIndex;
-            materialConstants.MetalnessMap = material->GetMetalnessMap() ? material->GetMetalnessMap()->GetSRV() : InvalidDescriptorIndex;
+            materialConstants.AlbedoMap = material->GetAlbedoMap() ? material->GetAlbedoMap()->GetSRV() : DefaultResources::WhiteTexture->GetSRV();
+            materialConstants.NormalMap = material->GetNormalMap() ? material->GetNormalMap()->GetSRV() : DefaultResources::WhiteTexture->GetSRV();
+            materialConstants.RoughnessMap = material->GetRoughnessMap() ? material->GetRoughnessMap()->GetSRV() : DefaultResources::WhiteTexture->GetSRV();
+            materialConstants.MetalnessMap = material->GetMetalnessMap() ? material->GetMetalnessMap()->GetSRV() : DefaultResources::WhiteTexture->GetSRV();
         }
     }
 

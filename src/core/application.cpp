@@ -51,20 +51,15 @@ Application::Application(const ApplicationDescription& description)
     // Create scene
     m_Scene = std::make_unique<Scene>("Test scene");
 
-    //Entity triangle = m_Scene->CreateEntity("Triangle");
-    //triangle.AddComponent<MeshComponent>().MeshObject = DefaultResources::TriangleMesh;
-
     Entity quad = m_Scene->CreateEntity("Quad");
-    quad.GetComponent<TransformComponent>().Translation.z = -3.0f;
-
     {
-        MeshComponent& quadMesh = quad.AddComponent<MeshComponent>();
         std::shared_ptr<Material> japaneseDiffuseOnly = std::make_shared<Material>(MaterialFlags::TwoSided);
+        japaneseDiffuseOnly->SetAlbedoColor(glm::vec3(0.8f, 0.4f, 0.2f));
         japaneseDiffuseOnly->SetAlbedoMap(TextureLoader::LoadFromFile("data/textures/japanese.png"));
         
-        MeshDescription quadMeshDesc = MeshDescription::CreateQuad();
-        quadMeshDesc.Materials = { japaneseDiffuseOnly };
-        quadMesh.MeshObject = std::make_shared<Mesh>(quadMeshDesc);
+        MeshComponent& quadMesh = quad.AddComponent<MeshComponent>();
+        quadMesh.MeshObject = DefaultResources::QuadMesh;
+        quadMesh.MeshObject->SetMaterial(0, japaneseDiffuseOnly);
     }
 }
 

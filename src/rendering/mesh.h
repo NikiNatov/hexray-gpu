@@ -33,14 +33,14 @@ struct MeshDescription
     std::vector<uint32_t> Indices;
     std::vector<std::shared_ptr<Material>> Materials;
     std::vector<SubmeshDescription> Submeshes;
-
-    static MeshDescription CreateQuad();
 };
 
 class Mesh
 {
 public:
     Mesh(const MeshDescription& description, const wchar_t* debugName = L"Unnamed Mesh");
+
+    void SetMaterial(uint32_t submeshIndex, const std::shared_ptr<Material>& material) { m_Submeshes[submeshIndex].Material = material; }
 
     inline uint32_t GetSubmeshCount() const { return m_Submeshes.size(); }
     inline const std::shared_ptr<Buffer>& GetVertexBuffer(uint32_t submeshIndex) const { return m_Submeshes[submeshIndex].VertexBuffer; }

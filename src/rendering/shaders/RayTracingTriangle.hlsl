@@ -42,19 +42,26 @@ void RayGenShader()
 [shader("closesthit")]
 void ClosestHitShader(inout RayPayload payload, in BuiltInTriangleIntersectionAttributes attr)
 {
-    GeometryConstants geometry = g_Buffers[g_ResourceIndices.GeometryBufferIndex].Load<GeometryConstants>(0);
-    MaterialConstants material = g_Buffers[g_ResourceIndices.MaterialBufferIndex].Load<MaterialConstants>(0);
+    uint geometryID = InstanceID();
+    uint triangleIndex = PrimitiveIndex();
     
-    Vertex v0 = g_Buffers[geometry.StartIndex + 0].Load<Vertex>(0);
-    Vertex v1 = g_Buffers[geometry.StartIndex + 1].Load<Vertex>(0);
-    Vertex v2 = g_Buffers[geometry.StartIndex + 2].Load<Vertex>(0);
+    MaterialConstants material = GetMeshMaterial(geometryID, g_ResourceIndices.MaterialBufferIndex);
+    GeometryConstants geometry = GetMesh(geometryID, g_ResourceIndices.GeometryBufferIndex);
+    
+    uint i0 = GetMeshIndex(triangleIndex * 3 + 0, geometry.IndexBufferIndex);
+    uint i1 = GetMeshIndex(triangleIndex * 3 + 1, geometry.IndexBufferIndex);
+    uint i2 = GetMeshIndex(triangleIndex * 3 + 2, geometry.IndexBufferIndex);
+    
+    Vertex v0 = GetMeshVertex(i0, geometry.VertexBufferIndex);
+    Vertex v1 = GetMeshVertex(i1, geometry.VertexBufferIndex);
+    Vertex v2 = GetMeshVertex(i2, geometry.VertexBufferIndex);
     
     float3 bary = float3(1.0 - attr.barycentrics.x - attr.barycentrics.y, attr.barycentrics.x, attr.barycentrics.y);
     float2 texCoord = bary.x * v0.TexCoord + bary.y * v1.TexCoord + bary.z * v2.TexCoord;
     
     // Note: Seems like diffuse.Sample is not supported
     Texture2D diffuse = g_Textures[material.AlbedoMapIndex];
-    payload.Color = diffuse.SampleLevel(g_AnisoWrapSampler, texCoord, 0);
+    payload.Color = diffuse.SampleLevel(g_LinearWrapSampler, texCoord, 0) * float4(material.AlbedoColor, 1.0);
 }
 
 [shader("miss")]
