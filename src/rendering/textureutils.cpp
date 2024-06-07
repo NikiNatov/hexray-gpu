@@ -159,7 +159,7 @@ uint32_t CalculateSlicePitch(uint32_t width, uint32_t height, DXGI_FORMAT format
 uint32_t CalculateMipOffset(const TextureDescription& desc, uint32_t arrayLevel, uint32_t mip)
 {
 	uint32_t result = 0;
-	if (arrayLevel > 0)
+	if (arrayLevel > 1)
 	{
 		for (uint32_t i = 0; i < desc.MipLevels; i++)
 		{
@@ -177,7 +177,7 @@ uint32_t CalculateMipOffset(const TextureDescription& desc, uint32_t arrayLevel,
 // ------------------------------------------------------------------------------------------------------------------------------------
 uint32_t CalculateTextureSize(const TextureDescription& desc)
 {
-	return CalculateMipOffset(desc, desc.ArrayLevels - 1, desc.MipLevels - 1);
+	return CalculateMipOffset(desc, desc.ArrayLevels, desc.MipLevels);
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------

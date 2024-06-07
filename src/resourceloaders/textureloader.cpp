@@ -44,7 +44,7 @@ std::shared_ptr<Texture> TextureLoader::LoadFromFile(const std::string& file)
 		return nullptr;
 	}
 
-	std::shared_ptr<Texture> texture = std::make_shared<Texture>(result);
+	std::shared_ptr<Texture> texture = std::make_shared<Texture>(result, L"Skybox");
 
 	uint32_t offset = 0;
 	for (uint32_t level = 0; level < texture->GetArrayLevels(); level++)
@@ -52,7 +52,7 @@ std::shared_ptr<Texture> TextureLoader::LoadFromFile(const std::string& file)
 		for (uint32_t mip = 0; mip < texture->GetMipLevels(); mip++)
 		{
 			GraphicsContext::GetInstance()->UploadTextureData(texture.get(), result.Pixels + offset, mip, level);
-			offset = CalculateMipOffset(result, level, mip);
+			offset += CalculateSlicePitch(texture->GetWidth() >> mip, texture->GetHeight() >> mip, texture->GetFormat());
 		}
 	}
 
