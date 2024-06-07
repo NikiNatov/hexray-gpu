@@ -59,6 +59,9 @@ Application::Application(const ApplicationDescription& description)
 
     MeshComponent& sponzaMesh = sponza.AddComponent<MeshComponent>();
     sponzaMesh.MeshObject = MeshLoader::LoadFromFile("data/meshes/Sponza/Sponza.fbx");
+
+    Entity sky = m_Scene->CreateEntity("Sky");
+    sky.AddComponent<SkyLightComponent>().EnvironmentMap = TextureLoader::LoadFromFile("data/textures/Skybox.dds");
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------

@@ -65,5 +65,6 @@ void ClosestHitShader(inout RayPayload payload, in BuiltInTriangleIntersectionAt
 [shader("miss")]
 void MissShader(inout RayPayload payload)
 {
-    payload.Color = float4(0.1, 0.2, 0.6, 1);
+    TextureCube environmentMap = g_CubeMaps[g_ResourceIndices.EnvironmentMapIndex];
+    payload.Color = environmentMap.SampleLevel(g_LinearWrapSampler, WorldRayDirection(), 0);
 }
