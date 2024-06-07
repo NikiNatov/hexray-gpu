@@ -66,6 +66,20 @@ Texture::~Texture()
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
+void Texture::Initialize(uint8_t* pixels)
+{
+    uint32_t offset = 0;
+    for (uint32_t level = 0; level < m_Description.ArrayLevels; level++)
+    {
+        for (uint32_t mip = 0; mip < m_Description.MipLevels; mip++)
+        {
+            GraphicsContext::GetInstance()->UploadTextureData(this, pixels + offset, mip, level);
+            offset += CalculateSlicePitch(m_Description.Width >> mip, m_Description.Height >> mip, m_Description.Format);
+        }
+    }
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
 DescriptorIndex Texture::GetSRV()
 {
     if (m_Description.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE)

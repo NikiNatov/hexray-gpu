@@ -25,6 +25,8 @@ public:
     Texture(const TextureDescription& description, const wchar_t* debugName = L"Unnamed Texture");
     ~Texture();
 
+    void Initialize(uint8_t* pixels);
+
     DescriptorIndex GetSRV();
     DescriptorIndex GetRTV(uint32_t mip);
     DescriptorIndex GetDSV(uint32_t mip);

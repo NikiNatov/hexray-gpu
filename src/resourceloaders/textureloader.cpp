@@ -2,6 +2,7 @@
 #include "resourceloaders/ddsloader.h"
 #include "rendering/graphicscontext.h"
 #include "rendering/textureutils.h"
+#include "core/utils.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 
@@ -44,17 +45,8 @@ std::shared_ptr<Texture> TextureLoader::LoadFromFile(const std::string& file)
 		return nullptr;
 	}
 
-	std::shared_ptr<Texture> texture = std::make_shared<Texture>(result, L"Skybox");
-
-	uint32_t offset = 0;
-	for (uint32_t level = 0; level < texture->GetArrayLevels(); level++)
-	{
-		for (uint32_t mip = 0; mip < texture->GetMipLevels(); mip++)
-		{
-			GraphicsContext::GetInstance()->UploadTextureData(texture.get(), result.Pixels + offset, mip, level);
-			offset += CalculateSlicePitch(texture->GetWidth() >> mip, texture->GetHeight() >> mip, texture->GetFormat());
-		}
-	}
+	std::shared_ptr<Texture> texture = std::make_shared<Texture>(result, ToWString(file).c_str());
+	texture->Initialize(result.Pixels);
 
 	// todo: will lead to terrible bugs if we don't wait for upload to finish
 	free(result.Pixels);
@@ -72,7 +64,7 @@ std::shared_ptr<Texture> TextureLoader::LoadFromCompressedData(uint8_t* data, ui
 	}
 
 	std::shared_ptr<Texture> texture = std::make_shared<Texture>(result);
-	GraphicsContext::GetInstance()->UploadTextureData(texture.get(), result.Pixels);
+	texture->Initialize(result.Pixels);
 
 	free(result.Pixels);
 	return texture;
