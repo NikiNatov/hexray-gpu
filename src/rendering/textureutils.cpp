@@ -133,7 +133,8 @@ uint32_t GetBitsPerPixel(DXGI_FORMAT format)
 uint32_t CalculateRowPitch(uint32_t width, DXGI_FORMAT format)
 {
 	uint32_t bitsPerPixel = GetBitsPerPixel(format);
-	if (format >= DXGI_FORMAT_BC1_TYPELESS && format <= DXGI_FORMAT_BC7_UNORM_SRGB)
+	if ((format >= DXGI_FORMAT_BC1_TYPELESS && format <= DXGI_FORMAT_BC5_SNORM)
+		|| (format >= DXGI_FORMAT_BC6H_TYPELESS && format <= DXGI_FORMAT_BC7_UNORM_SRGB))
 	{
 		uint32_t numBlocksWidth = std::max(1u, (width + 3u) / 4u);
 		return numBlocksWidth * bitsPerPixel * 2u;
@@ -146,9 +147,9 @@ uint32_t CalculateRowPitch(uint32_t width, DXGI_FORMAT format)
 uint32_t CalculateSlicePitch(uint32_t width, uint32_t height, DXGI_FORMAT format)
 {
 	uint32_t rowBytes = CalculateRowPitch(width, format);
-	if (format >= DXGI_FORMAT_BC1_TYPELESS && format <= DXGI_FORMAT_BC7_UNORM_SRGB)
+	if ((format >= DXGI_FORMAT_BC1_TYPELESS && format <= DXGI_FORMAT_BC5_SNORM)
+		|| (format >= DXGI_FORMAT_BC6H_TYPELESS && format <= DXGI_FORMAT_BC7_UNORM_SRGB))
 	{
-		
 		uint32_t numBlocksHeight = std::max(1u, (height + 3u) / 4u);
 		return rowBytes * numBlocksHeight;
 	}
