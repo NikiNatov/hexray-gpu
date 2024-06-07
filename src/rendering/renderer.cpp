@@ -8,7 +8,7 @@ Renderer::Renderer(const RendererDescription& description)
 {
     // Create raytracing pipeline
     RaytracingPipelineDescription pipelineDesc;
-    pipelineDesc.ShaderFilePath = "data/shaders/RayTracingTriangle.cso";
+    pipelineDesc.ShaderFilePath = "data/shaders/lambert.cso";
     pipelineDesc.MaxRecursionDepth = m_Description.RayRecursionDepth;
     pipelineDesc.MaxPayloadSize = sizeof(float) * 4;
     pipelineDesc.MaxIntersectAttributesSize = sizeof(float) * 2;

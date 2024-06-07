@@ -52,16 +52,83 @@ Application::Application(const ApplicationDescription& description)
     // Create scene
     m_Scene = std::make_unique<Scene>("Test scene");
 
-    Entity sponza = m_Scene->CreateEntity("Sponza");
+    {
+        Entity dirLight = m_Scene->CreateEntity("Directional Light");
+        dirLight.GetComponent<TransformComponent>().Translation = { 1.0f, 1.0f, 1.0f };
 
-    TransformComponent& sponzaTransform = sponza.GetComponent<TransformComponent>();
-    sponzaTransform.Scale = { 0.05f, 0.05f, 0.05f };
+        DirectionalLightComponent& dirLightComponent = dirLight.AddComponent<DirectionalLightComponent>();
+        dirLightComponent.Color = glm::vec3(0.6f, 0.4f, 0.0f);
+        dirLightComponent.Intensity = 0.5f;
+    }
 
-    MeshComponent& sponzaMesh = sponza.AddComponent<MeshComponent>();
-    sponzaMesh.MeshObject = MeshLoader::LoadFromFile("data/meshes/Sponza/Sponza.fbx");
+    {
+        Entity pointLight = m_Scene->CreateEntity("Red Point Light");
+        pointLight.GetComponent<TransformComponent>().Translation.y = 4.0f;
+        pointLight.GetComponent<TransformComponent>().Translation.z = -8.0f;
 
-    Entity sky = m_Scene->CreateEntity("Sky");
-    sky.AddComponent<SkyLightComponent>().EnvironmentMap = TextureLoader::LoadFromFile("data/textures/Skybox.dds");
+        PointLightComponent& pointLightComponent = pointLight.AddComponent<PointLightComponent>();
+        pointLightComponent.Color = glm::vec3(1.0f, 0.0f, 0.0f);
+        pointLightComponent.Intensity = 10.0f;
+        pointLightComponent.AttenuationFactors = { 0.5f, 0.5f, 0.5f };
+    }
+
+    {
+        Entity pointLight = m_Scene->CreateEntity("Blue Point Light");
+        pointLight.GetComponent<TransformComponent>().Translation.x = 8.0f;
+        pointLight.GetComponent<TransformComponent>().Translation.y = 4.0f;
+
+        PointLightComponent& pointLightComponent = pointLight.AddComponent<PointLightComponent>();
+        pointLightComponent.Color = glm::vec3(0.0f, 0.0f, 1.0f);
+        pointLightComponent.Intensity = 10.0f;
+        pointLightComponent.AttenuationFactors = { 0.5f, 0.5f, 0.5f };
+    }
+
+    {
+        Entity pointLight = m_Scene->CreateEntity("Yellow Point Light");
+        pointLight.GetComponent<TransformComponent>().Translation.z = 8.0f;
+        pointLight.GetComponent<TransformComponent>().Translation.y = 4.0f;
+
+        PointLightComponent& pointLightComponent = pointLight.AddComponent<PointLightComponent>();
+        pointLightComponent.Color = glm::vec3(1.0f, 1.0f, 0.0f);
+        pointLightComponent.Intensity = 10.0f;
+        pointLightComponent.AttenuationFactors = { 0.5f, 0.5f, 0.5f };
+    }
+
+    {
+        Entity pointLight = m_Scene->CreateEntity("Green Point Light");
+        pointLight.GetComponent<TransformComponent>().Translation.x = -8.0f;
+        pointLight.GetComponent<TransformComponent>().Translation.y = 4.0f;
+
+        PointLightComponent& pointLightComponent = pointLight.AddComponent<PointLightComponent>();
+        pointLightComponent.Color = glm::vec3(0.0f, 1.0f, 0.0f);
+        pointLightComponent.Intensity = 10.0f;
+        pointLightComponent.AttenuationFactors = { 0.5f, 0.5f, 0.5f };
+    }
+
+    {
+        Entity pointLight = m_Scene->CreateEntity("Pink Point Light");
+        pointLight.GetComponent<TransformComponent>().Translation.y = 4.0f;
+
+        PointLightComponent& pointLightComponent = pointLight.AddComponent<PointLightComponent>();
+        pointLightComponent.Color = glm::vec3(1.0f, 0.0f, 1.0f);
+        pointLightComponent.Intensity = 10.0f;
+        pointLightComponent.AttenuationFactors = { 0.5f, 0.5f, 0.5f };
+    }
+
+    {
+        Entity sponza = m_Scene->CreateEntity("Sponza");
+
+        TransformComponent& sponzaTransform = sponza.GetComponent<TransformComponent>();
+        sponzaTransform.Scale = { 0.05f, 0.05f, 0.05f };
+
+        MeshComponent& sponzaMesh = sponza.AddComponent<MeshComponent>();
+        sponzaMesh.MeshObject = MeshLoader::LoadFromFile("data/meshes/Sponza/Sponza.fbx");
+    }
+
+    {
+        Entity sky = m_Scene->CreateEntity("Sky");
+        sky.AddComponent<SkyLightComponent>().EnvironmentMap = TextureLoader::LoadFromFile("data/textures/Skybox.dds");
+    }
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
