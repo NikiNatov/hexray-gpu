@@ -10,9 +10,10 @@ public:
     void Reset();
     void Stop();
 
-    inline float GetElapsedTimeMS() const { return m_ElapsedTime; }
-    inline float GetElapsedTime() const { return m_ElapsedTime / 1000.0f; }
+    double GetTimeNow() const;
+    inline double GetElapsedTimeMS() const { return m_ElapsedTime; }
+    inline double GetElapsedTime() const { return m_ElapsedTime / 1000.0; }
 private:
     std::chrono::time_point<std::chrono::steady_clock> m_StartPoint;
-    float m_ElapsedTime = 0.0f;
+    double m_ElapsedTime = 0.0;
 };

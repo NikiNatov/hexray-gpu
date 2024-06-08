@@ -15,6 +15,14 @@ Application* Application::ms_Instance = nullptr;
 // ------------------------------------------------------------------------------------------------------------------------------------
 Application::Application(const ApplicationDescription& description)
     : m_Description(description)
+    , m_LastTime(0.0)
+    , m_DeltaTime(0.0)
+    , m_CurrentTime(0.0)
+    , m_RealTime(0.0)
+    , m_FixedDeltaTime(0.0)
+    , m_MaxFPS(0.0)
+    , m_MaxDeltaTime(0.0)
+    , m_AvgDeltaTimeMS(0.0)
 {
     HEXRAY_ASSERT(!ms_Instance, "Application already created");
     ms_Instance = this;
@@ -51,6 +59,9 @@ Application::Application(const ApplicationDescription& description)
 
     // Create scene
     m_Scene = std::make_unique<Scene>("Test scene");
+
+    SetMaxFPS(60);
+    SetMaxDeltaTime(2.0);
 
     {
         Entity dirLight = m_Scene->CreateEntity("Directional Light");
@@ -155,32 +166,17 @@ void Application::Run()
 {
     m_IsRunning = true;
 
-    std::string newTitleStart = m_Window->GetTitle();
+    m_Timer.Reset();
 
-    Timer frameTimer;
+    m_LastTime = m_Timer.GetTimeNow();
+
     while (m_IsRunning)
     {
-        frameTimer.Reset();
+        BeginFrame();
 
-        m_Window->ProcessEvents();
+        Update();
 
-        m_Scene->OnUpdate(frameTimer.GetElapsedTime());
-
-        m_GraphicsContext->BeginFrame();
-
-        m_Scene->OnRender(m_SceneRenderer);
-        m_GraphicsContext->CopyTextureToSwapChain(m_SceneRenderer->GetFinalImage().get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-
-        m_GraphicsContext->EndFrame();
-
-        frameTimer.Stop();
-
-        std::stringstream newTitle;
-        newTitle << newTitleStart;
-        newTitle << " ";
-        newTitle << std::fixed << std::setprecision(0) << std::ceil(1.0f / frameTimer.GetElapsedTime());
-        newTitle << "FPS";
-        m_Window->SetTitle(newTitle.str());
+        EndFrame();
     }
 }
 
@@ -240,4 +236,73 @@ bool Application::OnMouseButtonPressed(MouseButtonPressedEvent& event)
 bool Application::OnMouseScrolledPressed(MouseScrolledEvent& event)
 {
     return true;
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+void Application::BeginFrame()
+{
+    double timeNow = m_Timer.GetTimeNow();
+    double realTimeDelta = timeNow - m_LastTime;
+
+    bool isUsingFixedDeltaTime = m_FixedDeltaTime != 0.0f;
+    m_DeltaTime = isUsingFixedDeltaTime ? m_FixedDeltaTime : realTimeDelta;
+    m_DeltaTime = std::min(m_DeltaTime, m_MaxDeltaTime);
+
+    m_LastTime = timeNow;
+    m_CurrentTime += m_DeltaTime;
+    m_RealTime += realTimeDelta;
+
+    double deltaTimeMS = (m_DeltaTime * 1000);
+    m_AvgDeltaTimeMS = m_AvgDeltaTimeMS + (deltaTimeMS - m_AvgDeltaTimeMS) * 0.50;
+
+
+    m_Window->ProcessEvents();
+
+    m_GraphicsContext->BeginFrame();
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+void Application::Update()
+{
+    m_Scene->OnUpdate(m_DeltaTime);
+    m_Scene->OnRender(m_SceneRenderer);
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+void Application::EndFrame()
+{
+    m_GraphicsContext->CopyTextureToSwapChain(m_SceneRenderer->GetFinalImage().get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+    m_GraphicsContext->EndFrame();
+
+
+    double frameEnd = m_Timer.GetTimeNow();
+    double frameDuration = (frameEnd - m_LastTime);
+    double frameDurationMS = frameDuration * 1000;
+
+    if (m_MaxFPS > 0)
+    {
+        double frameDelayMS = 1000. / m_MaxFPS;
+        if (frameDurationMS < frameDelayMS)
+        {
+            uint32_t millis = uint32_t(frameDelayMS - frameDurationMS);
+#if defined(WIN32)
+            // std::this_thread::sleep_for is not precise
+            static thread_local HANDLE timer = CreateWaitableTimerEx(NULL, NULL, CREATE_WAITABLE_TIMER_HIGH_RESOLUTION, TIMER_ALL_ACCESS);
+            LARGE_INTEGER dueTime;
+            dueTime.QuadPart = -int64_t(millis) * 10000;
+
+            SetWaitableTimerEx(timer, &dueTime, 0, NULL, NULL, NULL, 0);
+            WaitForSingleObject(timer, INFINITE);
+#endif
+        }
+    }
+
+    std::stringstream newTitle;
+    newTitle << m_Description.Name;
+    newTitle << " ";
+    newTitle << std::fixed << std::setprecision(1) << (1000. / m_AvgDeltaTimeMS);
+    newTitle << "FPS (";
+    newTitle << std::fixed << std::setprecision(1) << m_AvgDeltaTimeMS;
+    newTitle << " ms)";
+    m_Window->SetTitle(newTitle.str());
 }
