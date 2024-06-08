@@ -116,6 +116,19 @@ Application::Application(const ApplicationDescription& description)
     }
 
     {
+        Entity spotLight = m_Scene->CreateEntity("Spot Light");
+        spotLight.GetComponent<TransformComponent>().Translation.y = 4.0f;
+        spotLight.GetComponent<TransformComponent>().Translation.x = 12.0f;
+        spotLight.GetComponent<TransformComponent>().Translation.z = 4.0f;
+
+        SpotLightComponent& spotLightComponent = spotLight.AddComponent<SpotLightComponent>();
+        spotLightComponent.Color = glm::vec3(0.0f, 1.0f, 1.0f);
+        spotLightComponent.Direction = glm::normalize(glm::vec3(0.0f, -0.5f, -1.0f));
+        spotLightComponent.Intensity = 30.0f;
+        spotLightComponent.AttenuationFactors = { 0.5f, 0.5f, 0.5f };
+    }
+
+    {
         Entity sponza = m_Scene->CreateEntity("Sponza");
 
         TransformComponent& sponzaTransform = sponza.GetComponent<TransformComponent>();

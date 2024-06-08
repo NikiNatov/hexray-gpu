@@ -18,6 +18,22 @@ float3 CalculatePointLight(Light light, float3 diffuseColor, float3 surfacePosit
     return lambertianTerm * diffuseColor * light.Color * light.Intensity * attenuation;
 }
 
+float3 CalculateSpotLight(Light light, float3 diffuseColor, float3 surfacePosition, float3 normal)
+{
+    float3 lightToSurface = surfacePosition - light.Position;
+    float distance = length(lightToSurface);
+    
+    float minCos = cos(light.ConeAngle);
+    float maxCos = (minCos + 1.0f) / 2.0f;
+    float cosAngle = dot(light.Direction.xyz, normalize(lightToSurface));
+    float spotIntensity = smoothstep(minCos, maxCos, cosAngle);
+
+    float attenuation = 1.0f / max(0.0001, light.AttenuationFactors[0] + light.AttenuationFactors[1] * distance + light.AttenuationFactors[2] * distance * distance);
+    float lambertianTerm = max(0.0, dot(normal, normalize(-lightToSurface)));
+
+    return lambertianTerm * diffuseColor * light.Color * light.Intensity * spotIntensity * attenuation;
+}
+
 struct RayPayload
 {
     float4 Color;
@@ -82,7 +98,8 @@ void ClosestHitShader(inout RayPayload payload, in BuiltInTriangleIntersectionAt
         }
         else if (light.LightType == 2)
         {
-            // TODO: SpotLight
+            // SpotLight
+            directLightColor += CalculateSpotLight(light, diffuseColor.xyz, surfacePositionWS, normalWS);
         }
     }
     
