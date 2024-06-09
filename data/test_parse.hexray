@@ -40,7 +40,7 @@ Mesh heart {
 }
 
 BitmapTexture japanese {
-	file "textures/japanese.png"
+	file "texture/japanese.png"
 }
 
 Lambert heartShader {
