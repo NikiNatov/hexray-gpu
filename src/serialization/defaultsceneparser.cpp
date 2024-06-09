@@ -36,10 +36,9 @@ bool DefaultSceneParser::AddSceneElement(const std::string& className, const std
 	// Textures
 	//if (className == "CheckerTexture") return new CheckerTexture;
 	//if (className == "Heightfield") return new Heightfield;
-	//if (className == "BumpTexture") return new BumpTexture;
 	//if (className == "Bumps") return new Bumps;
 	//if (className == "Const") return new Const;
-	if (className == "BitmapTexture")
+	if (className == "BitmapTexture" || className == "BumpTexture")
 	{
 		char filename[256];
 		if (!pb.GetFilenameProp("file", filename))
