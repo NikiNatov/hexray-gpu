@@ -16,7 +16,8 @@ int main(int argc, char** argv)
     appDesc.EnableAPIValidation = false;
 #endif
 
-    Application* app = new Application(appDesc);
-    app->Run();
-    delete app;
+    {
+        Application app(appDesc);
+        app.Run();
+    }
 }

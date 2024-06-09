@@ -1,6 +1,7 @@
 #include "scene.h"
 
 #include "scene/component.h"
+#include "serialization/defaultsceneparser.h"
 
 // ------------------------------------------------------------------------------------------------------------------------------------
 Scene::Scene(const std::string& name)
@@ -186,4 +187,13 @@ void Scene::OnRender(const std::shared_ptr<Renderer>& renderer)
 void Scene::OnViewportResize(uint32_t width, uint32_t height)
 {
     m_Camera.SetViewportSize(width, height);
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+std::unique_ptr<Scene> Scene::LoadFromHexrayFile(const std::string& file)
+{
+    std::unique_ptr<Scene> scene = std::make_unique<Scene>(file);
+    DefaultSceneParser parser;
+    parser.Parse(file.c_str(), scene.get());
+    return scene;
 }

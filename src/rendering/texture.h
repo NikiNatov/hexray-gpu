@@ -2,26 +2,14 @@
 
 #include "core/core.h"
 #include "rendering/descriptorheap.h"
-#include "directx12.h"
+#include "rendering/texturedescription.h"
+#include "rendering/resources_fwd.h"
 
-struct TextureDescription
-{
-    DXGI_FORMAT Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    D3D12_RESOURCE_DIMENSION Type = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-    uint32_t Width = 1;
-    uint32_t Height = 1;
-    uint32_t Depth = 1;
-    uint32_t MipLevels = 1;
-    uint32_t ArrayLevels = 1;
-    D3D12_RESOURCE_FLAGS Flags = D3D12_RESOURCE_FLAG_NONE;
-    D3D12_CLEAR_VALUE ClearValue = {};
-    D3D12_RESOURCE_STATES InitialState = D3D12_RESOURCE_STATE_COMMON;
-    bool IsCubeMap = false;
-};
 
 class Texture
 {
 public:
+    Texture() = default;
     Texture(const TextureDescription& description, const wchar_t* debugName = L"Unnamed Texture");
     ~Texture();
 
@@ -45,6 +33,7 @@ public:
     inline const ComPtr<ID3D12Resource2>& GetResource() const { return m_Resource; }
 
 private:
+    void CreateGPU(const TextureDescription& description, const wchar_t* debugName = L"Unnamed Texture");
     void CreateViews();
 private:
     TextureDescription m_Description;

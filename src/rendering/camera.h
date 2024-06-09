@@ -1,10 +1,11 @@
 #pragma once
 
 #include "core/core.h"
+#include "core/object.h"
 
 #include <glm.hpp>
 
-class Camera
+class Camera : public HObject
 {
 public:
 	Camera(float fov = 45.0f, float aspectRatio = 16.0f / 9.0f, float nearPlane = 0.1f, float farPlane = 1000.0f);
@@ -33,12 +34,16 @@ public:
 	inline const glm::vec3& GetPosition() const { return m_Position; }
 	inline const glm::mat4& GetProjection() const { return m_ProjectionMatrix; }
 	inline const glm::mat4& GetViewMatrix() const { return m_ViewMatrix; }
+
+	virtual void Serialize(ParsedBlock& pb);
 private:
 	void RecalculateProjection();
-	void RecalculateViewMatrix();
+	void RecalculateArcballViewMatrix();
+	void RecalculateDefaultViewMatrix();
 	void Pan(const glm::vec2& mouseDelta, float dt);
 	void Rotate(const glm::vec2& mouseDelta, float dt);
 	void Zoom(float zoomDelta, float dt);
+	void Move(float dt);
 private:
 	glm::mat4 m_ProjectionMatrix = glm::mat4(1.0f);
 	glm::mat4 m_ViewMatrix = glm::mat4(1.0f);
@@ -51,6 +56,7 @@ private:
 	float m_PitchAngle = 30.0f;
 	float m_PanSpeed = 1.0f;
 	float m_RotationSpeed = 30.0f;
+	float m_MovementSpeed = 350.0f;
 	float m_ZoomSpeed = 3.0f;
 	glm::vec3 m_Position = glm::vec3(0.0f, 0.0f, 5.0f);
 	glm::vec3 m_FocalPoint = glm::vec3(0.0f);

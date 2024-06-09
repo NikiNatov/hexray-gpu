@@ -10,18 +10,11 @@
 std::shared_ptr<Mesh> MeshLoader::LoadFromFile(const std::filesystem::path& filePath)
 {
     std::string fileExtension = filePath.extension().string();
-
-    if (fileExtension == ".fbx")
-    {
-        return LoadFBX(filePath);
-    }
-
-    HEXRAY_ERROR("File format {} not supported", fileExtension);
-    return nullptr;
+    return LoadAssimp(filePath);
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
-std::shared_ptr<Mesh> MeshLoader::LoadFBX(const std::filesystem::path& filePath)
+std::shared_ptr<Mesh> MeshLoader::LoadAssimp(const std::filesystem::path& filePath)
 {
     uint64_t processingFlags = aiProcess_ImproveCacheLocality |
         aiProcess_RemoveRedundantMaterials |

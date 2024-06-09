@@ -2,7 +2,7 @@
 
 #include "core/core.h"
 #include "rendering/descriptorheap.h"
-#include "directx12.h"
+#include "rendering/resources_fwd.h"
 
 struct BufferDescription
 {

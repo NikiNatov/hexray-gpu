@@ -57,102 +57,17 @@ Application::Application(const ApplicationDescription& description)
     m_SceneRenderer = std::make_shared<Renderer>(rendererDesc);
     m_SceneRenderer->SetViewportSize(m_Window->GetWidth(), m_Window->GetHeight());
 
+    ParseCommandlineArgs();
+
     // Create scene
-    m_Scene = std::make_unique<Scene>("Test scene");
+    if (!m_Scene)
+    {
+        m_Scene = std::make_unique<Scene>("Test scene");
+        LoadDefaultScene();
+    }
 
     SetMaxFPS(60);
     SetMaxDeltaTime(2.0);
-
-    {
-        Entity dirLight = m_Scene->CreateEntity("Directional Light");
-        dirLight.GetComponent<TransformComponent>().Translation = { 1.0f, 1.0f, 1.0f };
-
-        DirectionalLightComponent& dirLightComponent = dirLight.AddComponent<DirectionalLightComponent>();
-        dirLightComponent.Color = glm::vec3(0.6f, 0.4f, 0.0f);
-        dirLightComponent.Intensity = 0.5f;
-    }
-
-    {
-        Entity pointLight = m_Scene->CreateEntity("Red Point Light");
-        pointLight.GetComponent<TransformComponent>().Translation.y = 4.0f;
-        pointLight.GetComponent<TransformComponent>().Translation.z = -8.0f;
-
-        PointLightComponent& pointLightComponent = pointLight.AddComponent<PointLightComponent>();
-        pointLightComponent.Color = glm::vec3(1.0f, 0.0f, 0.0f);
-        pointLightComponent.Intensity = 10.0f;
-        pointLightComponent.AttenuationFactors = { 0.5f, 0.5f, 0.5f };
-    }
-
-    {
-        Entity pointLight = m_Scene->CreateEntity("Blue Point Light");
-        pointLight.GetComponent<TransformComponent>().Translation.x = 8.0f;
-        pointLight.GetComponent<TransformComponent>().Translation.y = 4.0f;
-
-        PointLightComponent& pointLightComponent = pointLight.AddComponent<PointLightComponent>();
-        pointLightComponent.Color = glm::vec3(0.0f, 0.0f, 1.0f);
-        pointLightComponent.Intensity = 10.0f;
-        pointLightComponent.AttenuationFactors = { 0.5f, 0.5f, 0.5f };
-    }
-
-    {
-        Entity pointLight = m_Scene->CreateEntity("Yellow Point Light");
-        pointLight.GetComponent<TransformComponent>().Translation.z = 8.0f;
-        pointLight.GetComponent<TransformComponent>().Translation.y = 4.0f;
-
-        PointLightComponent& pointLightComponent = pointLight.AddComponent<PointLightComponent>();
-        pointLightComponent.Color = glm::vec3(1.0f, 1.0f, 0.0f);
-        pointLightComponent.Intensity = 10.0f;
-        pointLightComponent.AttenuationFactors = { 0.5f, 0.5f, 0.5f };
-    }
-
-    {
-        Entity pointLight = m_Scene->CreateEntity("Green Point Light");
-        pointLight.GetComponent<TransformComponent>().Translation.x = -8.0f;
-        pointLight.GetComponent<TransformComponent>().Translation.y = 4.0f;
-
-        PointLightComponent& pointLightComponent = pointLight.AddComponent<PointLightComponent>();
-        pointLightComponent.Color = glm::vec3(0.0f, 1.0f, 0.0f);
-        pointLightComponent.Intensity = 10.0f;
-        pointLightComponent.AttenuationFactors = { 0.5f, 0.5f, 0.5f };
-    }
-
-    {
-        Entity pointLight = m_Scene->CreateEntity("Pink Point Light");
-        pointLight.GetComponent<TransformComponent>().Translation.y = 4.0f;
-
-        PointLightComponent& pointLightComponent = pointLight.AddComponent<PointLightComponent>();
-        pointLightComponent.Color = glm::vec3(1.0f, 0.0f, 1.0f);
-        pointLightComponent.Intensity = 10.0f;
-        pointLightComponent.AttenuationFactors = { 0.5f, 0.5f, 0.5f };
-    }
-
-    {
-        Entity spotLight = m_Scene->CreateEntity("Spot Light");
-        spotLight.GetComponent<TransformComponent>().Translation.y = 4.0f;
-        spotLight.GetComponent<TransformComponent>().Translation.x = 12.0f;
-        spotLight.GetComponent<TransformComponent>().Translation.z = 4.0f;
-
-        SpotLightComponent& spotLightComponent = spotLight.AddComponent<SpotLightComponent>();
-        spotLightComponent.Color = glm::vec3(0.0f, 1.0f, 1.0f);
-        spotLightComponent.Direction = glm::normalize(glm::vec3(0.0f, -0.5f, -1.0f));
-        spotLightComponent.Intensity = 30.0f;
-        spotLightComponent.AttenuationFactors = { 0.5f, 0.5f, 0.5f };
-    }
-
-    {
-        Entity sponza = m_Scene->CreateEntity("Sponza");
-
-        TransformComponent& sponzaTransform = sponza.GetComponent<TransformComponent>();
-        sponzaTransform.Scale = { 0.05f, 0.05f, 0.05f };
-
-        MeshComponent& sponzaMesh = sponza.AddComponent<MeshComponent>();
-        sponzaMesh.MeshObject = MeshLoader::LoadFromFile("data/meshes/Sponza/Sponza.fbx");
-    }
-
-    {
-        Entity sky = m_Scene->CreateEntity("Sky");
-        sky.AddComponent<SkyLightComponent>().EnvironmentMap = TextureLoader::LoadFromFile("data/textures/Skybox.dds");
-    }
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
@@ -305,4 +220,112 @@ void Application::EndFrame()
     newTitle << std::fixed << std::setprecision(1) << m_AvgDeltaTimeMS;
     newTitle << " ms)";
     m_Window->SetTitle(newTitle.str());
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+void Application::ParseCommandlineArgs()
+{
+    const CommandLineArgs& args = m_Description.CommandLineArgs;
+    for (int32_t i = 1; i < args.Count; i++)
+    {
+        if (strcmp(args[i], "-scene") == 0)
+        {
+            m_Scene = Scene::LoadFromHexrayFile(args[++i]);
+        }
+    }
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+void Application::LoadDefaultScene()
+{
+    {
+        Entity dirLight = m_Scene->CreateEntity("Directional Light");
+        dirLight.GetComponent<TransformComponent>().Translation = { 1.0f, 1.0f, 1.0f };
+
+        DirectionalLightComponent& dirLightComponent = dirLight.AddComponent<DirectionalLightComponent>();
+        dirLightComponent.Color = glm::vec3(0.6f, 0.4f, 0.0f);
+        dirLightComponent.Intensity = 0.5f;
+    }
+
+    {
+        Entity pointLight = m_Scene->CreateEntity("Red Point Light");
+        pointLight.GetComponent<TransformComponent>().Translation.y = 4.0f;
+        pointLight.GetComponent<TransformComponent>().Translation.z = -8.0f;
+
+        PointLightComponent& pointLightComponent = pointLight.AddComponent<PointLightComponent>();
+        pointLightComponent.Color = glm::vec3(1.0f, 0.0f, 0.0f);
+        pointLightComponent.Intensity = 10.0f;
+        pointLightComponent.AttenuationFactors = { 0.5f, 0.5f, 0.5f };
+    }
+
+    {
+        Entity pointLight = m_Scene->CreateEntity("Blue Point Light");
+        pointLight.GetComponent<TransformComponent>().Translation.x = 8.0f;
+        pointLight.GetComponent<TransformComponent>().Translation.y = 4.0f;
+
+        PointLightComponent& pointLightComponent = pointLight.AddComponent<PointLightComponent>();
+        pointLightComponent.Color = glm::vec3(0.0f, 0.0f, 1.0f);
+        pointLightComponent.Intensity = 10.0f;
+        pointLightComponent.AttenuationFactors = { 0.5f, 0.5f, 0.5f };
+    }
+
+    {
+        Entity pointLight = m_Scene->CreateEntity("Yellow Point Light");
+        pointLight.GetComponent<TransformComponent>().Translation.z = 8.0f;
+        pointLight.GetComponent<TransformComponent>().Translation.y = 4.0f;
+
+        PointLightComponent& pointLightComponent = pointLight.AddComponent<PointLightComponent>();
+        pointLightComponent.Color = glm::vec3(1.0f, 1.0f, 0.0f);
+        pointLightComponent.Intensity = 10.0f;
+        pointLightComponent.AttenuationFactors = { 0.5f, 0.5f, 0.5f };
+    }
+
+    {
+        Entity pointLight = m_Scene->CreateEntity("Green Point Light");
+        pointLight.GetComponent<TransformComponent>().Translation.x = -8.0f;
+        pointLight.GetComponent<TransformComponent>().Translation.y = 4.0f;
+
+        PointLightComponent& pointLightComponent = pointLight.AddComponent<PointLightComponent>();
+        pointLightComponent.Color = glm::vec3(0.0f, 1.0f, 0.0f);
+        pointLightComponent.Intensity = 10.0f;
+        pointLightComponent.AttenuationFactors = { 0.5f, 0.5f, 0.5f };
+    }
+
+    {
+        Entity pointLight = m_Scene->CreateEntity("Pink Point Light");
+        pointLight.GetComponent<TransformComponent>().Translation.y = 4.0f;
+
+        PointLightComponent& pointLightComponent = pointLight.AddComponent<PointLightComponent>();
+        pointLightComponent.Color = glm::vec3(1.0f, 0.0f, 1.0f);
+        pointLightComponent.Intensity = 10.0f;
+        pointLightComponent.AttenuationFactors = { 0.5f, 0.5f, 0.5f };
+    }
+
+    {
+        Entity spotLight = m_Scene->CreateEntity("Spot Light");
+        spotLight.GetComponent<TransformComponent>().Translation.y = 4.0f;
+        spotLight.GetComponent<TransformComponent>().Translation.x = 12.0f;
+        spotLight.GetComponent<TransformComponent>().Translation.z = 4.0f;
+
+        SpotLightComponent& spotLightComponent = spotLight.AddComponent<SpotLightComponent>();
+        spotLightComponent.Color = glm::vec3(0.0f, 1.0f, 1.0f);
+        spotLightComponent.Direction = glm::normalize(glm::vec3(0.0f, -0.5f, -1.0f));
+        spotLightComponent.Intensity = 30.0f;
+        spotLightComponent.AttenuationFactors = { 0.5f, 0.5f, 0.5f };
+    }
+
+    {
+        Entity sponza = m_Scene->CreateEntity("Sponza");
+
+        TransformComponent& sponzaTransform = sponza.GetComponent<TransformComponent>();
+        sponzaTransform.Scale = { 0.05f, 0.05f, 0.05f };
+
+        MeshComponent& sponzaMesh = sponza.AddComponent<MeshComponent>();
+        sponzaMesh.MeshObject = MeshLoader::LoadFromFile("data/meshes/Sponza/Sponza.fbx");
+    }
+
+    {
+        Entity sky = m_Scene->CreateEntity("Sky");
+        sky.AddComponent<SkyLightComponent>().EnvironmentMap = TextureLoader::LoadFromFile("data/textures/Skybox.dds");
+    }
 }

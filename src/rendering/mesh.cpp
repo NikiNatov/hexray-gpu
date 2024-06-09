@@ -5,6 +5,12 @@
 // ------------------------------------------------------------------------------------------------------------------------------------
 Mesh::Mesh(const MeshDescription& description, const wchar_t* debugName)
 {
+    CreateGPU(description, debugName);
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+void Mesh::CreateGPU(const MeshDescription& description, const wchar_t* debugName)
+{
     HEXRAY_ASSERT(description.Submeshes.size() == description.Materials.size());
     HEXRAY_ASSERT(description.Indices.size() && description.Positions.size());
     HEXRAY_ASSERT(description.Normals.empty() || description.Positions.size() == description.Normals.size());

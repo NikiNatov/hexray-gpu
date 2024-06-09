@@ -1,39 +1,16 @@
 #include "texture.h"
+#include "core/utils.h"
 #include "rendering/graphicscontext.h"
 #include "rendering/textureutils.h"
+#include "serialization/parsedblock.h"
+#include "resourceloaders/textureloader.h"
 
 #include <cmath>
 
 // ------------------------------------------------------------------------------------------------------------------------------------
 Texture::Texture(const TextureDescription& description, const wchar_t* debugName)
-    : m_Description(description)
 {
-    if (m_Description.MipLevels == 0)
-        m_Description.MipLevels = CalculateMaxMipCount(m_Description.Width, m_Description.Height);
-
-    auto d3dDevice = GraphicsContext::GetInstance()->GetDevice();
-
-    D3D12_RESOURCE_DESC resourceDesc = {};
-    resourceDesc.Dimension = m_Description.Type;
-    resourceDesc.Format = m_Description.Format;
-    resourceDesc.Width = m_Description.Width;
-    resourceDesc.Height = m_Description.Height;
-    resourceDesc.DepthOrArraySize = m_Description.IsCubeMap ? 6 : (m_Description.Depth != 1 ? m_Description.Depth : m_Description.ArrayLevels);
-    resourceDesc.MipLevels = m_Description.MipLevels;
-    resourceDesc.SampleDesc.Count = 1;
-    resourceDesc.SampleDesc.Quality = 0;
-    resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-    resourceDesc.Flags = m_Description.Flags;
-
-    D3D12_HEAP_PROPERTIES heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
-    D3D12_RESOURCE_STATES initialState = m_Description.InitialState;
-
-    bool isRenderTargetOrDepthBuffer = (m_Description.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET) || (m_Description.Flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
-    DXCall(d3dDevice->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, initialState,
-        isRenderTargetOrDepthBuffer ? &m_Description.ClearValue : nullptr, IID_PPV_ARGS(&m_Resource)));
-    DXCall(m_Resource->SetName(debugName));
-
-    CreateViews();
+    CreateGPU(description, debugName);
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
@@ -63,6 +40,39 @@ Texture::~Texture()
     }
 
     GraphicsContext::GetInstance()->ReleaseResource(m_Resource.Detach(), true);
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+void Texture::CreateGPU(const TextureDescription& description, const wchar_t* debugName)
+{
+    m_Description = description;
+
+    if (m_Description.MipLevels == 0)
+        m_Description.MipLevels = CalculateMaxMipCount(m_Description.Width, m_Description.Height);
+
+    auto d3dDevice = GraphicsContext::GetInstance()->GetDevice();
+
+    D3D12_RESOURCE_DESC resourceDesc = {};
+    resourceDesc.Dimension = m_Description.Type;
+    resourceDesc.Format = m_Description.Format;
+    resourceDesc.Width = m_Description.Width;
+    resourceDesc.Height = m_Description.Height;
+    resourceDesc.DepthOrArraySize = m_Description.IsCubeMap ? 6 : (m_Description.Depth != 1 ? m_Description.Depth : m_Description.ArrayLevels);
+    resourceDesc.MipLevels = m_Description.MipLevels;
+    resourceDesc.SampleDesc.Count = 1;
+    resourceDesc.SampleDesc.Quality = 0;
+    resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+    resourceDesc.Flags = m_Description.Flags;
+
+    D3D12_HEAP_PROPERTIES heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+    D3D12_RESOURCE_STATES initialState = m_Description.InitialState;
+
+    bool isRenderTargetOrDepthBuffer = (m_Description.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET) || (m_Description.Flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
+    DXCall(d3dDevice->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, initialState,
+        isRenderTargetOrDepthBuffer ? &m_Description.ClearValue : nullptr, IID_PPV_ARGS(&m_Resource)));
+    DXCall(m_Resource->SetName(debugName));
+
+    CreateViews();
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------

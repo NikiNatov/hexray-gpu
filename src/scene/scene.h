@@ -22,7 +22,10 @@ public:
     void OnRender(const std::shared_ptr<Renderer>& renderer);
     void OnViewportResize(uint32_t width, uint32_t height);
 
+    static std::unique_ptr<Scene> LoadFromHexrayFile(const std::string& file);
+
     inline const std::string& GetName() { return m_Name; }
+    inline Camera& GetCamera() { return m_Camera; }
 private:
     std::string m_Name;
     entt::registry m_Registry;

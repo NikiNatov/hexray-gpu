@@ -96,6 +96,9 @@ private:
     void Update();
     void EndFrame();
 private:
+    void ParseCommandlineArgs();
+    void LoadDefaultScene();
+private:
     ApplicationDescription m_Description;
     std::unique_ptr<Window> m_Window;
     std::unique_ptr<GraphicsContext> m_GraphicsContext;

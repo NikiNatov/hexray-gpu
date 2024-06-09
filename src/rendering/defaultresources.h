@@ -8,20 +8,20 @@ class DefaultResources
 {
 public:
     // Textures
-    static std::shared_ptr<Texture> BlackTexture;
-    static std::shared_ptr<Texture> BlackTextureCube;
-    static std::shared_ptr<Texture> ErrorTexture;
-    static std::shared_ptr<Texture> ErrorTextureCube;
-    static std::shared_ptr<Texture> WhiteTexture;
-    static std::shared_ptr<Texture> WhiteTextureCube;
+    static TexturePtr BlackTexture;
+    static TexturePtr BlackTextureCube;
+    static TexturePtr ErrorTexture;
+    static TexturePtr ErrorTextureCube;
+    static TexturePtr WhiteTexture;
+    static TexturePtr WhiteTextureCube;
 
     // Materials
-    static std::shared_ptr<Material> DefaultMaterial;
-    static std::shared_ptr<Material> ErrorMaterial;
+    static MaterialPtr DefaultMaterial;
+    static MaterialPtr ErrorMaterial;
 
     // Meshes
-    static std::shared_ptr<Mesh> TriangleMesh;
-    static std::shared_ptr<Mesh> QuadMesh;
+    static MeshPtr TriangleMesh;
+    static MeshPtr QuadMesh;
 
     static void Initialize();
     static void Shutdown();

@@ -3,11 +3,12 @@
 #include "core/core.h"
 
 #include "rendering/mesh.h"
+#include "rendering/resources_fwd.h"
 
 class MeshLoader
 {
 public:
-    static std::shared_ptr<Mesh> LoadFromFile(const std::filesystem::path& filePath);
+    static MeshPtr LoadFromFile(const std::filesystem::path& filePath);
 private:
-    static std::shared_ptr<Mesh> LoadFBX(const std::filesystem::path& filePath);
+    static MeshPtr LoadAssimp(const std::filesystem::path& filePath);
 };

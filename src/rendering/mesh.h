@@ -3,6 +3,7 @@
 #include "core/core.h"
 #include "rendering/buffer.h"
 #include "rendering/material.h"
+#include "rendering/resources_fwd.h"
 
 #include <glm.hpp>
 
@@ -17,10 +18,10 @@ struct SubmeshDescription
 
 struct Submesh
 {
-    std::shared_ptr<Buffer> VertexBuffer;
-    std::shared_ptr<Buffer> IndexBuffer;
-    std::shared_ptr<Material> Material;
-    std::shared_ptr<Buffer> AccelerationStructure;
+    BufferPtr VertexBuffer;
+    BufferPtr IndexBuffer;
+    MaterialPtr Material;
+    BufferPtr AccelerationStructure;
 };
 
 struct MeshDescription
@@ -31,22 +32,25 @@ struct MeshDescription
     std::vector<glm::vec3> Tangents;
     std::vector<glm::vec3> Bitangents;
     std::vector<uint32_t> Indices;
-    std::vector<std::shared_ptr<Material>> Materials;
+    std::vector<MaterialPtr> Materials;
     std::vector<SubmeshDescription> Submeshes;
 };
 
 class Mesh
 {
 public:
+    Mesh() = default;
     Mesh(const MeshDescription& description, const wchar_t* debugName = L"Unnamed Mesh");
 
-    void SetMaterial(uint32_t submeshIndex, const std::shared_ptr<Material>& material) { m_Submeshes[submeshIndex].Material = material; }
+    void SetMaterial(uint32_t submeshIndex, const MaterialPtr& material) { m_Submeshes[submeshIndex].Material = material; }
 
     inline uint32_t GetSubmeshCount() const { return m_Submeshes.size(); }
-    inline const std::shared_ptr<Buffer>& GetVertexBuffer(uint32_t submeshIndex) const { return m_Submeshes[submeshIndex].VertexBuffer; }
-    inline const std::shared_ptr<Buffer>& GetIndexBuffer(uint32_t submeshIndex) const { return m_Submeshes[submeshIndex].IndexBuffer; }
-    inline const std::shared_ptr<Material>& GetMaterial(uint32_t submeshIndex) const { return m_Submeshes[submeshIndex].Material; }
-    inline const std::shared_ptr<Buffer>& GetAccelerationStructure(uint32_t submeshIndex) const { return m_Submeshes[submeshIndex].AccelerationStructure; }
+    inline const BufferPtr& GetVertexBuffer(uint32_t submeshIndex) const { return m_Submeshes[submeshIndex].VertexBuffer; }
+    inline const BufferPtr& GetIndexBuffer(uint32_t submeshIndex) const { return m_Submeshes[submeshIndex].IndexBuffer; }
+    inline const MaterialPtr& GetMaterial(uint32_t submeshIndex) const { return m_Submeshes[submeshIndex].Material; }
+    inline const BufferPtr& GetAccelerationStructure(uint32_t submeshIndex) const { return m_Submeshes[submeshIndex].AccelerationStructure; }
+private:
+    void CreateGPU(const MeshDescription& description, const wchar_t* debugName = L"Unnamed Mesh");
 private:
     std::vector<Submesh> m_Submeshes;
 };

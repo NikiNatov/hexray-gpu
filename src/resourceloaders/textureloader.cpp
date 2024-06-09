@@ -48,8 +48,6 @@ std::shared_ptr<Texture> TextureLoader::LoadFromFile(const std::string& file)
 	std::shared_ptr<Texture> texture = std::make_shared<Texture>(result, ToWString(file).c_str());
 	texture->Initialize(result.Pixels);
 
-	// todo: will lead to terrible bugs if we don't wait for upload to finish
-	free(result.Pixels);
 	return texture;
 }
 
@@ -66,7 +64,6 @@ std::shared_ptr<Texture> TextureLoader::LoadFromCompressedData(uint8_t* data, ui
 	std::shared_ptr<Texture> texture = std::make_shared<Texture>(result);
 	texture->Initialize(result.Pixels);
 
-	free(result.Pixels);
 	return texture;
 }
 
