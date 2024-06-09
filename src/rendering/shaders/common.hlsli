@@ -1,6 +1,12 @@
 #ifndef __COMMON_HLSLI__
 #define __COMMON_HLSLI__
 
+#define DIRECTIONAL_LIGHT 0
+#define POINT_LIGHT       1
+#define SPOT_LIGHT        2
+#define AREA_LIGHT        3 // todo
+
+// -----------------------------------------------------------------------
 RayDesc GenerateCameraRay(in float3 cameraPosition, in float4x4 invProjMatrix, in float4x4 invViewMatrix)
 {
     float2 screenPos = (float2) DispatchRaysIndex().xy / (float2) DispatchRaysDimensions().xy * 2.0 - 1.0; // Clip Space [-1, 1]

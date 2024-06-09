@@ -64,41 +64,30 @@ void ClosestHitShader(inout RayPayload payload, in BuiltInTriangleIntersectionAt
     GeometryConstants geometry = GetMesh(geometryID, g_ResourceIndices.GeometryBufferIndex);
     SceneConstants sceneConstants = g_Buffers[g_ResourceIndices.SceneBufferIndex].Load<SceneConstants>(0);
     
-    uint i0 = GetMeshIndex(triangleIndex * 3 + 0, geometry.IndexBufferIndex);
-    uint i1 = GetMeshIndex(triangleIndex * 3 + 1, geometry.IndexBufferIndex);
-    uint i2 = GetMeshIndex(triangleIndex * 3 + 2, geometry.IndexBufferIndex);
-    
-    Vertex v0 = GetMeshVertex(i0, geometry.VertexBufferIndex);
-    Vertex v1 = GetMeshVertex(i1, geometry.VertexBufferIndex);
-    Vertex v2 = GetMeshVertex(i2, geometry.VertexBufferIndex);
-    
     float3 bary = float3(1.0 - attr.barycentrics.x - attr.barycentrics.y, attr.barycentrics.x, attr.barycentrics.y);
-    float2 texCoord = bary.x * v0.TexCoord + bary.y * v1.TexCoord + bary.z * v2.TexCoord;
-    float3 normal = bary.x * v0.Normal + bary.y * v1.Normal + bary.z * v2.Normal;
+    Triangle tri = GetTriangle(geometry, triangleIndex);
+    Vertex ip = GetIntersectionPoint(tri, bary);
     
     float3 surfacePositionWS = WorldRayOrigin() + WorldRayDirection() * RayTCurrent();
-    float3 normalWS = normalize(mul((float3x3)ObjectToWorld4x3(), normal));
+    float3 normalWS = normalize(mul((float3x3) ObjectToWorld4x3(), ip.Normal));
     
-    float4 diffuseColor = g_Textures[material.AlbedoMapIndex].SampleLevel(g_LinearWrapSampler, texCoord, 0);
+    float4 diffuseColor = g_Textures[material.AlbedoMapIndex].SampleLevel(g_LinearWrapSampler, ip.TexCoord, 0);
     
     float3 directLightColor = float3(0.0f, 0.0f, 0.0f);
     
     for (uint i = 0; i < sceneConstants.NumLights; i++)
     {
         Light light = GetLight(i, g_ResourceIndices.LightsBufferIndex);
-        if (light.LightType == 0)
+        if (light.LightType == DIRECTIONAL_LIGHT)
         {
-            // DirLight
             directLightColor += CalculateDirectionalLight(light, diffuseColor.xyz, normalWS);
         }
-        else if (light.LightType == 1)
+        else if (light.LightType == POINT_LIGHT)
         {
-            // PointLight
             directLightColor += CalculatePointLight(light, diffuseColor.xyz, surfacePositionWS, normalWS);
         }
-        else if (light.LightType == 2)
+        else if (light.LightType == SPOT_LIGHT)
         {
-            // SpotLight
             directLightColor += CalculateSpotLight(light, diffuseColor.xyz, surfacePositionWS, normalWS);
         }
     }
