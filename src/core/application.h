@@ -84,6 +84,8 @@ public:
         m_MaxFPS = fps;
     }
 
+    const std::filesystem::path& GetExecutablePath() const { return m_ExecutablePath; }
+
     inline static Application* GetInstance() { return ms_Instance; }
 private:
     bool OnWindowClosed(WindowClosedEvent& event);
@@ -115,6 +117,8 @@ private:
     double m_AvgDeltaTimeMS;
     uint16_t m_MaxFPS;
     bool m_IsRunning = false;
+
+    std::filesystem::path m_ExecutablePath;
 
     static Application* ms_Instance;
 };

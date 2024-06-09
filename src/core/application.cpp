@@ -27,6 +27,11 @@ Application::Application(const ApplicationDescription& description)
     HEXRAY_ASSERT(!ms_Instance, "Application already created");
     ms_Instance = this;
 
+    // Set exe path
+    char exePath[MAX_PATH];
+    GetModuleFileName(nullptr, exePath, MAX_PATH);
+    m_ExecutablePath = exePath;
+
     Logger::Initialize();
 
     // Create window

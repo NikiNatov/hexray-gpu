@@ -15,7 +15,7 @@ struct HitGroup
 
 struct RaytracingPipelineDescription
 {
-    std::string ShaderFilePath;
+    std::filesystem::path ShaderFilePath;
     uint32_t MaxPayloadSize;
     uint32_t MaxIntersectAttributesSize;
     uint32_t MaxRecursionDepth;

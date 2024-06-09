@@ -11,6 +11,8 @@
 #define RWTEXTURECUBE_SPACE space1
 #define RWBUFFERS_SPACE space2
 
+#define INVALID_DESCRIPTOR_INDEX 0xffffffff
+
 // -----------------------------------------------------------------------
 struct Vertex
 {

@@ -1,4 +1,5 @@
 #include "renderer.h"
+#include "core/application.h"
 #include "rendering/graphicscontext.h"
 #include "rendering/defaultresources.h"
 
@@ -8,7 +9,7 @@ Renderer::Renderer(const RendererDescription& description)
 {
     // Create raytracing pipeline
     RaytracingPipelineDescription pipelineDesc;
-    pipelineDesc.ShaderFilePath = "data/shaders/lambert.cso";
+    pipelineDesc.ShaderFilePath = Application::GetInstance()->GetExecutablePath().parent_path() / "shaderdata.cso";
     pipelineDesc.MaxRecursionDepth = m_Description.RayRecursionDepth;
     pipelineDesc.MaxPayloadSize = sizeof(float) * 4;
     pipelineDesc.MaxIntersectAttributesSize = sizeof(float) * 2;
@@ -18,9 +19,9 @@ Renderer::Renderer(const RendererDescription& description)
     };
     pipelineDesc.HitGroups = {
         // TODO: Set correct hit groups for each material model when we add support
-        HitGroup { D3D12_HIT_GROUP_TYPE_TRIANGLES, L"LambertColorHitGroup", L"ClosestHitShader", L"", L"MissShader" },
-        HitGroup { D3D12_HIT_GROUP_TYPE_TRIANGLES, L"PhongColorHitGroup", L"ClosestHitShader", L"", L"MissShader" },
-        HitGroup { D3D12_HIT_GROUP_TYPE_TRIANGLES, L"PBRColorHitGroup", L"ClosestHitShader", L"", L"MissShader" }
+        HitGroup { D3D12_HIT_GROUP_TYPE_TRIANGLES, L"LambertColorHitGroup", L"ClosestHitShader_Lambert", L"", L"MissShader" },
+        HitGroup { D3D12_HIT_GROUP_TYPE_TRIANGLES, L"PhongColorHitGroup", L"ClosestHitShader_Phong", L"", L"MissShader" },
+        HitGroup { D3D12_HIT_GROUP_TYPE_TRIANGLES, L"PBRColorHitGroup", L"ClosestHitShader_Lambert", L"", L"MissShader" }
     };
 
     m_RTPipeline = std::make_shared<RaytracingPipeline>(pipelineDesc, L"Triangle Raytracing Pipeline");

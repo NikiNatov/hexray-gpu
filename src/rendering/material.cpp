@@ -14,7 +14,7 @@ std::unordered_map<MaterialType, std::vector<MaterialPropertyMetaData>> Material
         {
             MaterialPropertyMetaData{ MaterialPropertyType::AlbedoColor, 0, 16 },
             MaterialPropertyMetaData{ MaterialPropertyType::SpecularColor, 16, 16 },
-            MaterialPropertyMetaData{ MaterialPropertyType::SpecularColor, 32, 4 },
+            MaterialPropertyMetaData{ MaterialPropertyType::Shininess, 32, 4 },
         },
     },
 

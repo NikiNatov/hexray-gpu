@@ -21,10 +21,10 @@ RaytracingPipeline::~RaytracingPipeline()
 // ------------------------------------------------------------------------------------------------------------------------------------
 void RaytracingPipeline::LoadShaderData()
 {
-    HEXRAY_ASSERT_MSG(std::filesystem::exists(m_Description.ShaderFilePath), "Could not find shader file: {}", m_Description.ShaderFilePath);
+    HEXRAY_ASSERT_MSG(std::filesystem::exists(m_Description.ShaderFilePath), "Could not find shader file: {}", m_Description.ShaderFilePath.string());
 
     std::ifstream ifs(m_Description.ShaderFilePath, std::ios::in | std::ios::binary | std::ios::ate);
-    HEXRAY_ASSERT_MSG(ifs, "Could not open shader file: {}", m_Description.ShaderFilePath);
+    HEXRAY_ASSERT_MSG(ifs, "Could not open shader file: {}", m_Description.ShaderFilePath.string());
 
     uint32_t fileSize = ifs.tellg();
     m_ShaderByteCode.BytecodeLength = fileSize;
