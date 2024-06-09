@@ -78,12 +78,14 @@ private:
     struct MaterialConstants
     {
         glm::vec4 AlbedoColor = glm::vec4(1.0f);
-        float Roughness = 0.5f;
-        float Metalness = 0.5f;
+        glm::vec4 SpecularColor = glm::vec4(1.0f);             // Phong
+        float Shininess = 0.5f;                                // Phong
+        float Roughness = 0.5f;                                // PBR
+        float Metalness = 0.5f;                                // PBR
         DescriptorIndex AlbedoMap = InvalidDescriptorIndex;
         DescriptorIndex NormalMap = InvalidDescriptorIndex;
-        DescriptorIndex RoughnessMap = InvalidDescriptorIndex;
-        DescriptorIndex MetalnessMap = InvalidDescriptorIndex;
+        DescriptorIndex RoughnessMap = InvalidDescriptorIndex; // PBR
+        DescriptorIndex MetalnessMap = InvalidDescriptorIndex; // PBR
     };
 
     struct GeometryConstants

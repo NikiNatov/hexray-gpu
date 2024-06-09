@@ -442,7 +442,7 @@ std::shared_ptr<Buffer> GraphicsContext::BuildTopLevelAccelerationStructure(cons
 
             instanceDesc.InstanceID = instanceDescs.size() - 1;
             instanceDesc.InstanceMask = 1;
-            instanceDesc.InstanceContributionToHitGroupIndex = 0;
+            instanceDesc.InstanceContributionToHitGroupIndex = (uint32_t)instance.Mesh->GetMaterial(i)->GetType();
             instanceDesc.AccelerationStructure = instance.Mesh->GetAccelerationStructure(i)->GetResource()->GetGPUVirtualAddress();
             instanceDesc.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_NONE;
 

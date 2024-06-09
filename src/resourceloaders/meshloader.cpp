@@ -103,7 +103,7 @@ std::shared_ptr<Mesh> MeshLoader::LoadAssimp(const std::filesystem::path& filePa
     {
         const aiMaterial* assimpMat = scene->mMaterials[materialIdx];
 
-        std::shared_ptr<Material> material = std::make_shared<Material>();
+        std::shared_ptr<Material> material = std::make_shared<Material>(MaterialType::PBR);
 
         // Set albedo color
         aiColor4D albedo;
@@ -117,21 +117,21 @@ std::shared_ptr<Mesh> MeshLoader::LoadAssimp(const std::filesystem::path& filePa
                 albedo.a = opacity;
             }
 
-            material->SetAlbedoColor(glm::vec4(albedo.r, albedo.g, albedo.b, albedo.a));
+            material->SetProperty(MaterialPropertyType::AlbedoColor, glm::vec4(albedo.r, albedo.g, albedo.b, albedo.a));
         }
 
         // Set roughness
         float roughness;
         if (assimpMat->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness) == AI_SUCCESS)
         {
-            material->SetRoughness(roughness);
+            material->SetProperty(MaterialPropertyType::Roughness, roughness);
         }
 
         // Set metalness
         float metalness;
         if (assimpMat->Get(AI_MATKEY_REFLECTIVITY, metalness) == AI_SUCCESS)
         {
-            material->SetMetalness(metalness);
+            material->SetProperty(MaterialPropertyType::Metalness, metalness);
         }
 
         // Set two sided flag
@@ -142,7 +142,7 @@ std::shared_ptr<Mesh> MeshLoader::LoadAssimp(const std::filesystem::path& filePa
         }
 
         // Set textures
-        auto SetMaterialTexture = [&](aiTextureType type)
+        auto SetMaterialTexture = [&](aiTextureType type, MaterialTextureType materialTextureType)
         {
             aiString aiPath;
             if (assimpMat->GetTexture(type, 0, &aiPath) == AI_SUCCESS)
@@ -163,20 +163,14 @@ std::shared_ptr<Mesh> MeshLoader::LoadAssimp(const std::filesystem::path& filePa
                     texture = TextureLoader::LoadFromFile(textureFullpath.string());
                 }
 
-                switch (type)
-                {
-                    case aiTextureType_DIFFUSE: material->SetAlbedoMap(texture); break;
-                    case aiTextureType_NORMALS: material->SetNormalMap(texture); break;
-                    case aiTextureType_METALNESS: material->SetMetalnessMap(texture); break;
-                    case aiTextureType_SHININESS: material->SetRoughnessMap(texture); break;
-                }
+                material->SetTexture(materialTextureType, texture);
             }
         };
 
-        SetMaterialTexture(aiTextureType_DIFFUSE);
-        SetMaterialTexture(aiTextureType_NORMALS);
-        SetMaterialTexture(aiTextureType_METALNESS);
-        SetMaterialTexture(aiTextureType_SHININESS);
+        SetMaterialTexture(aiTextureType_DIFFUSE, MaterialTextureType::Albedo);
+        SetMaterialTexture(aiTextureType_NORMALS, MaterialTextureType::Normal);
+        SetMaterialTexture(aiTextureType_METALNESS, MaterialTextureType::Metalness);
+        SetMaterialTexture(aiTextureType_SHININESS, MaterialTextureType::Roughness);
 
         meshDesc.Materials.push_back(material);
     }

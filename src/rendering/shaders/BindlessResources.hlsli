@@ -37,15 +37,17 @@ static const uint c_SceneConstantsStructSize = 272;
 struct MaterialConstants
 {
     float4 AlbedoColor;
-    float Roughness;
-    float Metalness;
+    float4 SpecularColor;   // Phong
+    float Shininess;        // Phong
+    float Roughness;        // PBR
+    float Metalness;        // PBR
     uint AlbedoMapIndex;
     uint NormalMapIndex;
-    uint RoughnessMapIndex;
-    uint MetalnessMapIndex;
+    uint RoughnessMapIndex; // PBR
+    uint MetalnessMapIndex; // PBR
 };
 
-static const uint c_MaterialConstantsStructSize = 40;
+static const uint c_MaterialConstantsStructSize = 60;
 
 struct GeometryConstants
 {

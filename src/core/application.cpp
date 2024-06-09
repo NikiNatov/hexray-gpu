@@ -326,6 +326,6 @@ void Application::LoadDefaultScene()
 
     {
         Entity sky = m_Scene->CreateEntity("Sky");
-        sky.AddComponent<SkyLightComponent>().EnvironmentMap = TextureLoader::LoadFromFile("data/textures/Skybox.dds");
+        sky.AddComponent<SkyLightComponent>().EnvironmentMap = TextureLoader::LoadFromFile("data/texture/Skybox.dds");
     }
 }

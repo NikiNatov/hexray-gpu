@@ -17,7 +17,10 @@ Renderer::Renderer(const RendererDescription& description)
         L"MissShader"
     };
     pipelineDesc.HitGroups = {
-        HitGroup { D3D12_HIT_GROUP_TYPE_TRIANGLES, L"MainHitGroup", L"ClosestHitShader", L"", L"MissShader" }
+        // TODO: Set correct hit groups for each material model when we add support
+        HitGroup { D3D12_HIT_GROUP_TYPE_TRIANGLES, L"LambertColorHitGroup", L"ClosestHitShader", L"", L"MissShader" },
+        HitGroup { D3D12_HIT_GROUP_TYPE_TRIANGLES, L"PhongColorHitGroup", L"ClosestHitShader", L"", L"MissShader" },
+        HitGroup { D3D12_HIT_GROUP_TYPE_TRIANGLES, L"PBRColorHitGroup", L"ClosestHitShader", L"", L"MissShader" }
     };
 
     m_RTPipeline = std::make_shared<RaytracingPipeline>(pipelineDesc, L"Triangle Raytracing Pipeline");
@@ -186,13 +189,34 @@ void Renderer::Render()
             std::shared_ptr<Material> material = instance.Mesh->GetMaterial(i);
 
             MaterialConstants& materialConstants = materials.emplace_back();
-            materialConstants.AlbedoColor = material->GetAlbedoColor();
-            materialConstants.Roughness = material->GetRoughness();
-            materialConstants.Metalness = material->GetMetalness();
-            materialConstants.AlbedoMap = material->GetAlbedoMap() ? material->GetAlbedoMap()->GetSRV() : DefaultResources::WhiteTexture->GetSRV();
-            materialConstants.NormalMap = material->GetNormalMap() ? material->GetNormalMap()->GetSRV() : DefaultResources::WhiteTexture->GetSRV();
-            materialConstants.RoughnessMap = material->GetRoughnessMap() ? material->GetRoughnessMap()->GetSRV() : DefaultResources::WhiteTexture->GetSRV();
-            materialConstants.MetalnessMap = material->GetMetalnessMap() ? material->GetMetalnessMap()->GetSRV() : DefaultResources::WhiteTexture->GetSRV();
+            material->GetProperty(MaterialPropertyType::AlbedoColor, materialConstants.AlbedoColor);
+
+            TexturePtr albedoMap = nullptr;
+            if (material->GetTexture(MaterialTextureType::Albedo, albedoMap))
+                materialConstants.AlbedoMap = albedoMap ? albedoMap->GetSRV() : InvalidDescriptorIndex;
+
+            TexturePtr normalMap = nullptr;
+            if (material->GetTexture(MaterialTextureType::Normal, normalMap))
+                materialConstants.NormalMap = normalMap ? normalMap->GetSRV() : InvalidDescriptorIndex;
+
+            if (material->GetType() == MaterialType::Phong)
+            {
+                material->GetProperty(MaterialPropertyType::SpecularColor, materialConstants.SpecularColor);
+                material->GetProperty(MaterialPropertyType::Shininess, materialConstants.Shininess);
+            }
+            else if (material->GetType() == MaterialType::PBR)
+            {
+                material->GetProperty(MaterialPropertyType::Roughness, materialConstants.Roughness);
+                material->GetProperty(MaterialPropertyType::Metalness, materialConstants.Metalness);
+
+                TexturePtr roughnessMap = nullptr;
+                if (material->GetTexture(MaterialTextureType::Roughness, roughnessMap))
+                    materialConstants.RoughnessMap = roughnessMap ? roughnessMap->GetSRV() : InvalidDescriptorIndex;
+
+                TexturePtr metalnessMap = nullptr;
+                if (material->GetTexture(MaterialTextureType::Metalness, metalnessMap))
+                    materialConstants.MetalnessMap = metalnessMap ? metalnessMap->GetSRV() : InvalidDescriptorIndex;
+            }
         }
     }
 

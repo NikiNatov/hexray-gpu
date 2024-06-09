@@ -106,7 +106,7 @@ bool DefaultSceneParser::AddSceneElement(const std::string& className, const std
 	// Shaders
 	if (className == "Lambert")
 	{
-		MaterialPtr material = std::make_shared<Material>();
+		MaterialPtr material = std::make_shared<Material>(MaterialType::Lambert);
 		material->Serialize(pb);
 		m_Materials[objectName] = material;
 	}

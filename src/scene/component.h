@@ -88,7 +88,7 @@ struct MeshComponent : public BaseComponent
 		TexturePtr bump;
 		pb.GetProperty("bump", bump);
 
-		material->SetNormalMap(bump);
+		material->SetTexture(MaterialTextureType::Normal, bump);
 
 		MeshObject->SetMaterial(0, material);
 	}

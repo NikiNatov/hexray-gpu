@@ -49,7 +49,7 @@ void RayGenShader()
     RayDesc ray = GenerateCameraRay(sceneConstants.CameraPosition, sceneConstants.InvProjMatrix, sceneConstants.InvViewMatrix);
     RayPayload payload = { float4(0, 0, 0, 0) };
     
-    TraceRay(accelerationStructure, RAY_FLAG_CULL_BACK_FACING_TRIANGLES, ~0, 0, 1, 0, ray, payload);
+    TraceRay(accelerationStructure, RAY_FLAG_CULL_BACK_FACING_TRIANGLES, ~0, 0, 0, 0, ray, payload);
 
     renderTarget[DispatchRaysIndex().xy] = payload.Color;
 }

@@ -89,15 +89,15 @@ void DefaultResources::Initialize()
     }
 
     // Default material
-    DefaultMaterial = std::make_shared<Material>(MaterialFlags::TwoSided);
-    DefaultMaterial->SetAlbedoColor(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
-    DefaultMaterial->SetMetalness(0.5f);
-    DefaultMaterial->SetRoughness(0.5f);
+    DefaultMaterial = std::make_shared<Material>(MaterialType::PBR, MaterialFlags::TwoSided);
+    DefaultMaterial->SetProperty(MaterialPropertyType::AlbedoColor, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+    DefaultMaterial->SetProperty(MaterialPropertyType::Metalness, 0.5f);
+    DefaultMaterial->SetProperty(MaterialPropertyType::Roughness, 0.5f);
 
-    ErrorMaterial = std::make_shared<Material>(MaterialFlags::TwoSided);
-    ErrorMaterial->SetAlbedoColor(glm::vec4(1.0f, 0.0f, 1.0f, 1.0f));
-    ErrorMaterial->SetMetalness(0.0f);
-    ErrorMaterial->SetRoughness(1.0f);
+    ErrorMaterial = std::make_shared<Material>(MaterialType::PBR, MaterialFlags::TwoSided);
+    DefaultMaterial->SetProperty(MaterialPropertyType::AlbedoColor, glm::vec4(1.0f, 0.0f, 1.0f, 1.0f));
+    DefaultMaterial->SetProperty(MaterialPropertyType::Metalness, 0.0f);
+    DefaultMaterial->SetProperty(MaterialPropertyType::Roughness, 1.0f);
 
     // Quad mesh
     {

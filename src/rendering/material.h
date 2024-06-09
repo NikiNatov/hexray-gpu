@@ -15,37 +15,141 @@ enum class MaterialFlags
 
 ENUM_FLAGS(MaterialFlags);
 
+enum class MaterialType
+{
+    Lambert,
+    Phong,
+    PBR
+};
+
+enum class MaterialPropertyType
+{
+    AlbedoColor,
+
+    // Phong specific
+    SpecularColor,
+    Shininess,
+
+    // PBR specific
+    Roughness,
+    Metalness
+};
+
+enum class MaterialTextureType
+{
+    Albedo,
+    Normal,
+
+    // PBR specific
+    Roughness,
+    Metalness
+};
+
+struct MaterialPropertyMetaData
+{
+    MaterialPropertyType Type;
+    uint32_t Offset;
+    uint32_t Size;
+};
+
+struct MaterialTextureMetaData
+{
+    MaterialTextureType Type;
+    uint32_t Index;
+};
+
 class Material
 {
 public:
-    Material(MaterialFlags flags = MaterialFlags::None);
+    Material(MaterialType type, MaterialFlags flags = MaterialFlags::None);
 
     void SetFlag(MaterialFlags flag, bool state);
-    inline void SetAlbedoColor(const glm::vec4& albedo) { m_AlbedoColor = albedo; }
-    inline void SetRoughness(float roughness) { m_Roughness = roughness; }
-    inline void SetMetalness(float metalness) { m_Metalness = metalness; }
-    inline void SetAlbedoMap(const TexturePtr& albedoMap) { m_AlbedoMap = albedoMap; }
-    inline void SetNormalMap(const TexturePtr& normalMap) { m_NormalMap = normalMap; }
-    inline void SetRoughnessMap(const TexturePtr& roughnessMap) { m_RoughnessMap = roughnessMap; }
-    inline void SetMetalnessMap(const TexturePtr& metalnessMap) { m_MetalnessMap = metalnessMap; }
 
+    template<typename T>
+    bool SetProperty(MaterialPropertyType propertyType, const T& value)
+    {
+        const MaterialPropertyMetaData* metaData = GetMaterialPropertyMetaData(propertyType);
+        if (!metaData)
+        {
+            HEXRAY_ERROR("Material property with type {} does not exist for material type {}", (uint32_t)propertyType, (uint32_t)m_Type);
+            return false;
+        }
+
+        if (metaData->Size != sizeof(T))
+        {
+            HEXRAY_ERROR("Size of property with type {} does not match the size of the value type!", (uint32_t)propertyType);
+            return false;
+        }
+
+        if (value == *(T*)(&m_PropertiesBuffer[metaData->Offset]))
+            return true;
+
+        memcpy(m_PropertiesBuffer.data() + metaData->Offset, &value, metaData->Size);
+        return true;
+    }
+
+    bool SetTexture(MaterialTextureType textureType, const TexturePtr& texture)
+    {
+        const MaterialTextureMetaData* metaData = GetMaterialTextureMetaData(textureType);
+        if (!metaData)
+        {
+            HEXRAY_ERROR("Texture of type {} does not exist for material type {}", (uint32_t)textureType, (uint32_t)m_Type);
+            return false;
+        }
+
+        m_Textures[metaData->Index] = texture;
+        return true;
+    }
+
+    template<typename T>
+    bool GetProperty(MaterialPropertyType propertyType, T& outData)
+    {
+        const MaterialPropertyMetaData* metaData = GetMaterialPropertyMetaData(propertyType);
+        if (!metaData)
+        {
+            HEXRAY_ERROR("Material property with type {} does not exist for material type {}", (uint32_t)propertyType, (uint32_t)m_Type);
+            return false;
+        }
+
+        if (metaData->Size != sizeof(T))
+        {
+            HEXRAY_ERROR("Size of property with type {} does not match the size of the value type!", (uint32_t)propertyType);
+            return false;
+        }
+
+        outData = *(T*)(&m_PropertiesBuffer[metaData->Offset]);
+        return true;
+    }
+
+    bool GetTexture(MaterialTextureType textureType, TexturePtr& outTexture) const
+    {
+        const MaterialTextureMetaData* metaData = GetMaterialTextureMetaData(textureType);
+        if (!metaData)
+        {
+            HEXRAY_ERROR("Texture of type {} does not exist for material type {}", (uint32_t)textureType, (uint32_t)m_Type);
+            return false;
+        }
+
+        outTexture = m_Textures[metaData->Index];
+        return true;
+    }
+
+    inline bool HasProperty(MaterialPropertyType propertyType) const { return GetMaterialPropertyMetaData(propertyType) != nullptr; }
+    inline bool HasTexture(MaterialTextureType textureType) const { return GetMaterialTextureMetaData(textureType) != nullptr; }
+
+    inline MaterialType GetType() const { return m_Type; }
     inline bool GetFlag(MaterialFlags flag) const { return (m_Flags & flag) != MaterialFlags::None; }
-    inline const glm::vec4& GetAlbedoColor() const { return m_AlbedoColor; }
-    inline float GetRoughness() const { return m_Roughness; }
-    inline float GetMetalness() const { return m_Metalness; }
-    inline const TexturePtr& GetAlbedoMap() const { return m_AlbedoMap; }
-    inline const TexturePtr& GetNormalMap() const { return m_NormalMap; }
-    inline const TexturePtr& GetRoughnessMap() const { return m_RoughnessMap; }
-    inline const TexturePtr& GetMetalnessMap() const { return m_MetalnessMap; }
 
     virtual void Serialize(ParsedBlock& pb);
 private:
-    MaterialFlags m_Flags = MaterialFlags::None;
-    glm::vec4 m_AlbedoColor = glm::vec4(1.0f);
-    float m_Roughness = 0.5f;
-    float m_Metalness = 0.5f;
-    TexturePtr m_AlbedoMap;
-    TexturePtr m_NormalMap;
-    TexturePtr m_RoughnessMap;
-    TexturePtr m_MetalnessMap;
+    const MaterialPropertyMetaData* GetMaterialPropertyMetaData(MaterialPropertyType propertyType) const;
+    const MaterialTextureMetaData* GetMaterialTextureMetaData(MaterialTextureType textureType) const;
+private:
+    MaterialType m_Type;
+    MaterialFlags m_Flags;
+    std::vector<uint8_t> m_PropertiesBuffer;
+    std::vector<TexturePtr> m_Textures;
+private:
+    static std::unordered_map<MaterialType, std::vector<MaterialPropertyMetaData>> ms_MaterialTypeProperties;
+    static std::unordered_map<MaterialType, std::vector<MaterialTextureMetaData>> ms_MaterialTypeTextures;
 };
