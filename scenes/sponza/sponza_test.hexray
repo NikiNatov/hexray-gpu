@@ -1,9 +1,9 @@
 Name: Sponza Test
 Camera:
   Position: [35, 20, 0]
-  Yaw: -90
-  Pitch: 25
-  FOV: 45
+  Yaw: 90
+  Pitch: -25
+  FOV: 60
 Entities:
   - Entity: 15249286607863821465
     TagComponent:
