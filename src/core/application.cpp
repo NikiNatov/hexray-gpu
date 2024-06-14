@@ -4,13 +4,102 @@
 #include "core/timer.h"
 #include "core/input.h"
 #include "scene/component.h"
+#include "scene/sceneserializer.h"
 #include "rendering/defaultresources.h"
-#include "resourceloaders/textureloader.h"
-#include "resourceloaders/meshloader.h"
+#include "asset/assetimporter.h"
+#include "asset/assetmanager.h"
+#include "asset/assetserializer.h"
 
 #include <sstream>
 
+static const char* s_DefaultScenePath = "scenes/sponza/sponza_test.hexray";
 Application* Application::ms_Instance = nullptr;
+
+static void CreateScene_Bumpmap()
+{
+    std::filesystem::path scenePath = "scenes/bumpmap/bumpmap1.hexray";
+    AssetManager::Initialize(scenePath.parent_path() / "assets");
+
+    Camera camera(60.0f, 16.0f / 9.0f, glm::vec3(45.0f, 180.0f, -240.0f), 5.0f, -20.0f);
+    std::shared_ptr<Scene> scene = std::make_shared<Scene>("Bumpmap Scene", camera);
+    {
+        Entity pointLight = scene->CreateEntity("Sun");
+        pointLight.GetComponent<TransformComponent>().Translation = { -90.0f, 1200.0f, -750.0f };
+
+        PointLightComponent& pointLightComponent = pointLight.AddComponent<PointLightComponent>();
+        pointLightComponent.Color = glm::vec3(1.0f, 1.0f, 1.0f);
+        pointLightComponent.Intensity = 1200000.0f;
+        pointLightComponent.AttenuationFactors = { 0.5f, 0.5f, 0.5f };
+    }
+
+    {
+        Entity e = scene->CreateEntity("Floor");
+
+        TransformComponent& tc = e.GetComponent<TransformComponent>();
+        tc.Translation.y = -0.01f;
+        tc.Scale = { 200.0f, 1.0f, 200.0f };
+
+        // Create plane material
+        Uuid matID = AssetImporter::CreateMaterialAsset("materials/floor_diffuse.hexmat", MaterialType::Lambert, MaterialFlags::TwoSided);
+        MaterialPtr mat = AssetManager::GetAsset<Material>(matID);
+
+        TexturePtr albedoTexture = AssetManager::GetAsset<Texture>(AssetImporter::ImportTextureAsset("data/texture/wood.bmp"));
+        mat->SetTexture(MaterialTextureType::Albedo, albedoTexture);
+        
+        AssetSerializer::Serialize(mat->GetAssetFilepath(), mat);
+
+        // Create plane mesh
+        MeshDescription meshDesc;
+        meshDesc.Submeshes = { Submesh{ 0, 4, 0, 6, 0} };
+        meshDesc.Materials = { mat };
+
+        Vertex vertexData[] = {
+            Vertex{ glm::vec3(-1.0f, 0.0f, -1.0f), glm::vec2(0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f) },
+            Vertex{ glm::vec3( 1.0f, 0.0f, -1.0f), glm::vec2(1.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f) },
+            Vertex{ glm::vec3( 1.0f, 0.0f,  1.0f), glm::vec2(1.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f) },
+            Vertex{ glm::vec3(-1.0f, 0.0f,  1.0f), glm::vec2(0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f) },
+        };
+
+        uint32_t indexData[] = { 0, 1, 2, 2, 3, 0 };
+
+        Uuid meshID = AssetImporter::CreateMeshAsset("meshes/plane.hexmesh", meshDesc, vertexData, indexData);
+
+        MeshComponent& mesh = e.AddComponent<MeshComponent>();
+        mesh.Mesh = AssetManager::GetAsset<Mesh>(meshID);
+    }
+
+    {
+        Entity e = scene->CreateEntity("Die");
+
+        TransformComponent& tc = e.GetComponent<TransformComponent>();
+        tc.Translation = { 0.0f, 60.0f, 0.0f };
+        tc.Rotation = { 134.0f, 0.0f, 0.0f };
+        tc.Scale = { 15.0f, 15.0f, 15.0f };
+
+        // Create plane material
+        Uuid matID = AssetImporter::CreateMaterialAsset("materials/die_faces_diffuse.hexmat", MaterialType::Lambert);
+        MaterialPtr mat = AssetManager::GetAsset<Material>(matID);
+
+        TexturePtr albedoTexture = AssetManager::GetAsset<Texture>(AssetImporter::ImportTextureAsset("data/texture/zar-texture.bmp"));
+        mat->SetTexture(MaterialTextureType::Albedo, albedoTexture);
+
+        TexturePtr bumpTexture = AssetManager::GetAsset<Texture>(AssetImporter::ImportTextureAsset("data/texture/zar-bump.bmp"));
+        mat->SetTexture(MaterialTextureType::Normal, bumpTexture);
+
+        AssetSerializer::Serialize(mat->GetAssetFilepath(), mat);
+
+        // Create die mesh
+        MeshComponent& mesh = e.AddComponent<MeshComponent>();
+        mesh.Mesh = AssetManager::GetAsset<Mesh>(AssetImporter::ImportMeshAsset("data/geom/truncated_cube.obj"));
+    }
+
+    {
+        Entity sky = scene->CreateEntity("Sky");
+        sky.AddComponent<SkyLightComponent>().EnvironmentMap = AssetManager::GetAsset<Texture>(AssetImporter::ImportTextureAsset("data/env/forest/skybox.dds"));
+    }
+
+    SceneSerializer::Serialize(scenePath, scene);
+}
 
 // ------------------------------------------------------------------------------------------------------------------------------------
 Application::Application(const ApplicationDescription& description)
@@ -64,11 +153,11 @@ Application::Application(const ApplicationDescription& description)
 
     ParseCommandlineArgs();
 
-    // Create scene
+    //CreateScene_Bumpmap();
+
     if (!m_Scene)
     {
-        m_Scene = std::make_unique<Scene>("Test scene");
-        LoadDefaultScene();
+        OpenScene(s_DefaultScenePath);
     }
 
     SetMaxFPS(60);
@@ -78,6 +167,7 @@ Application::Application(const ApplicationDescription& description)
 // ------------------------------------------------------------------------------------------------------------------------------------
 Application::~Application()
 {
+    AssetManager::Shutdown();
     DefaultResources::Shutdown();
 }
 
@@ -235,102 +325,28 @@ void Application::ParseCommandlineArgs()
     {
         if (strcmp(args[i], "-scene") == 0)
         {
-            m_Scene = Scene::LoadFromHexrayFile(args[++i]);
+            OpenScene(args[++i]);
         }
     }
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
-void Application::LoadDefaultScene()
+void Application::OpenScene(const std::filesystem::path& filepath)
 {
-    {
-        Entity dirLight = m_Scene->CreateEntity("Directional Light");
-        dirLight.GetComponent<TransformComponent>().Translation = { 1.0f, 1.0f, 1.0f };
+    bool loadDefaultScene = false;
 
-        DirectionalLightComponent& dirLightComponent = dirLight.AddComponent<DirectionalLightComponent>();
-        dirLightComponent.Color = glm::vec3(0.6f, 0.4f, 0.0f);
-        dirLightComponent.Intensity = 0.5f;
+    if (!std::filesystem::exists(filepath))
+    {
+        HEXRAY_ERROR("Scene with path {} doesn't exist. Loading default...", filepath.string());
+        return;
     }
 
+    AssetManager::Initialize(filepath.parent_path() / "assets");
+
+    if (!SceneSerializer::Deserialize(filepath, m_Scene))
     {
-        Entity pointLight = m_Scene->CreateEntity("Red Point Light");
-        pointLight.GetComponent<TransformComponent>().Translation.y = 4.0f;
-        pointLight.GetComponent<TransformComponent>().Translation.z = -8.0f;
-
-        PointLightComponent& pointLightComponent = pointLight.AddComponent<PointLightComponent>();
-        pointLightComponent.Color = glm::vec3(1.0f, 0.0f, 0.0f);
-        pointLightComponent.Intensity = 10.0f;
-        pointLightComponent.AttenuationFactors = { 0.5f, 0.5f, 0.5f };
-    }
-
-    {
-        Entity pointLight = m_Scene->CreateEntity("Blue Point Light");
-        pointLight.GetComponent<TransformComponent>().Translation.x = 8.0f;
-        pointLight.GetComponent<TransformComponent>().Translation.y = 4.0f;
-
-        PointLightComponent& pointLightComponent = pointLight.AddComponent<PointLightComponent>();
-        pointLightComponent.Color = glm::vec3(0.0f, 0.0f, 1.0f);
-        pointLightComponent.Intensity = 10.0f;
-        pointLightComponent.AttenuationFactors = { 0.5f, 0.5f, 0.5f };
-    }
-
-    {
-        Entity pointLight = m_Scene->CreateEntity("Yellow Point Light");
-        pointLight.GetComponent<TransformComponent>().Translation.z = 8.0f;
-        pointLight.GetComponent<TransformComponent>().Translation.y = 4.0f;
-
-        PointLightComponent& pointLightComponent = pointLight.AddComponent<PointLightComponent>();
-        pointLightComponent.Color = glm::vec3(1.0f, 1.0f, 0.0f);
-        pointLightComponent.Intensity = 10.0f;
-        pointLightComponent.AttenuationFactors = { 0.5f, 0.5f, 0.5f };
-    }
-
-    {
-        Entity pointLight = m_Scene->CreateEntity("Green Point Light");
-        pointLight.GetComponent<TransformComponent>().Translation.x = -8.0f;
-        pointLight.GetComponent<TransformComponent>().Translation.y = 4.0f;
-
-        PointLightComponent& pointLightComponent = pointLight.AddComponent<PointLightComponent>();
-        pointLightComponent.Color = glm::vec3(0.0f, 1.0f, 0.0f);
-        pointLightComponent.Intensity = 10.0f;
-        pointLightComponent.AttenuationFactors = { 0.5f, 0.5f, 0.5f };
-    }
-
-    {
-        Entity pointLight = m_Scene->CreateEntity("Pink Point Light");
-        pointLight.GetComponent<TransformComponent>().Translation.y = 4.0f;
-
-        PointLightComponent& pointLightComponent = pointLight.AddComponent<PointLightComponent>();
-        pointLightComponent.Color = glm::vec3(1.0f, 0.0f, 1.0f);
-        pointLightComponent.Intensity = 10.0f;
-        pointLightComponent.AttenuationFactors = { 0.5f, 0.5f, 0.5f };
-    }
-
-    {
-        Entity spotLight = m_Scene->CreateEntity("Spot Light");
-        spotLight.GetComponent<TransformComponent>().Translation.y = 4.0f;
-        spotLight.GetComponent<TransformComponent>().Translation.x = 12.0f;
-        spotLight.GetComponent<TransformComponent>().Translation.z = 4.0f;
-
-        SpotLightComponent& spotLightComponent = spotLight.AddComponent<SpotLightComponent>();
-        spotLightComponent.Color = glm::vec3(0.0f, 1.0f, 1.0f);
-        spotLightComponent.Direction = glm::normalize(glm::vec3(0.0f, -0.5f, -1.0f));
-        spotLightComponent.Intensity = 30.0f;
-        spotLightComponent.AttenuationFactors = { 0.5f, 0.5f, 0.5f };
-    }
-
-    {
-        Entity sponza = m_Scene->CreateEntity("Sponza");
-
-        TransformComponent& sponzaTransform = sponza.GetComponent<TransformComponent>();
-        sponzaTransform.Scale = { 0.05f, 0.05f, 0.05f };
-
-        MeshComponent& sponzaMesh = sponza.AddComponent<MeshComponent>();
-        sponzaMesh.MeshObject = MeshLoader::LoadFromFile("data/meshes/Sponza/Sponza.fbx");
-    }
-
-    {
-        Entity sky = m_Scene->CreateEntity("Sky");
-        sky.AddComponent<SkyLightComponent>().EnvironmentMap = TextureLoader::LoadFromFile("data/texture/Skybox.dds");
+        HEXRAY_ERROR("Failed loading scene with path {}. Loading default...", filepath.string());
+        AssetManager::Shutdown();
+        return;
     }
 }

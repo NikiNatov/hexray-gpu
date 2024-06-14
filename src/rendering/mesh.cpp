@@ -4,69 +4,71 @@
 
 // ------------------------------------------------------------------------------------------------------------------------------------
 Mesh::Mesh(const MeshDescription& description, const wchar_t* debugName)
+    : Asset(AssetType::Mesh), m_Description(description)
 {
-    CreateGPU(description, debugName);
+    HEXRAY_ASSERT(m_Description.Submeshes.size() == m_Description.Materials.size());
+
+    CreateGPU(debugName);
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
-void Mesh::CreateGPU(const MeshDescription& description, const wchar_t* debugName)
+void Mesh::UploadGPUData(const Vertex* vertexData, const uint32_t* indexData, bool keepCPUData)
 {
-    HEXRAY_ASSERT(description.Submeshes.size() == description.Materials.size());
-    HEXRAY_ASSERT(description.Indices.size() && description.Positions.size());
-    HEXRAY_ASSERT(description.Normals.empty() || description.Positions.size() == description.Normals.size());
-    HEXRAY_ASSERT(description.UVs.empty() || description.Positions.size() == description.UVs.size());
-    HEXRAY_ASSERT(description.Tangents.empty() || description.Positions.size() == description.Tangents.size());
-    HEXRAY_ASSERT(description.Bitangents.empty() || description.Positions.size() == description.Bitangents.size());
+    uint32_t vertexCount = 0;
+    uint32_t indexCount = 0;
 
-    struct Vertex
+    for (uint32_t i = 0 ; i < m_Description.Submeshes.size(); i++)
     {
-        glm::vec3 Position;
-        glm::vec2 TexCoord;
-        glm::vec3 Normal;
-        glm::vec3 Tangent;
-        glm::vec3 Bitangent;
-    };
+        const Submesh& submesh = m_Description.Submeshes[i];
 
-    std::vector<Vertex> vertices;
-    vertices.reserve(description.Positions.size());
+        // Upload vertex data
+        GraphicsContext::GetInstance()->UploadBufferData(m_VertexBuffers[i].get(), vertexData + submesh.StartVertex);
 
-    for (uint32_t i = 0; i < description.Positions.size(); i++)
-    {
-        Vertex& v = vertices.emplace_back();
-        v.Position = description.Positions[i];
-        v.TexCoord = !description.UVs.empty() ? description.UVs[i] : glm::vec2(0.0f);
-        v.Normal = !description.Normals.empty() ? description.Normals[i] : glm::vec3(0.0f);
-        v.Tangent = !description.Tangents.empty() ? description.Tangents[i] : glm::vec3(0.0f);
-        v.Bitangent = !description.Bitangents.empty() ? description.Bitangents[i] : glm::vec3(0.0f);
+        // Create index buffer
+        GraphicsContext::GetInstance()->UploadBufferData(m_IndexBuffers[i].get(), indexData + submesh.StartIndex);
+
+        // Create acceleration structure
+        m_AccelerationStructures[i] = GraphicsContext::GetInstance()->BuildBottomLevelAccelerationStructure(this, i);
+
+        vertexCount += submesh.VertexCount;
+        indexCount += submesh.IndexCount;
     }
 
-    // Create submeshes
-    m_Submeshes.reserve(description.Submeshes.size());
-
-    for (const SubmeshDescription& submeshDesc : description.Submeshes)
+    if (keepCPUData)
     {
-        Submesh& submesh = m_Submeshes.emplace_back();
-        submesh.Material = description.Materials[submeshDesc.MaterialIndex];
+        m_Vertices.resize(vertexCount);
+        memcpy(m_Vertices.data(), vertexData, vertexCount * sizeof(Vertex));
+
+        m_Indices.resize(indexCount);
+        memcpy(m_Indices.data(), indexData, indexCount * sizeof(uint32_t));
+    }
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+void Mesh::CreateGPU(const wchar_t* debugName)
+{
+    m_VertexBuffers.resize(m_Description.Submeshes.size());
+    m_IndexBuffers.resize(m_Description.Submeshes.size());
+    m_AccelerationStructures.resize(m_Description.Submeshes.size());
+
+    for (uint32_t i = 0; i < m_Description.Submeshes.size(); i++)
+    {
+        const Submesh& submesh = m_Description.Submeshes[i];
 
         // Create vertex buffer
         BufferDescription vbDesc;
-        vbDesc.ElementCount = submeshDesc.VertexCount;
+        vbDesc.ElementCount = submesh.VertexCount;
         vbDesc.ElementSize = sizeof(Vertex);
         vbDesc.InitialState = D3D12_RESOURCE_STATE_COMMON;
 
-        submesh.VertexBuffer = std::make_shared<Buffer>(vbDesc, fmt::format(L"{} Submesh {} Vertex Buffer", debugName, m_Submeshes.size() - 1).c_str());
-        GraphicsContext::GetInstance()->UploadBufferData(submesh.VertexBuffer.get(), vertices.data() + submeshDesc.StartVertex);
+        m_VertexBuffers[i] = std::make_shared<Buffer>(vbDesc, fmt::format(L"{} Submesh {} Vertex Buffer", debugName, m_Description.Submeshes.size() - 1).c_str());
 
         // Create index buffer
         BufferDescription ibDesc;
-        ibDesc.ElementCount = submeshDesc.IndexCount;
+        ibDesc.ElementCount = submesh.IndexCount;
         ibDesc.ElementSize = sizeof(uint32_t);
         vbDesc.InitialState = D3D12_RESOURCE_STATE_COMMON;
 
-        submesh.IndexBuffer = std::make_shared<Buffer>(ibDesc, fmt::format(L"{} Submesh {} Index Buffer", debugName, m_Submeshes.size() - 1).c_str());
-        GraphicsContext::GetInstance()->UploadBufferData(submesh.IndexBuffer.get(), description.Indices.data() + submeshDesc.StartIndex);
-
-        // Create acceleration structure
-        submesh.AccelerationStructure = GraphicsContext::GetInstance()->BuildBottomLevelAccelerationStructure(submesh);
+        m_IndexBuffers[i] = std::make_shared<Buffer>(ibDesc, fmt::format(L"{} Submesh {} Index Buffer", debugName, m_Description.Submeshes.size() - 1).c_str());
     }
 }

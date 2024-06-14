@@ -1,8 +1,8 @@
 #pragma once
 
 #include "core/core.h"
-#include "core/object.h"
 #include "rendering/texture.h"
+#include "asset/asset.h"
 
 #include <glm.hpp>
 
@@ -58,8 +58,9 @@ struct MaterialTextureMetaData
     uint32_t Index;
 };
 
-class Material
+class Material : public Asset
 {
+    friend class AssetSerializer;
 public:
     Material(MaterialType type, MaterialFlags flags = MaterialFlags::None);
 
@@ -102,7 +103,7 @@ public:
     }
 
     template<typename T>
-    bool GetProperty(MaterialPropertyType propertyType, T& outData)
+    bool GetProperty(MaterialPropertyType propertyType, T& outData) const
     {
         const MaterialPropertyMetaData* metaData = GetMaterialPropertyMetaData(propertyType);
         if (!metaData)
@@ -139,8 +140,6 @@ public:
 
     inline MaterialType GetType() const { return m_Type; }
     inline bool GetFlag(MaterialFlags flag) const { return (m_Flags & flag) != MaterialFlags::None; }
-
-    virtual void Serialize(ParsedBlock& pb);
 private:
     const MaterialPropertyMetaData* GetMaterialPropertyMetaData(MaterialPropertyType propertyType) const;
     const MaterialTextureMetaData* GetMaterialTextureMetaData(MaterialTextureType textureType) const;

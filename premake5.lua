@@ -30,6 +30,10 @@ project "hexray-gpu"
 	{
 		"%{wks.location}/src/**.cpp",
 		"%{wks.location}/src/**.h",
+		"%{wks.location}/extern/stb/**.h",
+		"%{wks.location}/extern/stb/**.cpp",
+		"%{wks.location}/extern/DirectXTex/**.h",
+		"%{wks.location}/extern/DirectXTex/**.cpp"
 	}
 
 	includedirs
@@ -41,13 +45,15 @@ project "hexray-gpu"
 		"%{wks.location}/extern/entt/include",
 		"%{wks.location}/extern/pix/include",
 		"%{wks.location}/extern/stb",
-		"%{wks.location}/extern",
+		"%{wks.location}/extern/DirectXTex",
+		"%{wks.location}/extern/yaml-cpp/include",
 	}
 
 	libdirs
 	{
 		"%{wks.location}/extern/pix/lib",
-		"%{wks.location}/extern/assimp/lib"
+		"%{wks.location}/extern/assimp/lib",
+		"%{wks.location}/extern/yaml-cpp/lib",
 	}
 
 	links
@@ -76,6 +82,7 @@ project "hexray-gpu"
 		links
 		{
 			"assimp-vc143-mtd",
+			"yaml_d",
 		}
 
 		postbuildcommands
@@ -96,6 +103,7 @@ project "hexray-gpu"
 		links
 		{
 			"assimp-vc143-mt",
+			"yaml_r",
 		}
 
 		postbuildcommands

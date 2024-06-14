@@ -5,6 +5,8 @@
 class Uuid
 {
 public:
+    static Uuid Invalid;
+public:
     Uuid();
     Uuid(uint64_t uuid);
 

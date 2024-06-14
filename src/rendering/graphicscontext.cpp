@@ -1,6 +1,6 @@
 #include "graphicscontext.h"
-#include "rendering/textureutils.h"
 
+#include <DirectXTex.h>
 #include <pix3.h>
 
 GraphicsContext* GraphicsContext::ms_Instance = nullptr;
@@ -245,10 +245,13 @@ void GraphicsContext::UploadTextureData(Texture* destTexture, const void* data, 
         uint32_t width = std::max(destTexture->GetWidth() >> mip, 1u);
         uint32_t height = std::max(destTexture->GetHeight() >> mip, 1u);
 
+        size_t rowPitch, slicePitch;
+        DirectX::ComputePitch(destTexture->GetFormat(), width, height, rowPitch, slicePitch);
+
         D3D12_SUBRESOURCE_DATA subresourceData = {};
         subresourceData.pData = data;
-        subresourceData.RowPitch = CalculateRowPitch(width, destTexture->GetFormat());
-        subresourceData.SlicePitch = CalculateSlicePitch(width, height, destTexture->GetFormat());
+        subresourceData.RowPitch = rowPitch;
+        subresourceData.SlicePitch = slicePitch;
 
         // Create a new copy command list and execute the upload operation
         HANDLE waitFenceEvent = CreateEvent(0, false, false, 0);
@@ -330,25 +333,25 @@ void GraphicsContext::CopyTextureToSwapChain(Texture* texture, D3D12_RESOURCE_ST
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
-std::shared_ptr<Buffer> GraphicsContext::BuildBottomLevelAccelerationStructure(const Submesh& submesh)
+std::shared_ptr<Buffer> GraphicsContext::BuildBottomLevelAccelerationStructure(Mesh* mesh, uint32_t submeshIndex)
 {
     D3D12_RAYTRACING_GEOMETRY_DESC geometryDesc = {};
     geometryDesc.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
     geometryDesc.Triangles.IndexFormat = DXGI_FORMAT_R32_UINT;
-    geometryDesc.Triangles.IndexBuffer = submesh.IndexBuffer->GetResource()->GetGPUVirtualAddress();
-    geometryDesc.Triangles.IndexCount = submesh.IndexBuffer->GetElementCount();
+    geometryDesc.Triangles.IndexBuffer = mesh->GetIndexBuffer(submeshIndex)->GetResource()->GetGPUVirtualAddress();
+    geometryDesc.Triangles.IndexCount = mesh->GetIndexBuffer(submeshIndex)->GetElementCount();
     geometryDesc.Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
-    geometryDesc.Triangles.VertexBuffer.StartAddress = submesh.VertexBuffer->GetResource()->GetGPUVirtualAddress();
-    geometryDesc.Triangles.VertexCount = submesh.VertexBuffer->GetElementCount();
-    geometryDesc.Triangles.VertexBuffer.StrideInBytes = submesh.VertexBuffer->GetElementSize();
+    geometryDesc.Triangles.VertexBuffer.StartAddress = mesh->GetVertexBuffer(submeshIndex)->GetResource()->GetGPUVirtualAddress();
+    geometryDesc.Triangles.VertexCount = mesh->GetVertexBuffer(submeshIndex)->GetElementCount();
+    geometryDesc.Triangles.VertexBuffer.StrideInBytes = mesh->GetVertexBuffer(submeshIndex)->GetElementSize();
     geometryDesc.Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_NONE;
 
-    if (!submesh.Material->GetFlag(MaterialFlags::Transparent))
+    if (!mesh->GetMaterial(submeshIndex)->GetFlag(MaterialFlags::Transparent))
     {
         geometryDesc.Flags |= D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;
     }
 
-    if (submesh.Material->GetFlag(MaterialFlags::TwoSided))
+    if (mesh->GetMaterial(submeshIndex)->GetFlag(MaterialFlags::TwoSided))
     {
         // Make sure the any hit shader is ran only ones per primitive since we don't care if it is a front or a back face
         geometryDesc.Flags |= D3D12_RAYTRACING_GEOMETRY_FLAG_NO_DUPLICATE_ANYHIT_INVOCATION;
@@ -428,7 +431,7 @@ std::shared_ptr<Buffer> GraphicsContext::BuildTopLevelAccelerationStructure(cons
 
     for (const MeshInstance& instance : meshInstances)
     {
-        for (uint32_t i = 0; i < instance.Mesh->GetSubmeshCount(); i++)
+        for (uint32_t i = 0; i < instance.Mesh->GetSubmeshes().size(); i++)
         {
             D3D12_RAYTRACING_INSTANCE_DESC& instanceDesc = instanceDescs.emplace_back();
 

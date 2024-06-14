@@ -99,12 +99,12 @@ private:
     void EndFrame();
 private:
     void ParseCommandlineArgs();
-    void LoadDefaultScene();
+    void OpenScene(const std::filesystem::path& filepath);
 private:
     ApplicationDescription m_Description;
     std::unique_ptr<Window> m_Window;
     std::unique_ptr<GraphicsContext> m_GraphicsContext;
-    std::unique_ptr<Scene> m_Scene;
+    std::shared_ptr<Scene> m_Scene;
     std::shared_ptr<Renderer> m_SceneRenderer;
 
     Timer m_Timer;

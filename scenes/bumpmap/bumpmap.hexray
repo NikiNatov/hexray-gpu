@@ -1,0 +1,65 @@
+Name: Bumpmap Scene
+Camera:
+  Position: [45, 180, -240]
+  Yaw: 5
+  Pitch: -20
+  FOV: 60
+Entities:
+  - Entity: 3599911203590321165
+    TagComponent:
+      Tag: Sky
+    SceneHierarchyComponent:
+      Parent: 0
+      FirstChild: 0
+      NextSibling: 0
+      PreviousSibling: 0
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SkyLightComponent:
+      EnvironmentMap: 9502051722158371484
+  - Entity: 12081370380695378189
+    TagComponent:
+      Tag: Die
+    SceneHierarchyComponent:
+      Parent: 0
+      FirstChild: 0
+      NextSibling: 0
+      PreviousSibling: 0
+    TransformComponent:
+      Translation: [0, 60, 0]
+      Rotation: [134, 0, 0]
+      Scale: [15, 15, 15]
+    MeshComponent:
+      Mesh: 2117428625312802407
+  - Entity: 9259314977020424433
+    TagComponent:
+      Tag: Floor
+    SceneHierarchyComponent:
+      Parent: 0
+      FirstChild: 0
+      NextSibling: 0
+      PreviousSibling: 0
+    TransformComponent:
+      Translation: [0, -0.00999999978, 0]
+      Rotation: [0, 0, 0]
+      Scale: [200, 1, 200]
+    MeshComponent:
+      Mesh: 4819899529674336568
+  - Entity: 4275895516170959306
+    TagComponent:
+      Tag: Sun
+    SceneHierarchyComponent:
+      Parent: 0
+      FirstChild: 0
+      NextSibling: 0
+      PreviousSibling: 0
+    TransformComponent:
+      Translation: [-90, 1200, -750]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    PointLightComponent:
+      Color: [1, 1, 1]
+      Intensity: 1200000
+      AttenuationFactors: [0.5, 0.5, 0.5]

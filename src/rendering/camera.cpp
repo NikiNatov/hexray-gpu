@@ -2,16 +2,17 @@
 
 #include "core/window.h"
 #include "core/input.h"
-#include "serialization/parsedblock.h"
 
 #include <gtc/matrix_transform.hpp>
 #include <gtc/quaternion.hpp>
 
 // ------------------------------------------------------------------------------------------------------------------------------------
-Camera::Camera(float fov, float aspectRatio, float nearPlane, float farPlane)
-    : m_PerspectiveFOV(fov), m_AspectRatio(aspectRatio), m_PerspectiveNear(nearPlane), m_PerspectiveFar(farPlane)
+Camera::Camera(float fov, float aspectRatio, const glm::vec3& position, float yaw, float pitch)
+    : m_PerspectiveFOV(fov), m_AspectRatio(aspectRatio), m_Position(position), m_YawAngle(yaw), m_PitchAngle(pitch)
 {
+    m_FocalPoint = m_Position + GetCameraFront() * m_Distance;
     RecalculateProjection();
+    RecalculateArcballViewMatrix();
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
@@ -69,16 +70,6 @@ glm::vec3 Camera::GetCameraFront() const
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
-void Camera::SetPerspective(float fov, float nearPlane, float farPlane)
-{
-    m_PerspectiveFOV = fov;
-    m_PerspectiveNear = nearPlane;
-    m_PerspectiveFar = farPlane;
-
-    RecalculateProjection();
-}
-
-// ------------------------------------------------------------------------------------------------------------------------------------
 void Camera::SetViewportSize(uint32_t width, uint32_t height)
 {
     if (height == 0)
@@ -89,29 +80,9 @@ void Camera::SetViewportSize(uint32_t width, uint32_t height)
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
-void Camera::Serialize(ParsedBlock& pb)
-{
-    pb.GetRequiredProperty("pos", m_Position);
-    pb.GetProperty("aspectRatio", m_AspectRatio, 1e-6);
-    pb.GetProperty("fov", m_PerspectiveFOV, 0.0001, 179);
-    pb.GetProperty("yaw", m_YawAngle);
-    pb.GetProperty("pitch", m_PitchAngle, -90, 90);
-    //pb.GetProperty("roll", m_Roll);
-    //pb.GetProperty("fNumber", &fNumber, 0.5, 128.0);
-    //pb.GetProperty("numSamples", &numSamples, 1);
-    //pb.GetProperty("focalPlaneDist", &focalPlaneDist, 1e-3, 1e+6);
-    //pb.GetProperty("dof", &dof);
-    //pb.GetProperty("autoFocus", &autoFocus);
-    //pb.GetProperty("stereoSeparation", &stereoSeparation, 0.0);
-
-    RecalculateProjection();
-    RecalculateDefaultViewMatrix();
-}
-
-// ------------------------------------------------------------------------------------------------------------------------------------
 void Camera::RecalculateProjection()
 {
-    m_ProjectionMatrix = glm::perspectiveRH_ZO(glm::radians(m_PerspectiveFOV), m_AspectRatio, m_PerspectiveNear, m_PerspectiveFar);
+    m_ProjectionMatrix = glm::perspectiveRH_ZO(glm::radians(m_PerspectiveFOV), m_AspectRatio, 0.1f, 1000.0f);
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------

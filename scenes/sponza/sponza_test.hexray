@@ -1,0 +1,148 @@
+Name: Sponza Test
+Camera:
+  Position: [35, 20, 0]
+  Yaw: -90
+  Pitch: 25
+  FOV: 45
+Entities:
+  - Entity: 15249286607863821465
+    TagComponent:
+      Tag: Sky
+    SceneHierarchyComponent:
+      Parent: 0
+      FirstChild: 0
+      NextSibling: 0
+      PreviousSibling: 0
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SkyLightComponent:
+      EnvironmentMap: 5072214805194217589
+  - Entity: 10435943414097880714
+    TagComponent:
+      Tag: Sponza
+    SceneHierarchyComponent:
+      Parent: 0
+      FirstChild: 0
+      NextSibling: 0
+      PreviousSibling: 0
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.0500000007, 0.0500000007, 0.0500000007]
+    MeshComponent:
+      Mesh: 4093123005514684352
+  - Entity: 9781792816327191898
+    TagComponent:
+      Tag: Spot Light
+    SceneHierarchyComponent:
+      Parent: 0
+      FirstChild: 0
+      NextSibling: 0
+      PreviousSibling: 0
+    TransformComponent:
+      Translation: [12, 4, 4]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpotLightComponent:
+      Color: [0, 1, 1]
+      Direction: [0, -0.44721359, -0.89442718]
+      ConeAngle: 30
+      Intensity: 30
+      AttenuationFactors: [0.5, 0.5, 0.5]
+  - Entity: 14736099928219977754
+    TagComponent:
+      Tag: Pink Point Light
+    SceneHierarchyComponent:
+      Parent: 0
+      FirstChild: 0
+      NextSibling: 0
+      PreviousSibling: 0
+    TransformComponent:
+      Translation: [0, 4, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    PointLightComponent:
+      Color: [1, 0, 1]
+      Intensity: 10
+      AttenuationFactors: [0.5, 0.5, 0.5]
+  - Entity: 17025338769264620239
+    TagComponent:
+      Tag: Green Point Light
+    SceneHierarchyComponent:
+      Parent: 0
+      FirstChild: 0
+      NextSibling: 0
+      PreviousSibling: 0
+    TransformComponent:
+      Translation: [-8, 4, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    PointLightComponent:
+      Color: [0, 1, 0]
+      Intensity: 10
+      AttenuationFactors: [0.5, 0.5, 0.5]
+  - Entity: 16617603791142812764
+    TagComponent:
+      Tag: Yellow Point Light
+    SceneHierarchyComponent:
+      Parent: 0
+      FirstChild: 0
+      NextSibling: 0
+      PreviousSibling: 0
+    TransformComponent:
+      Translation: [0, 4, 8]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    PointLightComponent:
+      Color: [1, 1, 0]
+      Intensity: 10
+      AttenuationFactors: [0.5, 0.5, 0.5]
+  - Entity: 11418104099960106736
+    TagComponent:
+      Tag: Blue Point Light
+    SceneHierarchyComponent:
+      Parent: 0
+      FirstChild: 0
+      NextSibling: 0
+      PreviousSibling: 0
+    TransformComponent:
+      Translation: [8, 4, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    PointLightComponent:
+      Color: [0, 0, 1]
+      Intensity: 10
+      AttenuationFactors: [0.5, 0.5, 0.5]
+  - Entity: 10220653814479443886
+    TagComponent:
+      Tag: Red Point Light
+    SceneHierarchyComponent:
+      Parent: 0
+      FirstChild: 0
+      NextSibling: 0
+      PreviousSibling: 0
+    TransformComponent:
+      Translation: [0, 4, -8]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    PointLightComponent:
+      Color: [1, 0, 0]
+      Intensity: 10
+      AttenuationFactors: [0.5, 0.5, 0.5]
+  - Entity: 3838221171708895895
+    TagComponent:
+      Tag: Directional Light
+    SceneHierarchyComponent:
+      Parent: 0
+      FirstChild: 0
+      NextSibling: 0
+      PreviousSibling: 0
+    TransformComponent:
+      Translation: [1, 1, 1]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    DirectionalLightComponent:
+      Color: [0.600000024, 0.400000006, 0]
+      Intensity: 0.5

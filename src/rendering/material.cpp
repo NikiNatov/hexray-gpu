@@ -1,5 +1,4 @@
 #include "material.h"
-#include "serialization/parsedblock.h"
 
 std::unordered_map<MaterialType, std::vector<MaterialPropertyMetaData>> Material::ms_MaterialTypeProperties = {
     { 
@@ -58,7 +57,7 @@ std::unordered_map<MaterialType, std::vector<MaterialTextureMetaData>> Material:
 
 // ------------------------------------------------------------------------------------------------------------------------------------
 Material::Material(MaterialType type,MaterialFlags flags)
-    : m_Type(type), m_Flags(flags)
+    : Asset(AssetType::Material), m_Type(type), m_Flags(flags)
 {
     uint32_t propertiesBufferSize = 0;
     for (const MaterialPropertyMetaData& metaData : ms_MaterialTypeProperties.at(m_Type))
@@ -79,17 +78,6 @@ void Material::SetFlag(MaterialFlags flag, bool state)
         m_Flags |= flag;
     else
         m_Flags &= ~flag;
-}
-
-// ------------------------------------------------------------------------------------------------------------------------------------
-void Material::Serialize(ParsedBlock& pb)
-{
-    // TODO: rework this
-    const auto* albedoColorMetaData = GetMaterialPropertyMetaData(MaterialPropertyType::AlbedoColor);
-    pb.GetProperty("color", *(glm::vec4*)(&m_PropertiesBuffer[albedoColorMetaData->Offset]));
-
-    const auto* albedoMapMetaData = GetMaterialTextureMetaData(MaterialTextureType::Albedo);
-    pb.GetProperty("texture", m_Textures[albedoMapMetaData->Index]);
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------

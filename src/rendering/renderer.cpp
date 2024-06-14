@@ -185,7 +185,7 @@ void Renderer::Render()
 
     for (const MeshInstance& instance : m_MeshInstances)
     {
-        for (uint32_t i = 0; i < instance.Mesh->GetSubmeshCount(); i++)
+        for (uint32_t i = 0; i < instance.Mesh->GetSubmeshes().size(); i++)
         {
             std::shared_ptr<Material> material = instance.Mesh->GetMaterial(i);
 
@@ -242,7 +242,7 @@ void Renderer::Render()
 
     for (const MeshInstance& instance : m_MeshInstances)
     {
-        for (uint32_t i = 0; i < instance.Mesh->GetSubmeshCount(); i++)
+        for (uint32_t i = 0; i < instance.Mesh->GetSubmeshes().size(); i++)
         {
             GeometryConstants& geometry = geometries.emplace_back();
             geometry.MaterialIndex = geometries.size() - 1;

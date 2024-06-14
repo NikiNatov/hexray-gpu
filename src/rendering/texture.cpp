@@ -1,16 +1,14 @@
 #include "texture.h"
 #include "core/utils.h"
 #include "rendering/graphicscontext.h"
-#include "rendering/textureutils.h"
-#include "serialization/parsedblock.h"
-#include "resourceloaders/textureloader.h"
 
-#include <cmath>
+#include <DirectXTex.h>
 
 // ------------------------------------------------------------------------------------------------------------------------------------
 Texture::Texture(const TextureDescription& description, const wchar_t* debugName)
+    : Asset(AssetType::Texture), m_Description(description)
 {
-    CreateGPU(description, debugName);
+    CreateGPU(debugName);
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
@@ -43,21 +41,19 @@ Texture::~Texture()
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
-void Texture::CreateGPU(const TextureDescription& description, const wchar_t* debugName)
+void Texture::CreateGPU(const wchar_t* debugName)
 {
-    m_Description = description;
-
     if (m_Description.MipLevels == 0)
         m_Description.MipLevels = CalculateMaxMipCount(m_Description.Width, m_Description.Height);
 
     auto d3dDevice = GraphicsContext::GetInstance()->GetDevice();
 
     D3D12_RESOURCE_DESC resourceDesc = {};
-    resourceDesc.Dimension = m_Description.Type;
+    resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
     resourceDesc.Format = m_Description.Format;
     resourceDesc.Width = m_Description.Width;
     resourceDesc.Height = m_Description.Height;
-    resourceDesc.DepthOrArraySize = m_Description.IsCubeMap ? 6 : (m_Description.Depth != 1 ? m_Description.Depth : m_Description.ArrayLevels);
+    resourceDesc.DepthOrArraySize = m_Description.IsCubeMap ? 6 : m_Description.ArrayLevels;
     resourceDesc.MipLevels = m_Description.MipLevels;
     resourceDesc.SampleDesc.Count = 1;
     resourceDesc.SampleDesc.Quality = 0;
@@ -76,16 +72,26 @@ void Texture::CreateGPU(const TextureDescription& description, const wchar_t* de
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
-void Texture::Initialize(uint8_t* pixels)
+void Texture::UploadGPUData(uint8_t* pixels, bool keepCPUData)
 {
-    uint32_t offset = 0;
+    size_t offset = 0;
     for (uint32_t level = 0; level < m_Description.ArrayLevels; level++)
     {
         for (uint32_t mip = 0; mip < m_Description.MipLevels; mip++)
         {
             GraphicsContext::GetInstance()->UploadTextureData(this, pixels + offset, mip, level);
-            offset += CalculateSlicePitch(m_Description.Width >> mip, m_Description.Height >> mip, m_Description.Format);
+
+            size_t rowPitch, slicePitch;
+            DirectX::ComputePitch(m_Description.Format, m_Description.Width >> mip, m_Description.Height >> mip, rowPitch, slicePitch);
+
+            offset += slicePitch;
         }
+    }
+
+    if (keepCPUData)
+    {
+        m_Pixels.resize(offset);
+        memcpy(m_Pixels.data(), pixels, offset);
     }
 }
 
@@ -287,4 +293,10 @@ void Texture::CreateViews()
             d3dDevice->CreateDepthStencilView(m_Resource.Get(), &dsvDesc, dsvHeap->GetCPUHandle(m_MipDSVDescriptors[mip]));
         }
     }
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+uint32_t Texture::CalculateMaxMipCount(uint32_t width, uint32_t height)
+{
+    return (uint32_t)log2(std::max(width, height)) + 1;
 }

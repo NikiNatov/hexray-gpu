@@ -9,8 +9,9 @@
 class Scene
 {
     friend class Entity;
+    friend class SceneSerializer;
 public:
-    Scene(const std::string& name = "Unnamed scene");
+    Scene(const std::string& name, const Camera& camera);
 
     Entity CreateEntity(const std::string& name = "Unnamed Entity");
     Entity CreateEntityFromUUID(Uuid uuid, const std::string& name = "Unnamed Entity");
@@ -21,8 +22,6 @@ public:
     void OnUpdate(float dt);
     void OnRender(const std::shared_ptr<Renderer>& renderer);
     void OnViewportResize(uint32_t width, uint32_t height);
-
-    static std::unique_ptr<Scene> LoadFromHexrayFile(const std::string& file);
 
     inline const std::string& GetName() { return m_Name; }
     inline Camera& GetCamera() { return m_Camera; }

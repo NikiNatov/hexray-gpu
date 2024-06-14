@@ -1,11 +1,10 @@
 #include "scene.h"
 
 #include "scene/component.h"
-#include "serialization/defaultsceneparser.h"
 
 // ------------------------------------------------------------------------------------------------------------------------------------
-Scene::Scene(const std::string& name)
-    : m_Name(name)
+Scene::Scene(const std::string& name, const Camera& camera)
+    : m_Name(name), m_Camera(camera)
 {
 }
 
@@ -159,7 +158,7 @@ void Scene::OnRender(const std::shared_ptr<Renderer>& renderer)
         {
             auto [mc, tc, shc] = view.get<MeshComponent, TransformComponent, SceneHierarchyComponent>(entity);
 
-            if (mc.MeshObject)
+            if (mc.Mesh)
             {
                 if (shc.Parent)
                 {
@@ -172,10 +171,10 @@ void Scene::OnRender(const std::shared_ptr<Renderer>& renderer)
                         accumulatedTransform = currentParent.GetComponent<TransformComponent>().GetTransform() * accumulatedTransform;
                     }
 
-                    renderer->SubmitMesh(mc.MeshObject, accumulatedTransform * tc.GetTransform());
+                    renderer->SubmitMesh(mc.Mesh, accumulatedTransform * tc.GetTransform());
                 }
                 else
-                    renderer->SubmitMesh(mc.MeshObject, tc.GetTransform());
+                    renderer->SubmitMesh(mc.Mesh, tc.GetTransform());
             }
         }
     }
@@ -187,13 +186,4 @@ void Scene::OnRender(const std::shared_ptr<Renderer>& renderer)
 void Scene::OnViewportResize(uint32_t width, uint32_t height)
 {
     m_Camera.SetViewportSize(width, height);
-}
-
-// ------------------------------------------------------------------------------------------------------------------------------------
-std::unique_ptr<Scene> Scene::LoadFromHexrayFile(const std::string& file)
-{
-    std::unique_ptr<Scene> scene = std::make_unique<Scene>(file);
-    DefaultSceneParser parser;
-    parser.Parse(file.c_str(), scene.get());
-    return scene;
 }

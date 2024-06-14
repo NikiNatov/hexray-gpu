@@ -6,16 +6,11 @@
 #include "rendering/mesh.h"
 #include "rendering/texture.h"
 #include "rendering/camera.h"
-#include "serialization/parsedblock.h"
 
 #include <glm.hpp>
 #include <gtc/matrix_transform.hpp>
 
-struct BaseComponent : public HObject
-{
-};
-
-struct IDComponent : public BaseComponent
+struct IDComponent
 {
 	Uuid ID;
 
@@ -25,7 +20,7 @@ struct IDComponent : public BaseComponent
 		: ID(uuid) {}
 };
 
-struct SceneHierarchyComponent : public BaseComponent
+struct SceneHierarchyComponent
 {
 	Uuid Parent = Uuid(0);
 	Uuid FirstChild = Uuid(0);
@@ -36,7 +31,7 @@ struct SceneHierarchyComponent : public BaseComponent
 	SceneHierarchyComponent(const SceneHierarchyComponent& other) = default;
 };
 
-struct TagComponent : public BaseComponent
+struct TagComponent
 {
 	std::string Tag = "";
 
@@ -46,7 +41,7 @@ struct TagComponent : public BaseComponent
 		: Tag(tag) {}
 };
 
-struct TransformComponent : public BaseComponent
+struct TransformComponent
 {
 	glm::vec3 Translation = { 0.0f, 0.0f, 0.0f };
 	glm::vec3 Rotation = { 0.0f, 0.0f, 0.0f };
@@ -69,81 +64,57 @@ struct TransformComponent : public BaseComponent
 	}
 };
 
-struct MeshComponent : public BaseComponent
+struct MeshComponent
 {
-	std::shared_ptr<Mesh> MeshObject = nullptr;
+	MeshPtr Mesh = nullptr;
 
 	MeshComponent() = default;
 	MeshComponent(const MeshComponent& other) = default;
-	MeshComponent(const std::shared_ptr<Mesh>& mesh)
-		: MeshObject(mesh) {}
-
-	virtual void Serialize(ParsedBlock& pb)
-	{
-		pb.GetProperty("geometry", MeshObject);
-
-		MaterialPtr material;
-		pb.GetProperty("shader", material);
-
-		TexturePtr bump;
-		pb.GetProperty("bump", bump);
-
-		material->SetTexture(MaterialTextureType::Normal, bump);
-
-		MeshObject->SetMaterial(0, material);
-	}
+	MeshComponent(const MeshPtr& mesh)
+		: Mesh(mesh) {}
 };
 
-struct SkyLightComponent : public BaseComponent
+struct SkyLightComponent
 {
-	std::shared_ptr<Texture> EnvironmentMap = nullptr;
+	TexturePtr EnvironmentMap = nullptr;
 
 	SkyLightComponent() = default;
 	SkyLightComponent(const SkyLightComponent& other) = default;
-	SkyLightComponent(const std::shared_ptr<Texture>& environmentMap)
+	SkyLightComponent(const TexturePtr& environmentMap)
 		: EnvironmentMap(environmentMap) {}
 };
 
-struct LightComponent : public BaseComponent
+struct DirectionalLightComponent
 {
 	glm::vec3 Color = glm::vec3(1.0f);
 	float Intensity = 1.0f;
 
-	LightComponent() = default;
-	LightComponent(const glm::vec3& color, float intensity)
-		: Color(color), Intensity(intensity) {}
-
-	virtual void Serialize(ParsedBlock& pb)
-	{
-		pb.GetProperty("color", Color);
-		pb.GetProperty("power", Intensity);
-	}
-};
-
-struct DirectionalLightComponent : public LightComponent
-{
 	DirectionalLightComponent() = default;
 	DirectionalLightComponent(const glm::vec3& color, float intensity)
-		: LightComponent(color, intensity) {}
+		: Color(color), Intensity(intensity) {}
 };
 
-struct PointLightComponent : public LightComponent
+struct PointLightComponent
 {
+	glm::vec3 Color = glm::vec3(1.0f);
+	float Intensity = 1.0f;
 	glm::vec3 AttenuationFactors = { 1.0f, 1.0f, 1.0f };
 
 	PointLightComponent() = default;
 	PointLightComponent(const glm::vec3& color, float intensity, const glm::vec3& attenuationFactors = glm::vec3(1.0f, 1.0f, 1.0f))
-		: LightComponent(color, intensity), AttenuationFactors(attenuationFactors) {}
+		: Color(color), Intensity(intensity), AttenuationFactors(attenuationFactors) {}
 };
 
-struct SpotLightComponent : public LightComponent
+struct SpotLightComponent
 {
+	glm::vec3 Color = glm::vec3(1.0f);
 	glm::vec3 Direction = glm::vec3(0.0f);
 	float ConeAngle = 30.0f;
+	float Intensity = 1.0f;
 	glm::vec3 AttenuationFactors = { 1.0f, 1.0f, 1.0f };
 
 	SpotLightComponent() = default;
 	SpotLightComponent(const SpotLightComponent& other) = default;
 	SpotLightComponent(const glm::vec3& color, const glm::vec3& direction, float coneAngle, float intensity, const glm::vec3& attenuationFactors = glm::vec3(1.0f, 1.0f, 1.0f))
-		: LightComponent(color, intensity), Direction(direction), ConeAngle(coneAngle), AttenuationFactors(attenuationFactors) {}
+		: Color(color), Direction(direction), ConeAngle(coneAngle), Intensity(intensity), AttenuationFactors(attenuationFactors) {}
 };

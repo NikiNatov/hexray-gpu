@@ -9,8 +9,6 @@ std::shared_ptr<Texture> DefaultResources::WhiteTextureCube = nullptr;
 std::shared_ptr<Texture> DefaultResources::ErrorTexture = nullptr;
 std::shared_ptr<Texture> DefaultResources::ErrorTextureCube = nullptr;
 std::shared_ptr<Material> DefaultResources::DefaultMaterial = nullptr;
-std::shared_ptr<Material> DefaultResources::ErrorMaterial = nullptr;
-std::shared_ptr<Mesh> DefaultResources::TriangleMesh = nullptr;
 std::shared_ptr<Mesh> DefaultResources::QuadMesh = nullptr;
 
 // ------------------------------------------------------------------------------------------------------------------------------------
@@ -25,19 +23,23 @@ void DefaultResources::Initialize()
         errorTextureDesc.MipLevels = 1;
         errorTextureDesc.InitialState = D3D12_RESOURCE_STATE_COPY_DEST;
 
+        uint8_t errorTextureData[] = { 0xFF, 0x00, 0xFF, 0xFF };
         ErrorTexture = std::make_shared<Texture>(errorTextureDesc, L"DefaultResources::ErrorTexture");
+        ErrorTexture->UploadGPUData(errorTextureData);
 
         errorTextureDesc.IsCubeMap = true;
 
+        uint8_t errorTextureCubeData[] = { 
+            0xFF, 0x00, 0xFF, 0xFF,
+            0xFF, 0x00, 0xFF, 0xFF,
+            0xFF, 0x00, 0xFF, 0xFF,
+            0xFF, 0x00, 0xFF, 0xFF,
+            0xFF, 0x00, 0xFF, 0xFF,
+            0xFF, 0x00, 0xFF, 0xFF
+        };
+
         ErrorTextureCube = std::make_shared<Texture>(errorTextureDesc, L"DefaultResources::ErrorTextureCube");
-
-        const uint8_t errorTextureData[] = { 0xFF, 0x00, 0xFF, 0xFF };
-        GraphicsContext::GetInstance()->UploadTextureData(ErrorTexture.get(), errorTextureData);
-
-        for (uint32_t face = 0; face < 6; face++)
-        {
-            GraphicsContext::GetInstance()->UploadTextureData(ErrorTextureCube.get(), errorTextureData, 0, face);
-        }
+        ErrorTextureCube->UploadGPUData(errorTextureCubeData);
     }
 
     // Black textures
@@ -49,19 +51,23 @@ void DefaultResources::Initialize()
         blackTextureDesc.MipLevels = 1;
         blackTextureDesc.InitialState = D3D12_RESOURCE_STATE_COPY_DEST;
 
+        uint8_t blackTextureData[] = { 0x00, 0x00, 0x00, 0xFF };
         BlackTexture = std::make_shared<Texture>(blackTextureDesc, L"DefaultResources::BlackTexture");
+        BlackTexture->UploadGPUData(blackTextureData);
 
         blackTextureDesc.IsCubeMap = true;
 
+        uint8_t blackTextureCubeData[] = {
+            0x00, 0x00, 0x00, 0xFF,
+            0x00, 0x00, 0x00, 0xFF,
+            0x00, 0x00, 0x00, 0xFF,
+            0x00, 0x00, 0x00, 0xFF,
+            0x00, 0x00, 0x00, 0xFF,
+            0x00, 0x00, 0x00, 0xFF
+        };
+
         BlackTextureCube = std::make_shared<Texture>(blackTextureDesc, L"DefaultResources::BlackTextureCube");
-
-        const byte blackTextureData[] = { 0x00, 0x00, 0x00, 0xFF };
-        GraphicsContext::GetInstance()->UploadTextureData(BlackTexture.get(), blackTextureData);
-
-        for (uint32_t face = 0; face < 6; face++)
-        {
-            GraphicsContext::GetInstance()->UploadTextureData(BlackTextureCube.get(), blackTextureData, 0, face);
-        }
+        BlackTextureCube->UploadGPUData(blackTextureCubeData);
     }
 
     // White textures
@@ -73,19 +79,23 @@ void DefaultResources::Initialize()
         whiteTextureDesc.MipLevels = 1;
         whiteTextureDesc.InitialState = D3D12_RESOURCE_STATE_COPY_DEST;
 
+        uint8_t whiteTextureData[] = { 0xFF, 0xFF, 0xFF, 0xFF };
         WhiteTexture = std::make_shared<Texture>(whiteTextureDesc, L"DefaultResources::WhiteTexture");
+        WhiteTexture->UploadGPUData(whiteTextureData);
 
         whiteTextureDesc.IsCubeMap = true;
 
+        uint8_t whiteTextureCubeData[] = {
+            0xFF, 0xFF, 0xFF, 0xFF,
+            0xFF, 0xFF, 0xFF, 0xFF,
+            0xFF, 0xFF, 0xFF, 0xFF,
+            0xFF, 0xFF, 0xFF, 0xFF,
+            0xFF, 0xFF, 0xFF, 0xFF,
+            0xFF, 0xFF, 0xFF, 0xFF
+        };
+
         WhiteTextureCube = std::make_shared<Texture>(whiteTextureDesc, L"DefaultResources::WhiteTextureCube");
-
-        const byte whiteTextureData[] = { 0xFF, 0xFF, 0xFF, 0xFF };
-        GraphicsContext::GetInstance()->UploadTextureData(WhiteTexture.get(), whiteTextureData);
-
-        for (uint32_t face = 0; face < 6; face++)
-        {
-            GraphicsContext::GetInstance()->UploadTextureData(WhiteTextureCube.get(), whiteTextureData, 0, face);
-        }
+        WhiteTextureCube->UploadGPUData(whiteTextureCubeData);
     }
 
     // Default material
@@ -94,52 +104,21 @@ void DefaultResources::Initialize()
     DefaultMaterial->SetProperty(MaterialPropertyType::Metalness, 0.5f);
     DefaultMaterial->SetProperty(MaterialPropertyType::Roughness, 0.5f);
 
-    ErrorMaterial = std::make_shared<Material>(MaterialType::PBR, MaterialFlags::TwoSided);
-    DefaultMaterial->SetProperty(MaterialPropertyType::AlbedoColor, glm::vec4(1.0f, 0.0f, 1.0f, 1.0f));
-    DefaultMaterial->SetProperty(MaterialPropertyType::Metalness, 0.0f);
-    DefaultMaterial->SetProperty(MaterialPropertyType::Roughness, 1.0f);
-
     // Quad mesh
-    {
-        MeshDescription quadMeshDesc;
-        quadMeshDesc.Indices = { 0, 1, 2, 2, 3, 0 };
-        quadMeshDesc.Positions = {
-            { -1.0f, -1.0f, 0.0f },
-            {  1.0f, -1.0f, 0.0f },
-            {  1.0f,  1.0f, 0.0f },
-            { -1.0f,  1.0f, 0.0f }
-        };
-        quadMeshDesc.UVs = {
-            { 0.0f, 1.0f },
-            { 1.0f, 1.0f },
-            { 1.0f, 0.0f },
-            { 0.0f, 0.0f }
-        };
-        quadMeshDesc.Submeshes = { SubmeshDescription{ 0, 4, 0, 6 } };
-        quadMeshDesc.Materials = { DefaultMaterial };
+    MeshDescription quadMeshDesc;
+    quadMeshDesc.Submeshes = { Submesh{ 0, 4, 0, 6, 0 } };
+    quadMeshDesc.Materials = { DefaultMaterial };
 
-        QuadMesh = std::make_shared<Mesh>(quadMeshDesc);
-    }
+    uint32_t indices[] = { 0, 1, 2, 2, 3, 0 };
+    Vertex vertices[]  = {
+        Vertex{ glm::vec3(-1.0f, -1.0f, 0.0f), glm::vec2(0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f) },
+        Vertex{ glm::vec3( 1.0f, -1.0f, 0.0f), glm::vec2(1.0f, 1.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f) },
+        Vertex{ glm::vec3( 1.0f,  1.0f, 0.0f), glm::vec2(1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f) },
+        Vertex{ glm::vec3(-1.0f,  1.0f, 0.0f), glm::vec2(0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f) }
+    };
 
-    // Triangle mesh
-    {
-        MeshDescription triMeshDesc;
-        triMeshDesc.Indices = { 0, 1, 2 };
-        triMeshDesc.Positions = {
-            {  0.0f,  1.0f, 0.0f },
-            { -1.0f, -1.0f, 0.0f },
-            {  1.0f, -1.0f, 0.0f }
-        };
-        triMeshDesc.UVs = {
-            { 0.5f, 0.0f },
-            { 0.0f, 1.0f },
-            { 1.0f, 0.0f },
-        };
-        triMeshDesc.Submeshes = { SubmeshDescription{ 0, 3, 0, 3 } };
-        triMeshDesc.Materials = { DefaultMaterial };
-
-        TriangleMesh = std::make_shared<Mesh>(triMeshDesc);
-    }
+    QuadMesh = std::make_shared<Mesh>(quadMeshDesc, L"DefaultResources::Quad");
+    QuadMesh->UploadGPUData(vertices, indices);
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
@@ -155,9 +134,7 @@ void DefaultResources::Shutdown()
 
     // Materials
     DefaultMaterial = nullptr;
-    ErrorMaterial = nullptr;
 
     // Meshes
     QuadMesh = nullptr;
-    TriangleMesh = nullptr;
 }

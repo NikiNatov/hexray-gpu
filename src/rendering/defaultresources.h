@@ -17,10 +17,8 @@ public:
 
     // Materials
     static MaterialPtr DefaultMaterial;
-    static MaterialPtr ErrorMaterial;
 
     // Meshes
-    static MeshPtr TriangleMesh;
     static MeshPtr QuadMesh;
 
     static void Initialize();
