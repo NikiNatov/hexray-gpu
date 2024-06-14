@@ -5,7 +5,7 @@ Camera:
   Pitch: -20
   FOV: 60
 Entities:
-  - Entity: 5592455155368274102
+  - Entity: 12508111270308788118
     TagComponent:
       Tag: Sky
     SceneHierarchyComponent:
@@ -19,7 +19,7 @@ Entities:
       Scale: [1, 1, 1]
     SkyLightComponent:
       EnvironmentMap: 11421556122622186990
-  - Entity: 11052535914002423803
+  - Entity: 6710558842671608901
     TagComponent:
       Tag: Die
     SceneHierarchyComponent:
@@ -29,13 +29,13 @@ Entities:
       PreviousSibling: 0
     TransformComponent:
       Translation: [0, 60, 0]
-      Rotation: [134, 0, 0]
+      Rotation: [0, 134, 0]
       Scale: [15, 15, 15]
     MeshComponent:
       Mesh: 3453318306227330137
       Materials:
         - 12400476501312598139
-  - Entity: 4124697407190400714
+  - Entity: 13221579101355902737
     TagComponent:
       Tag: Floor
     SceneHierarchyComponent:
@@ -51,7 +51,7 @@ Entities:
       Mesh: 8061761321854986189
       Materials:
         []
-  - Entity: 2887679890870497164
+  - Entity: 17871056859053219113
     TagComponent:
       Tag: Sun
     SceneHierarchyComponent:
@@ -66,4 +66,4 @@ Entities:
     PointLightComponent:
       Color: [1, 1, 1]
       Intensity: 1200000
-      AttenuationFactors: [0.5, 0.5, 0.5]
+      AttenuationFactors: [0, 0, 1]

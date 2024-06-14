@@ -15,95 +15,6 @@
 static const char* s_DefaultScenePath = "scenes/sponza/sponza_test.hexray";
 Application* Application::ms_Instance = nullptr;
 
-static void CreateScene_Bumpmap()
-{
-    std::filesystem::path scenePath = "scenes/bumpmap/bumpmap.hexray";
-    AssetManager::Initialize(scenePath.parent_path() / "assets");
-
-    Camera camera(60.0f, 16.0f / 9.0f, glm::vec3(45.0f, 180.0f, -240.0f), 5.0f, -20.0f);
-    std::shared_ptr<Scene> scene = std::make_shared<Scene>("Bumpmap Scene", camera);
-    {
-        Entity pointLight = scene->CreateEntity("Sun");
-        pointLight.GetComponent<TransformComponent>().Translation = { -90.0f, 1200.0f, -750.0f };
-
-        PointLightComponent& pointLightComponent = pointLight.AddComponent<PointLightComponent>();
-        pointLightComponent.Color = glm::vec3(1.0f, 1.0f, 1.0f);
-        pointLightComponent.Intensity = 1200000.0f;
-        pointLightComponent.AttenuationFactors = { 0.5f, 0.5f, 0.5f };
-    }
-
-    {
-        Entity e = scene->CreateEntity("Floor");
-
-        TransformComponent& tc = e.GetComponent<TransformComponent>();
-        tc.Translation.y = -0.01f;
-        tc.Scale = { 200.0f, 1.0f, 200.0f };
-
-        // Create plane material
-        Uuid matID = AssetImporter::CreateMaterialAsset("materials/floor_diffuse.hexmat", MaterialType::Lambert, MaterialFlags::TwoSided);
-        MaterialPtr mat = AssetManager::GetAsset<Material>(matID);
-
-        TexturePtr albedoTexture = AssetManager::GetAsset<Texture>(AssetImporter::ImportTextureAsset("data/texture/wood.bmp"));
-        mat->SetTexture(MaterialTextureType::Albedo, albedoTexture);
-        
-        AssetSerializer::Serialize(mat->GetAssetFilepath(), mat);
-
-        // Create plane mesh
-        MeshDescription meshDesc;
-        meshDesc.Submeshes = { Submesh{ 0, 4, 0, 6, 0} };
-        meshDesc.MaterialTable = std::make_shared<MaterialTable>(1);
-        meshDesc.MaterialTable->SetMaterial(0, mat);
-
-        Vertex vertexData[] = {
-            Vertex{ glm::vec3(-1.0f, 0.0f, -1.0f), glm::vec2(0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f) },
-            Vertex{ glm::vec3( 1.0f, 0.0f, -1.0f), glm::vec2(1.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f) },
-            Vertex{ glm::vec3( 1.0f, 0.0f,  1.0f), glm::vec2(1.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f) },
-            Vertex{ glm::vec3(-1.0f, 0.0f,  1.0f), glm::vec2(0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f) },
-        };
-
-        uint32_t indexData[] = { 0, 1, 2, 2, 3, 0 };
-
-        Uuid meshID = AssetImporter::CreateMeshAsset("meshes/plane.hexmesh", meshDesc, vertexData, indexData);
-
-        MeshComponent& mesh = e.AddComponent<MeshComponent>();
-        mesh.Mesh = AssetManager::GetAsset<Mesh>(meshID);
-    }
-
-    {
-        Entity e = scene->CreateEntity("Die");
-
-        TransformComponent& tc = e.GetComponent<TransformComponent>();
-        tc.Translation = { 0.0f, 60.0f, 0.0f };
-        tc.Rotation = { 134.0f, 0.0f, 0.0f };
-        tc.Scale = { 15.0f, 15.0f, 15.0f };
-
-        // Create die material
-        Uuid matID = AssetImporter::CreateMaterialAsset("materials/die_faces_diffuse.hexmat", MaterialType::Lambert);
-        MaterialPtr mat = AssetManager::GetAsset<Material>(matID);
-
-        TexturePtr albedoTexture = AssetManager::GetAsset<Texture>(AssetImporter::ImportTextureAsset("data/texture/zar-texture.bmp"));
-        mat->SetTexture(MaterialTextureType::Albedo, albedoTexture);
-
-        TexturePtr bumpTexture = AssetManager::GetAsset<Texture>(AssetImporter::ImportTextureAsset("data/texture/zar-bump.bmp"));
-        mat->SetTexture(MaterialTextureType::Normal, bumpTexture);
-
-        AssetSerializer::Serialize(mat->GetAssetFilepath(), mat);
-
-        // Create die mesh
-        MeshComponent& mesh = e.AddComponent<MeshComponent>();
-        mesh.Mesh = AssetManager::GetAsset<Mesh>(AssetImporter::ImportMeshAsset("data/geom/truncated_cube.obj"));
-        mesh.OverrideMaterialTable = std::make_shared<MaterialTable>(1);
-        mesh.OverrideMaterialTable->SetMaterial(0, mat);
-    }
-
-    {
-        Entity sky = scene->CreateEntity("Sky");
-        sky.AddComponent<SkyLightComponent>().EnvironmentMap = AssetManager::GetAsset<Texture>(AssetImporter::ImportTextureAsset("data/env/forest/skybox.dds"));
-    }
-
-    SceneSerializer::Serialize(scenePath, scene);
-}
-
 // ------------------------------------------------------------------------------------------------------------------------------------
 Application::Application(const ApplicationDescription& description)
     : m_Description(description)
@@ -155,8 +66,6 @@ Application::Application(const ApplicationDescription& description)
     m_SceneRenderer->SetViewportSize(m_Window->GetWidth(), m_Window->GetHeight());
 
     ParseCommandlineArgs();
-
-    //CreateScene_Bumpmap();
 
     if (!m_Scene)
     {
