@@ -171,10 +171,10 @@ void Scene::OnRender(const std::shared_ptr<Renderer>& renderer)
                         accumulatedTransform = currentParent.GetComponent<TransformComponent>().GetTransform() * accumulatedTransform;
                     }
 
-                    renderer->SubmitMesh(mc.Mesh, accumulatedTransform * tc.GetTransform());
+                    renderer->SubmitMesh(mc.Mesh, accumulatedTransform * tc.GetTransform(), mc.OverrideMaterialTable);
                 }
                 else
-                    renderer->SubmitMesh(mc.Mesh, tc.GetTransform());
+                    renderer->SubmitMesh(mc.Mesh, tc.GetTransform(), mc.OverrideMaterialTable);
             }
         }
     }

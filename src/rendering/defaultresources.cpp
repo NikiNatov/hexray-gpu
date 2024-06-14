@@ -107,7 +107,8 @@ void DefaultResources::Initialize()
     // Quad mesh
     MeshDescription quadMeshDesc;
     quadMeshDesc.Submeshes = { Submesh{ 0, 4, 0, 6, 0 } };
-    quadMeshDesc.Materials = { DefaultMaterial };
+    quadMeshDesc.MaterialTable = std::make_shared<MaterialTable>(1);
+    quadMeshDesc.MaterialTable->SetMaterial(0, DefaultMaterial);
 
     uint32_t indices[] = { 0, 1, 2, 2, 3, 0 };
     Vertex vertices[]  = {

@@ -443,9 +443,13 @@ std::shared_ptr<Buffer> GraphicsContext::BuildTopLevelAccelerationStructure(cons
                 }
             }
 
+            uint32_t materialIndex = instance.Mesh->GetSubmesh(i).MaterialIndex;
+            MaterialPtr overrideMaterial = instance.OverrideMaterialTable ? instance.OverrideMaterialTable->GetMaterial(materialIndex) : nullptr;
+            MaterialPtr material = instance.Mesh->GetMaterial(i);
+
             instanceDesc.InstanceID = instanceDescs.size() - 1;
             instanceDesc.InstanceMask = 1;
-            instanceDesc.InstanceContributionToHitGroupIndex = (uint32_t)instance.Mesh->GetMaterial(i)->GetType();
+            instanceDesc.InstanceContributionToHitGroupIndex = overrideMaterial ? (uint32_t)overrideMaterial->GetType() : (uint32_t)material->GetType();
             instanceDesc.AccelerationStructure = instance.Mesh->GetAccelerationStructure(i)->GetResource()->GetGPUVirtualAddress();
             instanceDesc.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_NONE;
 

@@ -6,8 +6,6 @@
 Mesh::Mesh(const MeshDescription& description, const wchar_t* debugName)
     : Asset(AssetType::Mesh), m_Description(description)
 {
-    HEXRAY_ASSERT(m_Description.Submeshes.size() == m_Description.Materials.size());
-
     CreateGPU(debugName);
 }
 

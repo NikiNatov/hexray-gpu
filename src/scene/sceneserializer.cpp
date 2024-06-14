@@ -141,6 +141,15 @@ void SceneSerializer::Serialize(const std::filesystem::path& filepath, const std
 			out << YAML::Key << "MeshComponent";
 			out << YAML::BeginMap;
 			out << YAML::Key << "Mesh" << YAML::Value << mc.Mesh->GetID();
+			out << YAML::Key << "Materials" << YAML::Value << YAML::BeginSeq;
+			if (mc.OverrideMaterialTable)
+			{
+				for (const MaterialPtr& material : *mc.OverrideMaterialTable)
+				{
+					out << YAML::Dec << (material ? material->GetID() : Uuid::Invalid);
+				}
+			}
+			out << YAML::EndSeq;
 			out << YAML::EndMap;
 		}
 	
@@ -258,6 +267,22 @@ bool SceneSerializer::Deserialize(const std::filesystem::path& filepath, std::sh
 
 				MeshComponent& mc = deserializedEntity.AddComponent<MeshComponent>();
 				mc.Mesh = AssetManager::GetAsset<Mesh>(meshID);
+
+				if (YAML::Node overrideMaterials = meshComponent["Materials"])
+				{
+					if (overrideMaterials.size())
+					{
+						mc.OverrideMaterialTable = std::make_shared<MaterialTable>(overrideMaterials.size());
+						for (uint32_t i = 0; i < overrideMaterials.size(); i++)
+						{
+							Uuid materialID = overrideMaterials[i].as<uint64_t>();
+							if (materialID != Uuid::Invalid)
+							{
+								mc.OverrideMaterialTable->SetMaterial(i, AssetManager::GetAsset<Material>(materialID));
+							}
+						}
+					}
+				}
 			}
 
 			if (YAML::Node skyLightComponent = entities[it]["SkyLightComponent"])

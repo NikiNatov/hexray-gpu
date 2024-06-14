@@ -104,7 +104,7 @@ void Renderer::SubmitSpotLight(const glm::vec3& color, const glm::vec3& position
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
-void Renderer::SubmitMesh(const std::shared_ptr<Mesh>& mesh, const glm::mat4& transform)
+void Renderer::SubmitMesh(const std::shared_ptr<Mesh>& mesh, const glm::mat4& transform, const std::shared_ptr<MaterialTable>& overrideMaterialTable)
 {
     if (!mesh)
         return;
@@ -112,6 +112,7 @@ void Renderer::SubmitMesh(const std::shared_ptr<Mesh>& mesh, const glm::mat4& tr
     MeshInstance& instance = m_MeshInstances.emplace_back();
     instance.Transform = transform;
     instance.Mesh = mesh;
+    instance.OverrideMaterialTable = overrideMaterialTable;
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
@@ -187,7 +188,11 @@ void Renderer::Render()
     {
         for (uint32_t i = 0; i < instance.Mesh->GetSubmeshes().size(); i++)
         {
-            std::shared_ptr<Material> material = instance.Mesh->GetMaterial(i);
+            uint32_t materialIndex = instance.Mesh->GetSubmesh(i).MaterialIndex;
+            MaterialPtr overrideMaterial = instance.OverrideMaterialTable ? instance.OverrideMaterialTable->GetMaterial(materialIndex) : nullptr;
+            MaterialPtr meshMaterial = instance.Mesh->GetMaterial(i);
+
+            std::shared_ptr<Material> material = overrideMaterial ? overrideMaterial : meshMaterial;
 
             MaterialConstants& materialConstants = materials.emplace_back();
             material->GetProperty(MaterialPropertyType::AlbedoColor, materialConstants.AlbedoColor);

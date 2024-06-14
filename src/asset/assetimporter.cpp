@@ -143,7 +143,7 @@ Uuid AssetImporter::ImportMeshAsset(const std::filesystem::path& sourceFilepath)
 
     MeshDescription meshDesc;
     meshDesc.Submeshes.resize(scene->mNumMeshes);
-    meshDesc.Materials.resize(scene->mNumMeshes);
+    meshDesc.MaterialTable = std::make_shared<MaterialTable>(scene->mNumMeshes);
 
     std::vector<Vertex> vertices;
     vertices.reserve(5000);
@@ -211,7 +211,7 @@ Uuid AssetImporter::ImportMeshAsset(const std::filesystem::path& sourceFilepath)
             continue;
         }
 
-        meshDesc.Materials[materialIdx] = AssetManager::GetAsset<Material>(materialID);
+        meshDesc.MaterialTable->SetMaterial(materialIdx, AssetManager::GetAsset<Material>(materialID));
     }
 
     // Create and serialize asset

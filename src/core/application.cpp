@@ -17,7 +17,7 @@ Application* Application::ms_Instance = nullptr;
 
 static void CreateScene_Bumpmap()
 {
-    std::filesystem::path scenePath = "scenes/bumpmap/bumpmap1.hexray";
+    std::filesystem::path scenePath = "scenes/bumpmap/bumpmap.hexray";
     AssetManager::Initialize(scenePath.parent_path() / "assets");
 
     Camera camera(60.0f, 16.0f / 9.0f, glm::vec3(45.0f, 180.0f, -240.0f), 5.0f, -20.0f);
@@ -51,7 +51,8 @@ static void CreateScene_Bumpmap()
         // Create plane mesh
         MeshDescription meshDesc;
         meshDesc.Submeshes = { Submesh{ 0, 4, 0, 6, 0} };
-        meshDesc.Materials = { mat };
+        meshDesc.MaterialTable = std::make_shared<MaterialTable>(1);
+        meshDesc.MaterialTable->SetMaterial(0, mat);
 
         Vertex vertexData[] = {
             Vertex{ glm::vec3(-1.0f, 0.0f, -1.0f), glm::vec2(0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f) },
@@ -76,7 +77,7 @@ static void CreateScene_Bumpmap()
         tc.Rotation = { 134.0f, 0.0f, 0.0f };
         tc.Scale = { 15.0f, 15.0f, 15.0f };
 
-        // Create plane material
+        // Create die material
         Uuid matID = AssetImporter::CreateMaterialAsset("materials/die_faces_diffuse.hexmat", MaterialType::Lambert);
         MaterialPtr mat = AssetManager::GetAsset<Material>(matID);
 
@@ -91,6 +92,8 @@ static void CreateScene_Bumpmap()
         // Create die mesh
         MeshComponent& mesh = e.AddComponent<MeshComponent>();
         mesh.Mesh = AssetManager::GetAsset<Mesh>(AssetImporter::ImportMeshAsset("data/geom/truncated_cube.obj"));
+        mesh.OverrideMaterialTable = std::make_shared<MaterialTable>(1);
+        mesh.OverrideMaterialTable->SetMaterial(0, mat);
     }
 
     {

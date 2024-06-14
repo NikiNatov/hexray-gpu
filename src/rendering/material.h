@@ -152,3 +152,23 @@ private:
     static std::unordered_map<MaterialType, std::vector<MaterialPropertyMetaData>> ms_MaterialTypeProperties;
     static std::unordered_map<MaterialType, std::vector<MaterialTextureMetaData>> ms_MaterialTypeTextures;
 };
+
+class MaterialTable
+{
+public:
+    MaterialTable(uint32_t size)
+    {
+        Resize(size);
+    }
+
+    inline void Resize(uint32_t size) { m_Materials.resize(size); }
+    inline void SetMaterial(uint32_t index, const MaterialPtr& material) { m_Materials[index] = material; }
+    inline const MaterialPtr& GetMaterial(uint32_t index) const { return index < m_Materials.size() ? m_Materials[index] : nullptr; }
+    inline bool IsValid(uint32_t index) const { return m_Materials[index] != nullptr; }
+
+    inline uint32_t GetSize() const { return m_Materials.size(); }
+    inline std::vector<MaterialPtr>::const_iterator begin() const { return m_Materials.begin(); }
+    inline std::vector<MaterialPtr>::const_iterator end() const { return m_Materials.end(); }
+private:
+    std::vector<MaterialPtr> m_Materials;
+};

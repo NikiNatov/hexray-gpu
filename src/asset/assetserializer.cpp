@@ -163,12 +163,12 @@ static bool AssetSerializer::Serialize(const std::filesystem::path& filepath, co
     const std::vector<Submesh>& submeshes = asset->GetSubmeshes();
     ofs.write((char*)submeshes.data(), sizeof(Submesh) * submeshCount);
 
-    uint32_t materialCount = asset->GetMaterials().size();
+    uint32_t materialCount = asset->GetMaterialTable()->GetSize();
     ofs.write((char*)&materialCount, sizeof(materialCount));
 
-    const std::vector<MaterialPtr>& materials = asset->GetMaterials();
+    std::shared_ptr<MaterialTable> materials = asset->GetMaterialTable();
 
-    for (const MaterialPtr& material : materials)
+    for (const MaterialPtr& material : *materials)
     {
         Uuid materialID = material ? material->GetID() : Uuid::Invalid;
         ofs.write((char*)&materialID, sizeof(materialID));
@@ -307,7 +307,7 @@ bool AssetSerializer::Deserialize(const std::filesystem::path& filepath, std::sh
     uint32_t materialCount;
     ifs.read((char*)&materialCount, sizeof(materialCount));
 
-    meshDesc.Materials.resize(materialCount);
+    meshDesc.MaterialTable = std::make_shared<MaterialTable>(materialCount);
     for (uint32_t i = 0; i < materialCount; i++)
     {
         Uuid materialID;
@@ -316,11 +316,10 @@ bool AssetSerializer::Deserialize(const std::filesystem::path& filepath, std::sh
         if (materialID != Uuid::Invalid)
         {
             MaterialPtr material = AssetManager::GetAsset<Material>(materialID);
-            meshDesc.Materials[i] = material;
+            meshDesc.MaterialTable->SetMaterial(i, material);
         }
     }
 
-    
     outAsset = std::make_shared<Mesh>(meshDesc, filepath.stem().wstring().c_str());
     outAsset->UploadGPUData(vertexData.data(), indexData.data());
     outAsset->m_MetaData = metaData;

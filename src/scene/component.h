@@ -67,6 +67,7 @@ struct TransformComponent
 struct MeshComponent
 {
 	MeshPtr Mesh = nullptr;
+	std::shared_ptr<MaterialTable> OverrideMaterialTable = nullptr;
 
 	MeshComponent() = default;
 	MeshComponent(const MeshComponent& other) = default;
