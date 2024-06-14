@@ -345,9 +345,9 @@ Uuid AssetImporter::CreateMeshAsset(const std::filesystem::path& filepath, const
 {
     std::filesystem::path assetFullPath = AssetManager::GetAssetFullPath(filepath);
 
-    if (std::filesystem::exists(filepath))
+    if (std::filesystem::exists(assetFullPath))
     {
-        return AssetManager::GetUUIDForAssetPath(filepath);
+        return AssetManager::GetUUIDForAssetPath(assetFullPath);
     }
 
     if (!std::filesystem::exists(assetFullPath.parent_path()))
@@ -373,9 +373,9 @@ Uuid AssetImporter::CreateMaterialAsset(const std::filesystem::path& filepath, M
 {
     std::filesystem::path assetFullPath = AssetManager::GetAssetFullPath(filepath);
 
-    if (std::filesystem::exists(filepath))
+    if (std::filesystem::exists(assetFullPath))
     {
-        return AssetManager::GetUUIDForAssetPath(filepath);
+        return AssetManager::GetUUIDForAssetPath(assetFullPath);
     }
 
     if (!std::filesystem::exists(assetFullPath.parent_path()))
