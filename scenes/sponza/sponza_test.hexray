@@ -140,9 +140,9 @@ Entities:
       NextSibling: 0
       PreviousSibling: 0
     TransformComponent:
-      Translation: [1, 1, 1]
+      Translation: [1, 1.5, 1]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     DirectionalLightComponent:
       Color: [0.600000024, 0.400000006, 0]
-      Intensity: 0.5
+      Intensity: 1.0

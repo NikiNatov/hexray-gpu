@@ -2,11 +2,13 @@
 #define __LAMBERTSHADING_HLSLI__
 
 #include "BindlessResources.hlsli"
+#include "common.hlsli"
 
-float3 CalculateDirectionalLight_Lambert(Light light, float3 diffuseColor, float3 normal)
+float3 CalculateDirectionalLight_Lambert(Light light, float3 diffuseColor, float3 normal, bool isInShadow)
 {
+    float shadowFactor = isInShadow ? 0.35f : 1.0;
     float lambertianTerm = max(0.0, dot(normal, -light.Direction));
-    return lambertianTerm * diffuseColor * light.Color * light.Intensity;
+    return shadowFactor * lambertianTerm * diffuseColor * light.Color * light.Intensity;
 }
 
 float3 CalculatePointLight_Lambert(Light light, float3 diffuseColor, float3 surfacePosition, float3 normal)
@@ -62,9 +64,17 @@ void ClosestHitShader_Lambert(inout RayPayload payload, in BuiltInTriangleInters
     for (uint i = 0; i < sceneConstants.NumLights; i++)
     {
         Light light = GetLight(i, g_ResourceIndices.LightsBufferIndex);
+        
         if (light.LightType == DIRECTIONAL_LIGHT)
         {
-            directLightColor += CalculateDirectionalLight_Lambert(light, diffuseColor.xyz, normalWS);
+            // Cast a shadow ray
+            Ray shadowRay;
+            shadowRay.Origin = surfacePositionWS;
+            shadowRay.Direction = normalize(-light.Direction);
+        
+            bool isInShadow = TraceShadowRay(shadowRay, payload.RecursionDepth);
+            
+            directLightColor += CalculateDirectionalLight_Lambert(light, diffuseColor.xyz, normalWS, isInShadow);
         }
         else if (light.LightType == POINT_LIGHT)
         {
