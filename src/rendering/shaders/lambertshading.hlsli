@@ -56,6 +56,13 @@ void ClosestHitShader_Lambert(inout RayPayload payload, in BuiltInTriangleInters
     
     float3 surfacePositionWS = WorldRayOrigin() + WorldRayDirection() * RayTCurrent();
     float3 normalWS = normalize(mul((float3x3) ObjectToWorld4x3(), ip.Normal));
+    float3 tangentWS = normalize(mul((float3x3) ObjectToWorld4x3(), ip.Tangent));
+    float3 bitangentWS = normalize(mul((float3x3) ObjectToWorld4x3(), ip.Bitangent));
+    
+    if (material.NormalMapIndex != INVALID_DESCRIPTOR_INDEX)
+    {
+        normalWS = GetNormalFromMap(g_Textures[material.NormalMapIndex], ip.TexCoord, tangentWS, bitangentWS, normalWS);
+    }
     
     float4 diffuseColor = material.AlbedoMapIndex != INVALID_DESCRIPTOR_INDEX ? g_Textures[material.AlbedoMapIndex].SampleLevel(g_LinearWrapSampler, ip.TexCoord, 0) : material.AlbedoColor;
     

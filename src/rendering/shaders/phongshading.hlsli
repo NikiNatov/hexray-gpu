@@ -2,6 +2,7 @@
 #define __PHONGSHADING_HLSLI__
 
 #include "BindlessResources.hlsli"
+#include "common.hlsli"
 
 float3 CalculateDirectionalLight_Phong(Light light, float4 albedo, float4 specular, float shininess, float3 surfacePosition, float3 viewDir, float3 normal)
 {
@@ -77,7 +78,14 @@ void ClosestHitShader_Phong(inout RayPayload payload, in BuiltInTriangleIntersec
     Vertex ip = GetIntersectionPoint(tri, bary);
     
     float3 surfacePositionWS = WorldRayOrigin() + WorldRayDirection() * RayTCurrent();
-    float3 normalWS = normalize(mul((float3x3)ObjectToWorld4x3(), ip.Normal));
+    float3 normalWS = normalize(mul((float3x3) ObjectToWorld4x3(), ip.Normal));
+    float3 tangentWS = normalize(mul((float3x3) ObjectToWorld4x3(), ip.Tangent));
+    float3 bitangentWS = normalize(mul((float3x3) ObjectToWorld4x3(), ip.Bitangent));
+    
+    if (material.NormalMapIndex != INVALID_DESCRIPTOR_INDEX)
+    {
+        normalWS = GetNormalFromMap(g_Textures[material.NormalMapIndex], ip.TexCoord, tangentWS, bitangentWS, normalWS);
+    }
     
     float4 albedoColor = material.AlbedoMapIndex != INVALID_DESCRIPTOR_INDEX ? g_Textures[material.AlbedoMapIndex].SampleLevel(g_LinearWrapSampler, ip.TexCoord, 0) : material.AlbedoColor;
     float4 specularColor = material.SpecularColor;
