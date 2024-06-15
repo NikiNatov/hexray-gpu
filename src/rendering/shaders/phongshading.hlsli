@@ -4,16 +4,21 @@
 #include "BindlessResources.hlsli"
 #include "common.hlsli"
 
-float3 CalculateDirectionalLight_Phong(Light light, float4 albedo, float4 specular, float shininess, float3 surfacePosition, float3 viewDir, float3 normal)
+float3 CalculateDirectionalLight_Phong(Light light, float4 albedo, float4 specular, float shininess, float3 surfacePosition, float3 viewDir, float3 normal, bool isInShadow)
 {
     // Diffuse
+    float shadowFactor = isInShadow ? 0.35f : 1.0;
     float lambertianTerm = max(0.0, dot(normal, -light.Direction));
-    float3 diffuseLight = albedo.rgb * lambertianTerm * light.Color * light.Intensity;
+    float3 diffuseLight = shadowFactor * albedo.rgb * lambertianTerm * light.Color * light.Intensity;
     
     // Specular
-    float3 reflectedLightDir = reflect(light.Direction, normal);
-    float specularTerm = pow(max(0.0, dot(-viewDir, reflectedLightDir)), shininess);
-    float3 specularLight = specular.rgb * specularTerm * light.Color * light.Intensity;
+    float3 specularLight = float3(0.0f, 0.0f, 0.0f);
+    if(!isInShadow)
+    {
+        float3 reflectedLightDir = reflect(light.Direction, normal);
+        float specularTerm = pow(max(0.0, dot(-viewDir, reflectedLightDir)), shininess);
+        float3 specularLight = specular.rgb * specularTerm * light.Color * light.Intensity;
+    }
     
     return diffuseLight + specularLight;
 }
@@ -100,17 +105,21 @@ void ClosestHitShader_Phong(inout RayPayload payload, in BuiltInTriangleIntersec
         Light light = GetLight(i, g_ResourceIndices.LightsBufferIndex);
         if (light.LightType == DIRECTIONAL_LIGHT)
         {
-            // DirLight
-            directLightColor += CalculateDirectionalLight_Phong(light, albedoColor, specularColor, shininess, surfacePositionWS, viewDir, normalWS);
+            // Cast a shadow ray
+            Ray shadowRay;
+            shadowRay.Origin = surfacePositionWS;
+            shadowRay.Direction = normalize(-light.Direction);
+        
+            bool isInShadow = TraceShadowRay(shadowRay, payload.RecursionDepth);
+            
+            directLightColor += CalculateDirectionalLight_Phong(light, albedoColor, specularColor, shininess, surfacePositionWS, viewDir, normalWS, isInShadow);
         }
         else if (light.LightType == POINT_LIGHT)
         {
-            // PointLight
             directLightColor += CalculatePointLight_Phong(light, albedoColor, specularColor, shininess, surfacePositionWS, viewDir, normalWS);
         }
         else if (light.LightType == SPOT_LIGHT)
         {
-            // SpotLight
             directLightColor += CalculateSpotLight_Phong(light, albedoColor, specularColor, shininess, surfacePositionWS, viewDir, normalWS);
         }
     }
