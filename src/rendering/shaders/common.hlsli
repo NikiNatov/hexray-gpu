@@ -8,6 +8,10 @@
 
 #define MAX_RAY_RECURSION_DEPTH 3
 
+static const float PI = 3.141592;
+static const float TwoPI = 2 * PI;
+static const float Epsilon = 0.00001;
+
 struct Ray
 {
     float3 Origin;

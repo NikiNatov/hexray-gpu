@@ -12,8 +12,37 @@
 
 #include <sstream>
 
-static const char* s_DefaultScenePath = "scenes/sponza/sponza_test.hexray";
+static const char* s_DefaultScenePath = "scenes/pbr_test/pbr_test.hexray";
 Application* Application::ms_Instance = nullptr;
+
+void CreatePBRTestScene()
+{
+    std::filesystem::path scenePath = "scenes/pbr_test/pbr_test.hexray";
+
+    AssetManager::Initialize(scenePath.parent_path() / "assets");
+    auto scene = std::make_shared<Scene>(scenePath.stem().string(), Camera(60.0f, 16.0f / 9.0f, glm::vec3(35.0f, 25.0f, -35.0f), 45.0f, -25.0f));
+    {
+        Entity e = scene->CreateEntity("SkyBox");
+        e.AddComponent<SkyLightComponent>().EnvironmentMap = AssetManager::GetAsset<Texture>(AssetImporter::ImportTextureAsset("data/texture/Skybox.dds"));
+    }
+
+    {
+        Entity e = scene->CreateEntity("Sun");
+        e.GetComponent<TransformComponent>().Translation = { 1.0f, 3.0f, 2.0f };
+        auto& c = e.AddComponent<DirectionalLightComponent>();
+        c.Color = { 0.8f, 0.5f, 0.1f };
+        c.Intensity = 4.0f;
+    }
+
+    {
+       
+        Entity e = scene->CreateEntity("Pistol");
+        auto& mc = e.AddComponent<MeshComponent>();
+        mc.Mesh = AssetManager::GetAsset<Mesh>(AssetImporter::ImportMeshAsset("data/meshes/gun/gun.fbx"));
+    }
+
+    SceneSerializer::Serialize(scenePath, scene);
+}
 
 // ------------------------------------------------------------------------------------------------------------------------------------
 Application::Application(const ApplicationDescription& description)

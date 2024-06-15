@@ -28,3 +28,4 @@ void MissShader_Shadow(inout ShadowRayPayload payload)
 
 #include "lambertshading.hlsli"
 #include "phongshading.hlsli"
+#include "pbrshading.hlsli"

@@ -18,10 +18,9 @@ Renderer::Renderer(const RendererDescription& description)
         L"MissShader_Radiance", L"MissShader_Shadow"
     };
     pipelineDesc.HitGroups = {
-        // TODO: Set correct hit groups for each material model when we add support
         HitGroup { D3D12_HIT_GROUP_TYPE_TRIANGLES, L"LambertColorHitGroup", L"ClosestHitShader_Lambert", L"", L"" },
         HitGroup { D3D12_HIT_GROUP_TYPE_TRIANGLES, L"PhongColorHitGroup", L"ClosestHitShader_Phong", L"", L"" },
-        HitGroup { D3D12_HIT_GROUP_TYPE_TRIANGLES, L"PBRColorHitGroup", L"ClosestHitShader_Lambert", L"", L"" }
+        HitGroup { D3D12_HIT_GROUP_TYPE_TRIANGLES, L"PBRColorHitGroup", L"ClosestHitShader_PBR", L"", L"" }
     };
 
     m_RTPipeline = std::make_shared<RaytracingPipeline>(pipelineDesc, L"Triangle Raytracing Pipeline");
