@@ -29,7 +29,7 @@ float SchlickG1(float k, float3 N, float3 X)
 //Schlick-GGX geometry shadowing function
 float GeometryShadowingFunction(float alpha, float3 N, float3 L, float3 V)
 {
-    float k = alpha / 2.0;
+    float k = pow(alpha + 1.0, 2.0) / 8.0;
     return SchlickG1(k, N, V) * SchlickG1(k, N, L);
 }
 
@@ -37,15 +37,13 @@ float GeometryShadowingFunction(float alpha, float3 N, float3 L, float3 V)
 float3 FresnelSchlickFunction(float3 F0, float3 V, float3 H, float roughness)
 {
     float VDotH = max(dot(V, H), 0.0);
-    return F0 + (max(float3(1.0 - roughness, 1.0 - roughness, 1.0 - roughness), F0) - F0) * pow(1.0 - VDotH, 5.0);
+    return F0 + (float3(1.0, 1.0, 1.0) - F0) * pow(1.0 - VDotH, 5.0);
 }
 
 //Cook-Torrance equation
 float3 CookTorranceFunction(float roughness, float3 F0, float3 N, float3 V, float3 L, float3 H)
 {
-    float alpha = roughness * roughness;
-
-    float3 numerator = NormalDistributionFunction(alpha, N, H) * GeometryShadowingFunction(alpha, N, V, L) * FresnelSchlickFunction(F0, V, H, roughness);
+    float3 numerator = NormalDistributionFunction(roughness, N, H) * GeometryShadowingFunction(roughness, N, L, V) * FresnelSchlickFunction(F0, V, H, roughness);
     float denominator = max(4.0 * max(dot(V, N), 0.0) * max(dot(L, N), 0.0), Epsilon);
 
     return numerator / denominator;
@@ -62,7 +60,7 @@ float3 CalculateDirectionalLight_PBR(Light light, float3 F0, float3 V, float3 N,
     float3 Kd = (float3(1.0, 1.0, 1.0) - Ks) * (1.0 - metalness);
 
     float3 specularColor = CookTorranceFunction(roughness, F0, N, V, L, H);
-    float3 brdf = Kd * albedoColor + specularColor;
+    float3 brdf = Kd * albedoColor / PI + specularColor;
 
     return shadowFactor * brdf * light.Color.rgb * light.Intensity * max(dot(L, N), 0.0);
 }
@@ -79,7 +77,7 @@ float3 CalculatePointLight_PBR(Light light, float3 F0, float3 V, float3 N, float
 
     float attenuation = 1.0f / max(light.AttenuationFactors[0] + light.AttenuationFactors[1] * distance + light.AttenuationFactors[2] * distance * distance, Epsilon);
     float3 specularColor = CookTorranceFunction(roughness, F0, N, V, L, H);
-    float3 brdf = Kd * albedoColor + specularColor;
+    float3 brdf = Kd * albedoColor / PI + specularColor;
 
     return brdf * light.Color.rgb * light.Intensity * attenuation * max(dot(L, N), 0.0);
 }
@@ -102,7 +100,7 @@ float3 CalculateSpotLight_PBR(Light light, float3 F0, float3 V, float3 N, float3
 
     float attenuation = 1.0f / max(light.AttenuationFactors[0] + light.AttenuationFactors[1] * distance + light.AttenuationFactors[2] * distance * distance, Epsilon);
     float3 specularColor = CookTorranceFunction(roughness, F0, N, V, L, H);
-    float3 brdf = Kd * albedoColor + specularColor;
+    float3 brdf = Kd * albedoColor / PI + specularColor;
 
     return brdf * light.Color.rgb * light.Intensity * spotIntensity * attenuation * max(dot(L, N), 0.0);
 }
@@ -139,8 +137,6 @@ void ClosestHitShader_PBR(inout RayPayload payload, in BuiltInTriangleIntersecti
     float3 V = normalize(sceneConstants.CameraPosition - surfacePositionWS);
     float3 F0 = lerp(float3(0.04, 0.04, 0.04), albedoColor.rgb, metalness);
 
-    float3 outgoingLightColor = float3(0.0, 0.0, 0.0);
-    
     // Lights
     float3 directLightColor = float3(0.0f, 0.0f, 0.0f);
     for (uint i = 0; i < sceneConstants.NumLights; i++)
