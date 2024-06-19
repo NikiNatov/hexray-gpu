@@ -22,8 +22,8 @@ ENUM_FLAGS(AssetFlags)
 struct AssetMetaData
 {
     Uuid ID;
-    AssetType Type;
-    AssetFlags Flags;
+    AssetType Type = AssetType::NumTypes;
+    AssetFlags Flags = AssetFlags::None;
     std::filesystem::path SourceFilepath;
     std::filesystem::path AssetFilepath;
 };
@@ -38,6 +38,13 @@ public:
         ".hextex",
         ".hexmesh",
         ".hexmat",
+    };
+
+    inline static const char* AssetFileSubDirectories[(uint32_t)AssetType::NumTypes] =
+    {
+        "textures",
+        "meshes",
+        "materials",
     };
 public:
     virtual ~Asset() = default;

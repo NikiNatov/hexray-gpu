@@ -11,20 +11,12 @@
 #include <fstream>
 
 // ------------------------------------------------------------------------------------------------------------------------------------
-Uuid AssetImporter::ImportTextureAsset(const std::filesystem::path& sourceFilepath)
+Uuid AssetImporter::ImportTextureAsset(const std::filesystem::path& sourceFilepath, TextureImportOptions options)
 {
-    std::string assetFilename = sourceFilepath.stem().string() + Asset::AssetFileExtensions[(uint32_t)AssetType::Texture];
-    std::filesystem::path destinationFolder = "textures";
-    std::filesystem::path assetFullPath = AssetManager::GetAssetFullPath(destinationFolder / assetFilename);
-
-    if (std::filesystem::exists(assetFullPath))
+    AssetMetaData metaData;
+    if (GetExistingOrSetupImport(AssetType::Texture, sourceFilepath.stem().string(), sourceFilepath, metaData))
     {
-        return AssetManager::GetUUIDForAssetPath(assetFullPath);
-    }
-
-    if (!std::filesystem::exists(assetFullPath.parent_path()))
-    {
-        std::filesystem::create_directories(assetFullPath.parent_path());
+        return metaData.ID;
     }
 
     TextureDescription textureDesc;
@@ -45,36 +37,16 @@ Uuid AssetImporter::ImportTextureAsset(const std::filesystem::path& sourceFilepa
         }
     }
 
-    TexturePtr texture = std::make_shared<Texture>(textureDesc, sourceFilepath.stem().wstring().c_str());
-    texture->UploadGPUData(pixels.data(), true);
-
-    texture->m_MetaData.SourceFilepath = sourceFilepath;
-
-    if (!AssetSerializer::Serialize(assetFullPath, texture))
-    {
-        HEXRAY_ERROR("Asset Importer: Failed serializing texture asset {}", assetFullPath.string());
-        return Uuid::Invalid;
-    }
-
-    AssetManager::RegisterAsset(texture->m_MetaData);
-    return texture->m_MetaData.ID;
+    return FinalizeTextureImport(textureDesc, pixels.data(), metaData, options);
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
-Uuid AssetImporter::ImportTextureAsset(const byte* compressedData, uint32_t dataSize, const std::string& assetName)
+Uuid AssetImporter::ImportTextureAsset(const byte* compressedData, uint32_t dataSize, const std::string& assetName, TextureImportOptions options)
 {
-    std::string assetFilename = assetName + Asset::AssetFileExtensions[(uint32_t)AssetType::Texture];
-    std::filesystem::path destinationFolder = "textures";
-    std::filesystem::path assetFullPath = AssetManager::GetAssetFullPath(destinationFolder / assetFilename);
-
-    if (std::filesystem::exists(assetFullPath))
+    AssetMetaData metaData;
+    if (GetExistingOrSetupImport(AssetType::Texture, assetName, "", metaData))
     {
-        return AssetManager::GetUUIDForAssetPath(assetFullPath);
-    }
-
-    if (!std::filesystem::exists(assetFullPath.parent_path()))
-    {
-        std::filesystem::create_directories(assetFullPath.parent_path());
+        return metaData.ID;
     }
 
     TextureDescription textureDesc;
@@ -85,34 +57,16 @@ Uuid AssetImporter::ImportTextureAsset(const byte* compressedData, uint32_t data
         return Uuid::Invalid;
     }
 
-    TexturePtr texture = std::make_shared<Texture>(textureDesc, assetFullPath.stem().wstring().c_str());
-    texture->UploadGPUData(pixels.data(), true);
-
-    if (!AssetSerializer::Serialize(assetFullPath, texture))
-    {
-        HEXRAY_ERROR("Asset Importer: Failed serializing texture asset {}", assetFullPath.string());
-        return Uuid::Invalid;
-    }
-
-    AssetManager::RegisterAsset(texture->m_MetaData);
-    return texture->m_MetaData.ID;
+    return FinalizeTextureImport(textureDesc, pixels.data(), metaData, options);
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
 Uuid AssetImporter::ImportMeshAsset(const std::filesystem::path& sourceFilepath)
 {
-    std::string assetFilename = sourceFilepath.stem().string() + Asset::AssetFileExtensions[(uint32_t)AssetType::Mesh];
-    std::filesystem::path destinationFolder = "meshes";
-    std::filesystem::path assetFullPath = AssetManager::GetAssetFullPath(destinationFolder / assetFilename);
-
-    if (std::filesystem::exists(assetFullPath))
+    AssetMetaData metaData;
+    if (GetExistingOrSetupImport(AssetType::Mesh, sourceFilepath.stem().string(), sourceFilepath, metaData))
     {
-        return AssetManager::GetUUIDForAssetPath(assetFullPath);
-    }
-
-    if (!std::filesystem::exists(assetFullPath.parent_path()))
-    {
-        std::filesystem::create_directories(assetFullPath.parent_path());
+        return metaData.ID;
     }
 
     // Import asset data
@@ -218,11 +172,11 @@ Uuid AssetImporter::ImportMeshAsset(const std::filesystem::path& sourceFilepath)
     MeshPtr mesh = std::make_shared<Mesh>(meshDesc, sourceFilepath.stem().wstring().c_str());
     mesh->UploadGPUData(vertices.data(), indices.data(), true);
 
-    mesh->m_MetaData.SourceFilepath = sourceFilepath;
+    mesh->m_MetaData = metaData;
 
-    if (!AssetSerializer::Serialize(assetFullPath, mesh))
+    if (!AssetSerializer::Serialize(metaData.AssetFilepath, mesh))
     {
-        HEXRAY_ERROR("Asset Importer: Failed serializing mesh asset {}", assetFullPath.string());
+        HEXRAY_ERROR("Asset Importer: Failed serializing mesh asset {}", metaData.AssetFilepath.string());
         return Uuid::Invalid;
     }
 
@@ -237,20 +191,12 @@ Uuid AssetImporter::ImportMaterialAsset(const aiMaterial* assimpMaterial, const 
     assimpMaterial->Get(AI_MATKEY_NAME, tmpName);
 
     std::string materialName = tmpName.C_Str();
-    materialName.append(Asset::AssetFileExtensions[(uint32_t)AssetType::Material]);
     std::replace(materialName.begin(), materialName.end(), ':', '_');
 
-    std::filesystem::path destinationFolder = "materials";
-    std::filesystem::path assetFullPath = AssetManager::GetAssetFullPath(destinationFolder / materialName);
-
-    if (std::filesystem::exists(assetFullPath))
+    AssetMetaData metaData;
+    if (GetExistingOrSetupImport(AssetType::Material, materialName, "", metaData))
     {
-        return AssetManager::GetUUIDForAssetPath(assetFullPath);
-    }
-
-    if (!std::filesystem::exists(assetFullPath.parent_path()))
-    {
-        std::filesystem::create_directories(assetFullPath.parent_path());
+        return metaData.ID;
     }
 
     MaterialPtr material = std::make_shared<Material>(MaterialType::PBR);
@@ -330,14 +276,14 @@ Uuid AssetImporter::ImportMaterialAsset(const aiMaterial* assimpMaterial, const 
     SetMaterialTexture(aiTextureType_SHININESS, MaterialTextureType::Roughness);
 
     // Serialize the material
-    if (!AssetSerializer::Serialize(assetFullPath, material))
+    if (!AssetSerializer::Serialize(metaData.AssetFilepath, material))
     {
-        HEXRAY_ERROR("Asset Importer: Failed to serialize material {}", assetFullPath.string());
+        HEXRAY_ERROR("Asset Importer: Failed to serialize material {}", metaData.AssetFilepath.string());
         return Uuid::Invalid;
     }
 
-    AssetManager::RegisterAsset(material->m_MetaData);
-    return material->GetMetaData().ID;
+    AssetManager::RegisterAsset(metaData);
+    return metaData.ID;
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
@@ -393,6 +339,29 @@ Uuid AssetImporter::CreateMaterialAsset(const std::filesystem::path& filepath, M
 
     AssetManager::RegisterAsset(asset->m_MetaData);
     return asset->m_MetaData.ID;
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+bool AssetImporter::GetExistingOrSetupImport(AssetType type, const std::string& assetName, const std::filesystem::path& sourcePath, AssetMetaData& outMetaData)
+{
+    std::string assetFilename = assetName + Asset::AssetFileExtensions[(uint32_t)type];
+    std::filesystem::path destinationFolder = Asset::AssetFileSubDirectories[(uint32_t)type];
+
+    outMetaData.Type = type;
+    outMetaData.SourceFilepath = sourcePath;
+    outMetaData.AssetFilepath = AssetManager::GetAssetFullPath(destinationFolder / assetFilename);
+
+    if (std::filesystem::exists(outMetaData.AssetFilepath))
+    {
+        outMetaData.ID = AssetManager::GetUUIDForAssetPath(outMetaData.AssetFilepath);
+        return true;
+    }
+
+    if (!std::filesystem::exists(outMetaData.AssetFilepath.parent_path()))
+    {
+        std::filesystem::create_directories(outMetaData.AssetFilepath.parent_path());
+    }
+    return false;
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
@@ -535,4 +504,27 @@ bool AssetImporter::ImportSTB(const uint8_t* data, uint32_t size, TextureDescrip
     stbi_image_free(pixels);
 
     return true;
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+Uuid AssetImporter::FinalizeTextureImport(TextureDescription& desc, uint8_t* pixels, const AssetMetaData& metaData, TextureImportOptions options)
+{
+    if (options.Compress)
+    {
+
+    }
+
+    TexturePtr texture = std::make_shared<Texture>(desc, metaData.AssetFilepath.stem().wstring().c_str());
+    texture->UploadGPUData(pixels, true);
+
+    texture->m_MetaData = metaData;
+
+    if (!AssetSerializer::Serialize(metaData.AssetFilepath, texture))
+    {
+        HEXRAY_ERROR("Asset Importer: Failed serializing texture asset {}", metaData.AssetFilepath.string());
+        return Uuid::Invalid;
+    }
+
+    AssetManager::RegisterAsset(texture->m_MetaData);
+    return texture->m_MetaData.ID;
 }
