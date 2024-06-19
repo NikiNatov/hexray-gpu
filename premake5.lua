@@ -47,6 +47,7 @@ project "hexray-gpu"
 		"%{wks.location}/extern/stb",
 		"%{wks.location}/extern/DirectXTex",
 		"%{wks.location}/extern/yaml-cpp/include",
+		"%{wks.location}/extern/nvtt/include",
 	}
 
 	libdirs
@@ -54,6 +55,7 @@ project "hexray-gpu"
 		"%{wks.location}/extern/pix/lib",
 		"%{wks.location}/extern/assimp/lib",
 		"%{wks.location}/extern/yaml-cpp/lib",
+		"%{wks.location}/extern/nvtt/lib",
 	}
 
 	links
@@ -110,3 +112,14 @@ project "hexray-gpu"
 		{
 			"XCOPY %{wks.location}\\extern\\assimp\\lib\\assimp-vc143-mt.dll \"%{cfg.targetdir}\"  /S /Y"
 		}
+	filter ""
+
+	links
+	{
+		'nvtt30203',
+	}
+
+	postbuildcommands
+	{
+		"XCOPY %{wks.location}\\extern\\nvtt\\lib\\nvtt30203.dll \"%{cfg.targetdir}\"  /S /Y"
+	}
