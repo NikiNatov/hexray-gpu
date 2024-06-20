@@ -32,7 +32,7 @@ Entities:
       Rotation: [0, 0, 0]
       Scale: [0.0500000007, 0.0500000007, 0.0500000007]
     MeshComponent:
-      Mesh: 4093123005514684352
+      Mesh: 2446930999705944993
   - Entity: 9781792816327191898
     TagComponent:
       Tag: Spot Light

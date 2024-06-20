@@ -5,7 +5,7 @@ Camera:
   Pitch: -25
   FOV: 60
 Entities:
-  - Entity: 12288720901240039010
+  - Entity: 15141466953230745733
     TagComponent:
       Tag: Pistol
     SceneHierarchyComponent:
@@ -18,10 +18,10 @@ Entities:
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     MeshComponent:
-      Mesh: 3104227507691101742
+      Mesh: 7589156685251712309
       Materials:
         []
-  - Entity: 10588207567569807255
+  - Entity: 18267142540546682729
     TagComponent:
       Tag: Sun
     SceneHierarchyComponent:
@@ -36,7 +36,7 @@ Entities:
     DirectionalLightComponent:
       Color: [0.800000012, 0.5, 0.100000001]
       Intensity: 4
-  - Entity: 7425292138645988557
+  - Entity: 13636529221628202081
     TagComponent:
       Tag: SkyBox
     SceneHierarchyComponent:
