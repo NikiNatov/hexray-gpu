@@ -119,14 +119,16 @@ void ClosestHitShader_PBR(inout RayPayload payload, in BuiltInTriangleIntersecti
     Vertex ip = GetIntersectionPointOS(tri, bary);
     Vertex ipWS = GetIntersectionPointWS(ip);
     
+    SampleGradValues sampleValues = GetSamplingValues(sceneConstants, tri, ipWS.Position, ipWS.Normal, ip.TexCoord);
+    
     if (material.NormalMapIndex != INVALID_DESCRIPTOR_INDEX)
     {
-        ipWS.Normal = GetNormalFromMap(g_Textures[material.NormalMapIndex], ip.TexCoord, ipWS);
+        ipWS.Normal = GetNormalFromMap(g_Textures[material.NormalMapIndex], ipWS, sampleValues);
     }
-    
-    float4 albedoColor = material.AlbedoMapIndex != INVALID_DESCRIPTOR_INDEX ? g_Textures[material.AlbedoMapIndex].SampleLevel(g_LinearWrapSampler, ip.TexCoord, 0) : material.AlbedoColor;
-    float metalness = material.MetalnessMapIndex != INVALID_DESCRIPTOR_INDEX ? g_Textures[material.MetalnessMapIndex].SampleLevel(g_LinearWrapSampler, ip.TexCoord, 0) : material.Metalness;
-    float roughness = material.RoughnessMapIndex != INVALID_DESCRIPTOR_INDEX ? g_Textures[material.RoughnessMapIndex].SampleLevel(g_LinearWrapSampler, ip.TexCoord, 0) : material.Roughness;
+
+    float4 albedoColor = material.AlbedoMapIndex != INVALID_DESCRIPTOR_INDEX ? SampleTextureGrad(g_Textures[material.AlbedoMapIndex], g_LinearWrapSampler, sampleValues) : material.AlbedoColor;
+    float metalness = material.MetalnessMapIndex != INVALID_DESCRIPTOR_INDEX ? SampleTextureGrad(g_Textures[material.MetalnessMapIndex], g_LinearWrapSampler, sampleValues) : material.Metalness;
+    float roughness = material.RoughnessMapIndex != INVALID_DESCRIPTOR_INDEX ? SampleTextureGrad(g_Textures[material.RoughnessMapIndex], g_LinearWrapSampler, sampleValues) : material.Roughness;
 
     float3 N = ipWS.Normal;
     float3 V = normalize(sceneConstants.CameraPosition - ipWS.Position);

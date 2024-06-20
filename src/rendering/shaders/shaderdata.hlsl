@@ -7,7 +7,8 @@ void RayGenShader()
     RWTexture2D<float4> renderTarget = g_RWTextures[g_ResourceIndices.RenderTargetIndex];
     SceneConstants sceneConstants = g_Buffers[g_ResourceIndices.SceneBufferIndex].Load<SceneConstants>(0);
     
-    Ray ray = GenerateCameraRay(sceneConstants.CameraPosition, sceneConstants.InvProjMatrix, sceneConstants.InvViewMatrix);
+    Ray ray;
+    GenerateCameraRay(sceneConstants, DispatchRaysIndex().xy, ray.Origin, ray.Direction);
     float4 finalColor = TraceRadianceRay(ray, 0);
     
     renderTarget[DispatchRaysIndex().xy] = finalColor;

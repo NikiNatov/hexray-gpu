@@ -82,12 +82,14 @@ void ClosestHitShader_Phong(inout RayPayload payload, in BuiltInTriangleIntersec
     Vertex ip = GetIntersectionPointOS(tri, bary);
     Vertex ipWS = GetIntersectionPointWS(ip);
     
+    SampleGradValues sampleValues = GetSamplingValues(sceneConstants, tri, ipWS.Position, ipWS.Normal, ip.TexCoord);
+    
     if (material.NormalMapIndex != INVALID_DESCRIPTOR_INDEX)
     {
-        ipWS.Normal = GetNormalFromMap(g_Textures[material.NormalMapIndex], ip.TexCoord, ipWS);
+        ipWS.Normal = GetNormalFromMap(g_Textures[material.NormalMapIndex], ipWS, sampleValues);
     }
-    
-    float4 albedoColor = material.AlbedoMapIndex != INVALID_DESCRIPTOR_INDEX ? g_Textures[material.AlbedoMapIndex].SampleLevel(g_LinearWrapSampler, ip.TexCoord, 0) : material.AlbedoColor;
+
+    float4 albedoColor = material.AlbedoMapIndex != INVALID_DESCRIPTOR_INDEX ? SampleTextureGrad(g_Textures[material.AlbedoMapIndex], g_LinearWrapSampler, sampleValues) : material.AlbedoColor;
     float4 specularColor = material.SpecularColor;
     float shininess = material.Shininess;
     

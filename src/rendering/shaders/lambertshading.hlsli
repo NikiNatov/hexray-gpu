@@ -54,12 +54,14 @@ void ClosestHitShader_Lambert(inout RayPayload payload, in BuiltInTriangleInters
     Vertex ip = GetIntersectionPointOS(tri, bary);
     Vertex ipWS = GetIntersectionPointWS(ip);
     
+    SampleGradValues sampleValues = GetSamplingValues(sceneConstants, tri, ipWS.Position, ipWS.Normal, ip.TexCoord);
+    
     if (material.NormalMapIndex != INVALID_DESCRIPTOR_INDEX)
     {
-        ipWS.Normal = GetNormalFromMap(g_Textures[material.NormalMapIndex], ip.TexCoord, ipWS);
+        ipWS.Normal = GetNormalFromMap(g_Textures[material.NormalMapIndex], ipWS, sampleValues);
     }
-    
-    float4 diffuseColor = material.AlbedoMapIndex != INVALID_DESCRIPTOR_INDEX ? g_Textures[material.AlbedoMapIndex].SampleLevel(g_LinearWrapSampler, ip.TexCoord, 0) : material.AlbedoColor;
+
+    float4 diffuseColor = material.AlbedoMapIndex != INVALID_DESCRIPTOR_INDEX ? SampleTextureGrad(g_Textures[material.AlbedoMapIndex], g_LinearWrapSampler, sampleValues) : material.AlbedoColor;
     
     float3 directLightColor = float3(0.0f, 0.0f, 0.0f);
     
