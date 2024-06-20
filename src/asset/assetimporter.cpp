@@ -5,6 +5,7 @@
 
 #include <DirectXTex.h>
 #include <stb_image.h>
+#include <stb_image_resize2.h>
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
@@ -37,7 +38,7 @@ Uuid AssetImporter::ImportTextureAsset(const std::filesystem::path& sourceFilepa
         }
     }
 
-    return FinalizeTextureImport(textureDesc, pixels.data(), metaData, options);
+    return FinalizeTextureImport(textureDesc, pixels, metaData, options);
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
@@ -57,7 +58,7 @@ Uuid AssetImporter::ImportTextureAsset(const byte* compressedData, uint32_t data
         return Uuid::Invalid;
     }
 
-    return FinalizeTextureImport(textureDesc, pixels.data(), metaData, options);
+    return FinalizeTextureImport(textureDesc, pixels, metaData, options);
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
@@ -471,6 +472,10 @@ bool AssetImporter::ImportSTB(const uint8_t* data, uint32_t size, TextureDescrip
         }
         else
         {
+            // Note: Future improvements:
+            // 1. Save that this is 3 channel image.
+            // 2. Generate mips using stb_resize for 3 channels (DirectXTex relies on DXGI formats)
+            // 3. use BC1 for compression (3 channels)
             if (channels == 3)
             {
                 // Converts RGB to RGBA, since there are no RGB8 formats.
@@ -507,15 +512,28 @@ bool AssetImporter::ImportSTB(const uint8_t* data, uint32_t size, TextureDescrip
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
-Uuid AssetImporter::FinalizeTextureImport(TextureDescription& desc, uint8_t* pixels, const AssetMetaData& metaData, TextureImportOptions options)
+Uuid AssetImporter::FinalizeTextureImport(TextureDescription& desc, std::vector<uint8_t>& pixels, const AssetMetaData& metaData, TextureImportOptions options)
 {
+    if (options.GenerateMips)
+    {
+        if (!GenerateMipmaps(desc, pixels))
+        {
+            HEXRAY_ERROR("Asset Importer: Couldn't generate mips for texture asset {}", metaData.AssetFilepath.string());
+            return Uuid::Invalid;
+        }
+    }
+
     if (options.Compress)
     {
-
+        if (!CompressDXT(desc, pixels))
+        {
+            HEXRAY_ERROR("Asset Importer: Couldn't compress texture asset {}", metaData.AssetFilepath.string());
+            return Uuid::Invalid;
+        }
     }
 
     TexturePtr texture = std::make_shared<Texture>(desc, metaData.AssetFilepath.stem().wstring().c_str());
-    texture->UploadGPUData(pixels, true);
+    texture->UploadGPUData(pixels.data(), true);
 
     texture->m_MetaData = metaData;
 
@@ -527,4 +545,159 @@ Uuid AssetImporter::FinalizeTextureImport(TextureDescription& desc, uint8_t* pix
 
     AssetManager::RegisterAsset(texture->m_MetaData);
     return texture->m_MetaData.ID;
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+bool AssetImporter::GenerateMipmaps(TextureDescription& desc, std::vector<uint8_t>& pixels)
+{
+    uint32_t totalMips = (uint32_t)log2(std::max(desc.Width, desc.Height)) + 1;
+    if (desc.MipLevels == totalMips)
+    {
+    	return true;
+    }
+
+    if (DirectX::IsCompressed(desc.Format))
+    {
+        HEXRAY_ERROR("Mipmap generation for compressed textures is not supported");
+        return false;
+    }
+
+    // STB has 3 channel resizing + Mitchell filter
+#define USE_STB 0
+#if USE_STB
+    uint32_t startMip = desc.MipLevels;
+    uint32_t totalSize = 0;
+    for (uint32_t mip = 0; mip < totalMips; mip++)
+    {
+        size_t rowPitch, slicePitch;
+        DirectX::ComputePitch(desc.Format, desc.Width >> mip, desc.Height >> mip, rowPitch, slicePitch);
+        totalSize += slicePitch;
+    }
+
+    size_t initialRowPitch, initialSlicePitch;
+    DirectX::ComputePitch(desc.Format, desc.Width, desc.Height, initialRowPitch, initialSlicePitch);
+
+    pixels.resize(totalSize);
+
+    uint32_t mipOffset = initialSlicePitch;
+    for (uint32_t mip = startMip; mip < totalMips; mip++)
+    {
+        size_t rowPitch, slicePitch;
+        DirectX::ComputePitch(desc.Format, desc.Width >> mip, desc.Height >> mip, rowPitch, slicePitch);
+
+        stbir_resize((const void*)pixels.data(),
+            desc.Width,
+            desc.Height,
+            initialRowPitch,
+            (void*)(pixels.data() + mipOffset),
+            desc.Width >> mip,
+            desc.Height >> mip,
+            rowPitch,
+            STBIR_4CHANNEL,
+            STBIR_TYPE_UINT8,
+            STBIR_EDGE_CLAMP,
+            STBIR_FILTER_MITCHELL);
+
+        mipOffset += slicePitch;
+    }
+#else
+    size_t rowPitch, slicePitch;
+    DirectX::ComputePitch(desc.Format, desc.Width, desc.Height, rowPitch, slicePitch);
+
+    DirectX::Image dxImage;
+    dxImage.width = desc.Width;
+    dxImage.height = desc.Height;
+    dxImage.format = desc.Format;
+    dxImage.rowPitch = rowPitch;
+    dxImage.slicePitch = slicePitch;
+    dxImage.pixels = pixels.data();
+
+    DirectX::ScratchImage dxScratchImage;
+    HRESULT hr = DirectX::GenerateMipMaps(dxImage, DirectX::TEX_FILTER_BOX, totalMips, dxScratchImage);
+    if (FAILED(hr))
+    {
+        return false;
+    }
+
+    pixels.resize(dxScratchImage.GetPixelsSize());
+    memcpy(pixels.data(), dxScratchImage.GetPixels(), dxScratchImage.GetPixelsSize());
+#endif
+    desc.MipLevels = totalMips;
+    return true;
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+bool AssetImporter::CompressDXT(TextureDescription& desc, std::vector<uint8_t>& pixels)
+{
+    if (DirectX::IsCompressed(desc.Format))
+    {
+        return true;
+    }
+
+    uint32_t sourceOffset = 0;
+
+    std::vector<DirectX::Image> uncompressedMips;
+    for (uint32_t mip = 0; mip < desc.MipLevels; mip++)
+    {
+        size_t rowPitch, slicePitch;
+        DirectX::ComputePitch(desc.Format, desc.Width >> mip, desc.Height >> mip, rowPitch, slicePitch);
+
+        DirectX::Image dxImage;
+        dxImage.width = desc.Width >> mip;
+        dxImage.height = desc.Height >> mip;
+        dxImage.format = desc.Format;
+        dxImage.rowPitch = rowPitch;
+        dxImage.slicePitch = slicePitch;
+        dxImage.pixels = pixels.data() + sourceOffset;
+        uncompressedMips.emplace_back(dxImage);
+
+        sourceOffset += slicePitch;
+    }
+
+    DirectX::TexMetadata dxMetaData;
+    dxMetaData.width = desc.Width;
+    dxMetaData.height = desc.Height;
+    dxMetaData.depth = 1;
+    dxMetaData.arraySize = desc.ArrayLevels;
+    dxMetaData.mipLevels = desc.MipLevels;
+    dxMetaData.miscFlags = 0;
+    dxMetaData.miscFlags2 = 0;
+    dxMetaData.format = desc.Format;
+    dxMetaData.dimension = DirectX::TEX_DIMENSION_TEXTURE2D;
+
+    DXGI_FORMAT compressedFormat;
+    switch (desc.Format)
+    {
+    case DXGI_FORMAT_R32_FLOAT:
+    case DXGI_FORMAT_R8_UNORM:
+        compressedFormat = DXGI_FORMAT_BC4_UNORM;
+        break;
+    case DXGI_FORMAT_R32G32_FLOAT:
+    case DXGI_FORMAT_R8G8_UNORM:
+        compressedFormat = DXGI_FORMAT_BC5_UNORM;
+        break;
+    case DXGI_FORMAT_R32G32B32_FLOAT:
+        compressedFormat = DXGI_FORMAT_BC1_UNORM;
+        break;
+    case DXGI_FORMAT_R32G32B32A32_FLOAT:
+    case DXGI_FORMAT_R8G8B8A8_UNORM:
+    default:
+        // Higher quality compression, but really slow
+        //compressedFormat = DXGI_FORMAT_BC7_UNORM;
+        compressedFormat = DXGI_FORMAT_BC3_UNORM;
+        break;
+    }
+
+    DirectX::ScratchImage dxScratchImage;
+    HRESULT hr = DirectX::Compress(uncompressedMips.data(), uncompressedMips.size(), dxMetaData, compressedFormat, DirectX::TEX_COMPRESS_DEFAULT, DirectX::TEX_THRESHOLD_DEFAULT, dxScratchImage);
+    if (FAILED(hr))
+    {
+        return false;
+    }
+
+    pixels.resize(dxScratchImage.GetPixelsSize());
+    memcpy(pixels.data(), dxScratchImage.GetPixels(), dxScratchImage.GetPixelsSize());
+
+    desc.Format = compressedFormat;
+    return true;
 }

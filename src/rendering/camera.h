@@ -37,7 +37,7 @@ private:
 	float m_YawAngle = 0.0f;
 	float m_PitchAngle = 30.0f;
 	float m_RotationSpeed = 30.0f;
-	float m_MovementSpeed = 30.0f;
+	float m_MovementSpeed = 1130.0f;
 	glm::vec3 m_Position = glm::vec3(0.0f, 0.0f, 5.0f);
 	glm::vec2 m_LastMousePosition = glm::vec2(0.0f);
 };

@@ -48,8 +48,6 @@ private:
     void CreateGPU(const wchar_t* debugName = L"Unnamed Texture");
     void CreateViews();
 private:
-    static uint32_t CalculateMaxMipCount(uint32_t width, uint32_t height);
-private:
     TextureDescription m_Description;
     ComPtr<ID3D12Resource2> m_Resource;
     DescriptorIndex m_SRVDescriptor;

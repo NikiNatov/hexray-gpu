@@ -282,6 +282,8 @@ void Application::OpenScene(const std::filesystem::path& filepath)
         return;
     }
 
+    double startTime = m_Timer.GetTimeNow();
+
     AssetManager::Initialize(filepath.parent_path() / "assets");
 
     if (!SceneSerializer::Deserialize(filepath, m_Scene))
@@ -290,4 +292,7 @@ void Application::OpenScene(const std::filesystem::path& filepath)
         AssetManager::Shutdown();
         return;
     }
+
+    double endTime = m_Timer.GetTimeNow();
+    HEXRAY_INFO("Scene load took {}ms", endTime - startTime);
 }

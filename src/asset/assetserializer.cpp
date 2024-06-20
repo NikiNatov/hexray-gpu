@@ -9,11 +9,11 @@ static bool AssetSerializer::Serialize(const std::filesystem::path& filepath, co
 {
     HEXRAY_ASSERT(!asset->GetPixels().empty());
 
-    std::ofstream ofs(filepath, std::ios::out | std::ios::binary);
+    std::ofstream ofs(filepath, std::ios::out | std::ios::binary | std::ios::trunc);
 
     if (!ofs)
     {
-        HEXRAY_ERROR("Asset Serializer: Failed creating/opening file {}", filepath.string());
+        HEXRAY_ERROR("Asset Serializer: Failed creating/opening texture file {}", filepath.string());
         return false;
     }
 
@@ -65,11 +65,11 @@ static bool AssetSerializer::Serialize(const std::filesystem::path& filepath, co
 template<>
 static bool AssetSerializer::Serialize(const std::filesystem::path& filepath, const std::shared_ptr<Material>& asset)
 {
-    std::ofstream ofs(filepath, std::ios::out | std::ios::binary);
+    std::ofstream ofs(filepath, std::ios::out | std::ios::binary | std::ios::trunc);
 
     if (!ofs)
     {
-        HEXRAY_ERROR("Asset Serializer: Failed creating/opening file {}", filepath.string());
+        HEXRAY_ERROR("Asset Serializer: Failed creating/opening material file {}", filepath.string());
         return false;
     }
 
@@ -120,11 +120,11 @@ static bool AssetSerializer::Serialize(const std::filesystem::path& filepath, co
 {
     HEXRAY_ASSERT(!asset->GetVertices().empty() && !asset->GetIndices().empty());
 
-    std::ofstream ofs(filepath, std::ios::out | std::ios::binary);
+    std::ofstream ofs(filepath, std::ios::out | std::ios::binary | std::ios::trunc);
 
     if (!ofs)
     {
-        HEXRAY_ERROR("Asset Serializer: Failed creating/opening file {}", filepath.string());
+        HEXRAY_ERROR("Asset Serializer: Failed creating/opening mesh file {}", filepath.string());
         return false;
     }
 
@@ -185,7 +185,7 @@ bool AssetSerializer::Deserialize(const std::filesystem::path& filepath, std::sh
 
     if (!ifs)
     {
-        HEXRAY_ERROR("Asset Serializer: Failed reading file {}", filepath.string());
+        HEXRAY_ERROR("Asset Serializer: Failed reading texture file {}", filepath.string());
         return false;
     }
 
@@ -224,7 +224,7 @@ bool AssetSerializer::Deserialize(const std::filesystem::path& filepath, std::sh
 
     if (!ifs)
     {
-        HEXRAY_ERROR("Asset Serializer: Failed reading file {}", filepath.string());
+        HEXRAY_ERROR("Asset Serializer: Failed reading material file {}", filepath.string());
         return false;
     }
 

@@ -62,14 +62,7 @@ void Camera::OnUpdate(float dt)
         m_YawAngle -= mouseDelta.x * m_RotationSpeed * dt;
         m_PitchAngle -= mouseDelta.y * m_RotationSpeed * dt;
 
-        if (m_PitchAngle >= 89.0f)
-        {
-            m_PitchAngle = 89.0f;
-        }
-        else if (m_PitchAngle <= -89.0f)
-        {
-            m_PitchAngle = -89.0f;
-        }
+        m_PitchAngle = std::clamp(m_PitchAngle, -89.0f, 89.0f);
 
         recalculateView = true;
     }

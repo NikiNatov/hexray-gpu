@@ -30,5 +30,7 @@ private:
     static bool ImportDDS(const uint8_t* data, uint32_t size, TextureDescription& outTextureDesc, std::vector<uint8_t>& outPixels);
     static bool ImportSTB(const std::filesystem::path& filepath, TextureDescription& outTextureDesc, std::vector<uint8_t>& outPixels);
     static bool ImportSTB(const uint8_t* data, uint32_t size, TextureDescription& outTextureDesc, std::vector<uint8_t>& outPixels);
-    static Uuid FinalizeTextureImport(TextureDescription& desc, uint8_t* pixels, const AssetMetaData& metaData, TextureImportOptions options);
+    static Uuid FinalizeTextureImport(TextureDescription& desc, std::vector<uint8_t>& pixels, const AssetMetaData& metaData, TextureImportOptions options);
+    static bool GenerateMipmaps(TextureDescription& desc, std::vector<uint8_t>& pixels);
+    static bool CompressDXT(TextureDescription& desc, std::vector<uint8_t>& pixels);
 };
