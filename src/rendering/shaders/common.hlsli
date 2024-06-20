@@ -86,11 +86,12 @@ bool TraceShadowRay(in Ray ray, in uint currentRayRecursionDepth)
     return payload.Hit;
 }
 
-float3 GetNormalFromMap(Texture2D<float4> normalMap, float2 texCoord, float3 tangentWS, float3 bitangentWS, float3 normalWS)
+float3 GetNormalFromMap(Texture2D<float4> normalMap, float2 texCoord, Vertex vertex)
 {
-    float3x3 tgnMatrix = float3x3(normalize(tangentWS), normalize(bitangentWS), normalize(normalWS));
+    // Note: If using DXT5n compression, different unpacking will be required!
+    float3x3 TBNMatrix = float3x3(vertex.Tangent, vertex.Bitangent, vertex.Normal);
     float3 normalMapValue = normalMap.SampleLevel(g_LinearClampSampler, texCoord, 0).rgb * 2.0 - 1.0;
-    return normalize(mul(normalMapValue, tgnMatrix));
+    return normalize(mul(normalMapValue, TBNMatrix));
 }
 
 #endif // __COMMON_HLSLI__

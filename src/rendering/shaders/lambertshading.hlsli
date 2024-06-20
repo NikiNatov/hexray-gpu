@@ -44,24 +44,19 @@ float3 CalculateSpotLight_Lambert(Light light, float3 diffuseColor, float3 surfa
 void ClosestHitShader_Lambert(inout RayPayload payload, in BuiltInTriangleIntersectionAttributes attr)
 {
     uint geometryID = InstanceID();
-    uint triangleIndex = PrimitiveIndex();
-    
+
     MaterialConstants material = GetMeshMaterial(geometryID, g_ResourceIndices.MaterialBufferIndex);
     GeometryConstants geometry = GetMesh(geometryID, g_ResourceIndices.GeometryBufferIndex);
     SceneConstants sceneConstants = g_Buffers[g_ResourceIndices.SceneBufferIndex].Load<SceneConstants>(0);
     
     float3 bary = float3(1.0 - attr.barycentrics.x - attr.barycentrics.y, attr.barycentrics.x, attr.barycentrics.y);
-    Triangle tri = GetTriangle(geometry, triangleIndex);
-    Vertex ip = GetIntersectionPoint(tri, bary);
-    
-    float3 surfacePositionWS = WorldRayOrigin() + WorldRayDirection() * RayTCurrent();
-    float3 normalWS = normalize(mul((float3x3) ObjectToWorld4x3(), ip.Normal));
-    float3 tangentWS = normalize(mul((float3x3) ObjectToWorld4x3(), ip.Tangent));
-    float3 bitangentWS = normalize(mul((float3x3) ObjectToWorld4x3(), ip.Bitangent));
+    Triangle tri = GetTriangle(geometry, PrimitiveIndex());
+    Vertex ip = GetIntersectionPointOS(tri, bary);
+    Vertex ipWS = GetIntersectionPointWS(ip);
     
     if (material.NormalMapIndex != INVALID_DESCRIPTOR_INDEX)
     {
-        normalWS = GetNormalFromMap(g_Textures[material.NormalMapIndex], ip.TexCoord, tangentWS, bitangentWS, normalWS);
+        ipWS.Normal = GetNormalFromMap(g_Textures[material.NormalMapIndex], ip.TexCoord, ipWS);
     }
     
     float4 diffuseColor = material.AlbedoMapIndex != INVALID_DESCRIPTOR_INDEX ? g_Textures[material.AlbedoMapIndex].SampleLevel(g_LinearWrapSampler, ip.TexCoord, 0) : material.AlbedoColor;
@@ -76,20 +71,20 @@ void ClosestHitShader_Lambert(inout RayPayload payload, in BuiltInTriangleInters
         {
             // Cast a shadow ray
             Ray shadowRay;
-            shadowRay.Origin = surfacePositionWS;
+            shadowRay.Origin = ipWS.Position;
             shadowRay.Direction = normalize(-light.Direction);
         
             bool isInShadow = TraceShadowRay(shadowRay, payload.RecursionDepth);
             
-            directLightColor += CalculateDirectionalLight_Lambert(light, diffuseColor.xyz, normalWS, isInShadow);
+            directLightColor += CalculateDirectionalLight_Lambert(light, diffuseColor.xyz, ipWS.Normal, isInShadow);
         }
         else if (light.LightType == POINT_LIGHT)
         {
-            directLightColor += CalculatePointLight_Lambert(light, diffuseColor.xyz, surfacePositionWS, normalWS);
+            directLightColor += CalculatePointLight_Lambert(light, diffuseColor.xyz, ipWS.Position, ipWS.Normal);
         }
         else if (light.LightType == SPOT_LIGHT)
         {
-            directLightColor += CalculateSpotLight_Lambert(light, diffuseColor.xyz, surfacePositionWS, normalWS);
+            directLightColor += CalculateSpotLight_Lambert(light, diffuseColor.xyz, ipWS.Position, ipWS.Normal);
         }
     }
     

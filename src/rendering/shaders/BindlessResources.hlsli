@@ -162,8 +162,9 @@ Triangle GetTriangle(GeometryConstants geometry, uint triangleIndex)
     return tri;
 }
 
+// Object space
 // -----------------------------------------------------------------------
-Vertex GetIntersectionPoint(Triangle tri, float3 bary)
+Vertex GetIntersectionPointOS(Triangle tri, float3 bary)
 {
     Vertex vertex;
     vertex.TexCoord = bary.x * tri.V0.TexCoord + bary.y * tri.V1.TexCoord + bary.z * tri.V2.TexCoord;
@@ -171,6 +172,20 @@ Vertex GetIntersectionPoint(Triangle tri, float3 bary)
     vertex.Tangent = bary.x * tri.V0.Tangent + bary.y * tri.V1.Tangent + bary.z * tri.V2.Tangent;
     vertex.Bitangent = bary.x * tri.V0.Bitangent + bary.y * tri.V1.Bitangent + bary.z * tri.V2.Bitangent;
     return vertex;
+}
+
+// World space
+// -----------------------------------------------------------------------
+Vertex GetIntersectionPointWS(Vertex vertex)
+{
+    float3x3 objectToWorld = (float3x3) ObjectToWorld4x3();
+    
+    Vertex ws;
+    ws.Position = WorldRayOrigin() + WorldRayDirection() * RayTCurrent();
+    ws.Normal = normalize(mul(objectToWorld, vertex.Normal));
+    ws.Tangent = normalize(mul(objectToWorld, vertex.Tangent));
+    ws.Bitangent = normalize(mul(objectToWorld, vertex.Bitangent));
+    return ws;
 }
 
 #endif // __BINDLESS_RESOURCES_HLSLI__

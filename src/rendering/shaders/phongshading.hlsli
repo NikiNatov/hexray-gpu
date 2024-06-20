@@ -72,31 +72,26 @@ float3 CalculateSpotLight_Phong(Light light, float4 albedo, float4 specular, flo
 void ClosestHitShader_Phong(inout RayPayload payload, in BuiltInTriangleIntersectionAttributes attr)
 {
     uint geometryID = InstanceID();
-    uint triangleIndex = PrimitiveIndex();
-    
+
     MaterialConstants material = GetMeshMaterial(geometryID, g_ResourceIndices.MaterialBufferIndex);
     GeometryConstants geometry = GetMesh(geometryID, g_ResourceIndices.GeometryBufferIndex);
     SceneConstants sceneConstants = g_Buffers[g_ResourceIndices.SceneBufferIndex].Load<SceneConstants>(0);
     
     float3 bary = float3(1.0 - attr.barycentrics.x - attr.barycentrics.y, attr.barycentrics.x, attr.barycentrics.y);
-    Triangle tri = GetTriangle(geometry, triangleIndex);
-    Vertex ip = GetIntersectionPoint(tri, bary);
-    
-    float3 surfacePositionWS = WorldRayOrigin() + WorldRayDirection() * RayTCurrent();
-    float3 normalWS = normalize(mul((float3x3) ObjectToWorld4x3(), ip.Normal));
-    float3 tangentWS = normalize(mul((float3x3) ObjectToWorld4x3(), ip.Tangent));
-    float3 bitangentWS = normalize(mul((float3x3) ObjectToWorld4x3(), ip.Bitangent));
+    Triangle tri = GetTriangle(geometry, PrimitiveIndex());
+    Vertex ip = GetIntersectionPointOS(tri, bary);
+    Vertex ipWS = GetIntersectionPointWS(ip);
     
     if (material.NormalMapIndex != INVALID_DESCRIPTOR_INDEX)
     {
-        normalWS = GetNormalFromMap(g_Textures[material.NormalMapIndex], ip.TexCoord, tangentWS, bitangentWS, normalWS);
+        ipWS.Normal = GetNormalFromMap(g_Textures[material.NormalMapIndex], ip.TexCoord, ipWS);
     }
     
     float4 albedoColor = material.AlbedoMapIndex != INVALID_DESCRIPTOR_INDEX ? g_Textures[material.AlbedoMapIndex].SampleLevel(g_LinearWrapSampler, ip.TexCoord, 0) : material.AlbedoColor;
     float4 specularColor = material.SpecularColor;
     float shininess = material.Shininess;
     
-    float3 viewDir = normalize(surfacePositionWS - sceneConstants.CameraPosition);
+    float3 viewDir = normalize(ipWS.Position - sceneConstants.CameraPosition);
     
     float3 directLightColor = float3(0.0f, 0.0f, 0.0f);
     
@@ -107,20 +102,20 @@ void ClosestHitShader_Phong(inout RayPayload payload, in BuiltInTriangleIntersec
         {
             // Cast a shadow ray
             Ray shadowRay;
-            shadowRay.Origin = surfacePositionWS;
+            shadowRay.Origin = ipWS.Position;
             shadowRay.Direction = normalize(-light.Direction);
         
             bool isInShadow = TraceShadowRay(shadowRay, payload.RecursionDepth);
             
-            directLightColor += CalculateDirectionalLight_Phong(light, albedoColor, specularColor, shininess, surfacePositionWS, viewDir, normalWS, isInShadow);
+            directLightColor += CalculateDirectionalLight_Phong(light, albedoColor, specularColor, shininess, ipWS.Position, viewDir, ipWS.Normal, isInShadow);
         }
         else if (light.LightType == POINT_LIGHT)
         {
-            directLightColor += CalculatePointLight_Phong(light, albedoColor, specularColor, shininess, surfacePositionWS, viewDir, normalWS);
+            directLightColor += CalculatePointLight_Phong(light, albedoColor, specularColor, shininess, ipWS.Position, viewDir, ipWS.Normal);
         }
         else if (light.LightType == SPOT_LIGHT)
         {
-            directLightColor += CalculateSpotLight_Phong(light, albedoColor, specularColor, shininess, surfacePositionWS, viewDir, normalWS);
+            directLightColor += CalculateSpotLight_Phong(light, albedoColor, specularColor, shininess, ipWS.Position, viewDir, ipWS.Normal);
         }
     }
     

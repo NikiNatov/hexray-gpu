@@ -109,32 +109,27 @@ float3 CalculateSpotLight_PBR(Light light, float3 F0, float3 V, float3 N, float3
 void ClosestHitShader_PBR(inout RayPayload payload, in BuiltInTriangleIntersectionAttributes attr)
 {
     uint geometryID = InstanceID();
-    uint triangleIndex = PrimitiveIndex();
-    
+
     MaterialConstants material = GetMeshMaterial(geometryID, g_ResourceIndices.MaterialBufferIndex);
     GeometryConstants geometry = GetMesh(geometryID, g_ResourceIndices.GeometryBufferIndex);
     SceneConstants sceneConstants = g_Buffers[g_ResourceIndices.SceneBufferIndex].Load<SceneConstants>(0);
     
     float3 bary = float3(1.0 - attr.barycentrics.x - attr.barycentrics.y, attr.barycentrics.x, attr.barycentrics.y);
-    Triangle tri = GetTriangle(geometry, triangleIndex);
-    Vertex ip = GetIntersectionPoint(tri, bary);
-    
-    float3 surfacePositionWS = WorldRayOrigin() + WorldRayDirection() * RayTCurrent();
-    float3 normalWS = normalize(mul((float3x3) ObjectToWorld4x3(), ip.Normal));
-    float3 tangentWS = normalize(mul((float3x3) ObjectToWorld4x3(), ip.Tangent));
-    float3 bitangentWS = normalize(mul((float3x3) ObjectToWorld4x3(), ip.Bitangent));
+    Triangle tri = GetTriangle(geometry, PrimitiveIndex());
+    Vertex ip = GetIntersectionPointOS(tri, bary);
+    Vertex ipWS = GetIntersectionPointWS(ip);
     
     if (material.NormalMapIndex != INVALID_DESCRIPTOR_INDEX)
     {
-        normalWS = GetNormalFromMap(g_Textures[material.NormalMapIndex], ip.TexCoord, tangentWS, bitangentWS, normalWS);
+        ipWS.Normal = GetNormalFromMap(g_Textures[material.NormalMapIndex], ip.TexCoord, ipWS);
     }
     
     float4 albedoColor = material.AlbedoMapIndex != INVALID_DESCRIPTOR_INDEX ? g_Textures[material.AlbedoMapIndex].SampleLevel(g_LinearWrapSampler, ip.TexCoord, 0) : material.AlbedoColor;
     float metalness = material.MetalnessMapIndex != INVALID_DESCRIPTOR_INDEX ? g_Textures[material.MetalnessMapIndex].SampleLevel(g_LinearWrapSampler, ip.TexCoord, 0) : material.Metalness;
     float roughness = material.RoughnessMapIndex != INVALID_DESCRIPTOR_INDEX ? g_Textures[material.RoughnessMapIndex].SampleLevel(g_LinearWrapSampler, ip.TexCoord, 0) : material.Roughness;
 
-    float3 N = normalize(normalWS);
-    float3 V = normalize(sceneConstants.CameraPosition - surfacePositionWS);
+    float3 N = ipWS.Normal;
+    float3 V = normalize(sceneConstants.CameraPosition - ipWS.Position);
     float3 F0 = lerp(float3(0.04, 0.04, 0.04), albedoColor.rgb, metalness);
 
     // Lights
@@ -146,7 +141,7 @@ void ClosestHitShader_PBR(inout RayPayload payload, in BuiltInTriangleIntersecti
         if (light.LightType == DIRECTIONAL_LIGHT)
         {
             Ray shadowRay;
-            shadowRay.Origin = surfacePositionWS;
+            shadowRay.Origin = ipWS.Position;
             shadowRay.Direction = normalize(-light.Direction);
         
             bool isInShadow = TraceShadowRay(shadowRay, payload.RecursionDepth);
@@ -155,11 +150,11 @@ void ClosestHitShader_PBR(inout RayPayload payload, in BuiltInTriangleIntersecti
         }
         else if (light.LightType == POINT_LIGHT)
         {
-            directLightColor += CalculatePointLight_PBR(light, F0, V, N, surfacePositionWS, albedoColor.rgb, metalness, roughness);
+            directLightColor += CalculatePointLight_PBR(light, F0, V, N, ipWS.Position, albedoColor.rgb, metalness, roughness);
         }
         else if (light.LightType == SPOT_LIGHT)
         {
-            directLightColor += CalculateSpotLight_PBR(light, F0, V, N, surfacePositionWS, albedoColor.rgb, metalness, roughness);
+            directLightColor += CalculateSpotLight_PBR(light, F0, V, N, ipWS.Position, albedoColor.rgb, metalness, roughness);
         }
     }
     
