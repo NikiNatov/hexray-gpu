@@ -1,34 +1,6 @@
 #ifndef __COMMON_HLSLI__
 #define __COMMON_HLSLI__
 
-#define DIRECTIONAL_LIGHT 0
-#define POINT_LIGHT       1
-#define SPOT_LIGHT        2
-#define AREA_LIGHT        3 // todo
-
-#define MAX_RAY_RECURSION_DEPTH 3
-
-static const float PI = 3.141592;
-static const float TwoPI = 2 * PI;
-static const float Epsilon = 0.00001;
-
-struct Ray
-{
-    float3 Origin;
-    float3 Direction;
-};
-
-struct RayPayload
-{
-    float4 Color;
-    uint RecursionDepth;
-};
-
-struct ShadowRayPayload
-{
-    bool Hit;
-};
-
 struct SampleGradValues
 {
     float2 TexCoord;
@@ -48,60 +20,10 @@ void GenerateCameraRay(SceneConstants sceneConstants, uint2 index, inout float3 
     direction = rayDirectionWS;
 }
 
-float4 TraceRadianceRay(in Ray ray, in uint currentRayRecursionDepth)
-{
-    if (currentRayRecursionDepth >= MAX_RAY_RECURSION_DEPTH)
-    {
-        return float4(0, 0, 0, 0);
-    }
-
-    RayDesc rayDesc;
-    rayDesc.Origin = ray.Origin;
-    rayDesc.Direction = ray.Direction;
-    rayDesc.TMin = 0.01;
-    rayDesc.TMax = 1000;
-    
-    RaytracingAccelerationStructure accelerationStructure = g_AccelerationStructures[g_ResourceIndices.AccelerationStructureIndex];
-    RayPayload payload = { float4(0, 0, 0, 0), currentRayRecursionDepth + 1 };
-    
-    TraceRay(accelerationStructure, RAY_FLAG_CULL_BACK_FACING_TRIANGLES, ~0, 0, 0, 0, rayDesc, payload);
-
-    return payload.Color;
-}
-
-bool TraceShadowRay(in Ray ray, in uint currentRayRecursionDepth)
-{
-    if (currentRayRecursionDepth >= MAX_RAY_RECURSION_DEPTH)
-    {
-        return false;
-    }
-
-    RayDesc rayDesc;
-    rayDesc.Origin = ray.Origin;
-    rayDesc.Direction = ray.Direction;
-    rayDesc.TMin = 0.01;
-    rayDesc.TMax = 1000;
-    
-    RaytracingAccelerationStructure accelerationStructure = g_AccelerationStructures[g_ResourceIndices.AccelerationStructureIndex];
-    ShadowRayPayload payload = { true };
-    
-    TraceRay(accelerationStructure, RAY_FLAG_CULL_BACK_FACING_TRIANGLES | RAY_FLAG_FORCE_OPAQUE | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER | RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH, ~0, 0, 0, 1, rayDesc, payload);
-
-    return payload.Hit;
-}
-
 float4 SampleTextureGrad(Texture2D<float4> texture, SamplerState samplerState, SampleGradValues sampleValues)
 {
     //return texture.SampleLevel(samplerState, sampleValues.TexCoord, 0);
     return texture.SampleGrad(samplerState, sampleValues.TexCoord, sampleValues.Ddx, sampleValues.Ddy);
-}
-
-float3 GetNormalFromMap(Texture2D<float4> normalMap, Vertex vertex, SampleGradValues sampleValues)
-{
-    // Note: If using DXT5n compression, different unpacking will be required!
-    float3x3 TBNMatrix = float3x3(vertex.Tangent, vertex.Bitangent, vertex.Normal);
-    float3 normalMapValue = SampleTextureGrad(normalMap, g_LinearClampSampler, sampleValues).rgb * 2.0 - 1.0;
-    return normalize(mul(normalMapValue, TBNMatrix));
 }
 
 float3 RayPlaneIntersection(float3 planeOrigin, float3 planeNormal, float3 rayOrigin, float3 rayDirection)
@@ -127,7 +49,6 @@ float3 ComputeBarycentricCoordinates(float3 pt, float3 v0, float3 v1, float3 v2)
     float u = 1.0 - v - w;
     return float3(u, v, w);
 }
-
 
 SampleGradValues GetSamplingValues(SceneConstants sceneConstants, Triangle tri, float3 worldPosition, float3 worldNormal, float2 texCoord)
 {
@@ -175,4 +96,10 @@ SampleGradValues GetSamplingValues(SceneConstants sceneConstants, Triangle tri, 
     return result;
 }
 
+uint ComputeMipLevel(float2 texCoords)
+{
+    float2 dx = ddx(texCoords);
+    float2 dy = ddy(texCoords);
+    return 0.5 * log2(max(dot(dx, dx), dot(dy, dy)));
+}
 #endif // __COMMON_HLSLI__

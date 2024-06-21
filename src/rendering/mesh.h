@@ -5,17 +5,9 @@
 #include "rendering/material.h"
 #include "rendering/resources_fwd.h"
 #include "asset/asset.h"
+#include "rendering/shaders/resources.h"
 
 #include <glm.hpp>
-
-struct Vertex
-{
-    glm::vec3 Position;
-    glm::vec2 TexCoord;
-    glm::vec3 Normal;
-    glm::vec3 Tangent;
-    glm::vec3 Bitangent;
-};
 
 struct Submesh
 {

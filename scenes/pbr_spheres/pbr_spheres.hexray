@@ -1,0 +1,116 @@
+Name: pbr_spheres
+Camera:
+  Position: [5, 5, -5]
+  Yaw: 45
+  Pitch: -25
+  FOV: 60
+Entities:
+  - Entity: 10212821202673451405
+    TagComponent:
+      Tag: Sphere
+    SceneHierarchyComponent:
+      Parent: 0
+      FirstChild: 0
+      NextSibling: 0
+      PreviousSibling: 0
+    TransformComponent:
+      Translation: [0, 0, 8]
+      Rotation: [0, 0, 0]
+      Scale: [10, 10, 10]
+    MeshComponent:
+      Mesh: 16325624282694119969
+      Materials:
+        - 9215370629855428657
+  - Entity: 6348591630393959774
+    TagComponent:
+      Tag: Sphere
+    SceneHierarchyComponent:
+      Parent: 0
+      FirstChild: 0
+      NextSibling: 0
+      PreviousSibling: 0
+    TransformComponent:
+      Translation: [7.20000029, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [2, 2, 2]
+    MeshComponent:
+      Mesh: 16325624282694119969
+      Materials:
+        - 15426669971618511260
+  - Entity: 8250086932649049815
+    TagComponent:
+      Tag: Sphere
+    SceneHierarchyComponent:
+      Parent: 0
+      FirstChild: 0
+      NextSibling: 0
+      PreviousSibling: 0
+    TransformComponent:
+      Translation: [4.80000019, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [2, 2, 2]
+    MeshComponent:
+      Mesh: 16325624282694119969
+      Materials:
+        - 3341419239815796775
+  - Entity: 8289484911073955154
+    TagComponent:
+      Tag: Sphere
+    SceneHierarchyComponent:
+      Parent: 0
+      FirstChild: 0
+      NextSibling: 0
+      PreviousSibling: 0
+    TransformComponent:
+      Translation: [2.4000001, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [2, 2, 2]
+    MeshComponent:
+      Mesh: 16325624282694119969
+      Materials:
+        - 17674866018143584163
+  - Entity: 9811220920499494596
+    TagComponent:
+      Tag: Sphere
+    SceneHierarchyComponent:
+      Parent: 0
+      FirstChild: 0
+      NextSibling: 0
+      PreviousSibling: 0
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [2, 2, 2]
+    MeshComponent:
+      Mesh: 16325624282694119969
+      Materials:
+        - 3306385820756075865
+  - Entity: 7189545466632774860
+    TagComponent:
+      Tag: Sun
+    SceneHierarchyComponent:
+      Parent: 0
+      FirstChild: 0
+      NextSibling: 0
+      PreviousSibling: 0
+    TransformComponent:
+      Translation: [1, 3, 2]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    DirectionalLightComponent:
+      Color: [1, 1, 1]
+      Intensity: 1
+  - Entity: 3359655639290426987
+    TagComponent:
+      Tag: SkyBox
+    SceneHierarchyComponent:
+      Parent: 0
+      FirstChild: 0
+      NextSibling: 0
+      PreviousSibling: 0
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SkyLightComponent:
+      EnvironmentMap: 7884058071470161461

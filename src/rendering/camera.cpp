@@ -17,43 +17,44 @@ Camera::Camera(float fov, float aspectRatio, const glm::vec3& position, float ya
 // ------------------------------------------------------------------------------------------------------------------------------------
 void Camera::OnUpdate(float dt)
 {
+    m_HasMoved = false;
+
     const glm::vec2 mousePos = Input::GetMousePosition();
     glm::vec2 mouseDelta = mousePos - m_LastMousePosition;
     m_LastMousePosition = mousePos;
 
-    bool recalculateView = false;
     glm::vec3 upVector = glm::vec3(0.0f, 1.0f, 0.0f);
 
     // Movement
     if (Input::IsKeyPressed(Key::W))
     {
         m_Position += GetCameraFront() * m_MovementSpeed * dt;
-        recalculateView = true;
+        m_HasMoved = true;
     }
     else if (Input::IsKeyPressed(Key::S))
     {
         m_Position -= GetCameraFront() * m_MovementSpeed * dt;
-        recalculateView = true;
+        m_HasMoved = true;
     }
     if (Input::IsKeyPressed(Key::A))
     {
         m_Position -= GetCameraRight() * m_MovementSpeed * dt;
-        recalculateView = true;
+        m_HasMoved = true;
     }
     else if (Input::IsKeyPressed(Key::D))
     {
         m_Position += GetCameraRight() * m_MovementSpeed * dt;
-        recalculateView = true;
+        m_HasMoved = true;
     }
     if (Input::IsKeyPressed(Key::LShift))
     {
         m_Position -= upVector * m_MovementSpeed * dt;
-        recalculateView = true;
+        m_HasMoved = true;
     }
     else if (Input::IsKeyPressed(Key::Space))
     {
         m_Position += upVector * m_MovementSpeed * dt;
-        recalculateView = true;
+        m_HasMoved = true;
     }
 
     // Rotation
@@ -64,10 +65,10 @@ void Camera::OnUpdate(float dt)
 
         m_PitchAngle = std::clamp(m_PitchAngle, -89.0f, 89.0f);
 
-        recalculateView = true;
+        m_HasMoved = true;
     }
 
-    if (recalculateView)
+    if (m_HasMoved)
     {
         RecalculateView();
     }

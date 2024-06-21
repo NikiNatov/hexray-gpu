@@ -3,6 +3,7 @@
 #include "core/core.h"
 #include "rendering/texture.h"
 #include "asset/asset.h"
+#include "rendering/shaders/resources.h"
 
 #include <glm.hpp>
 
@@ -14,13 +15,6 @@ enum class MaterialFlags
 };
 
 ENUM_FLAGS(MaterialFlags);
-
-enum class MaterialType
-{
-    Lambert,
-    Phong,
-    PBR
-};
 
 enum class MaterialPropertyType
 {

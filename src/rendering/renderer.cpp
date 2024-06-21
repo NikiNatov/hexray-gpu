@@ -11,16 +11,14 @@ Renderer::Renderer(const RendererDescription& description)
     RaytracingPipelineDescription pipelineDesc;
     pipelineDesc.ShaderFilePath = Application::GetInstance()->GetExecutablePath().parent_path() / "shaderdata.cso";
     pipelineDesc.MaxRecursionDepth = m_Description.RayRecursionDepth;
-    pipelineDesc.MaxPayloadSize = sizeof(float) * 4 + sizeof(uint32_t);
-    pipelineDesc.MaxIntersectAttributesSize = sizeof(float) * 2;
+    pipelineDesc.MaxPayloadSize = sizeof(ColorRayPayload);
+    pipelineDesc.MaxIntersectAttributesSize = sizeof(glm::vec2);
     pipelineDesc.RayGenShader = L"RayGenShader";
     pipelineDesc.MissShaders = {
-        L"MissShader_Radiance", L"MissShader_Shadow"
+        L"MissShader_Color", L"MissShader_Shadow"
     };
     pipelineDesc.HitGroups = {
-        HitGroup { D3D12_HIT_GROUP_TYPE_TRIANGLES, L"LambertColorHitGroup", L"ClosestHitShader_Lambert", L"", L"" },
-        HitGroup { D3D12_HIT_GROUP_TYPE_TRIANGLES, L"PhongColorHitGroup", L"ClosestHitShader_Phong", L"", L"" },
-        HitGroup { D3D12_HIT_GROUP_TYPE_TRIANGLES, L"PBRColorHitGroup", L"ClosestHitShader_PBR", L"", L"" }
+        HitGroup { D3D12_HIT_GROUP_TYPE_TRIANGLES, L"ColorHitGroup", L"ClosestHitShader_Color", L"", L"" },
     };
 
     m_RTPipeline = std::make_shared<RaytracingPipeline>(pipelineDesc, L"Triangle Raytracing Pipeline");
@@ -34,7 +32,19 @@ Renderer::Renderer(const RendererDescription& description)
         sceneBufferDesc.HeapType = D3D12_HEAP_TYPE_UPLOAD;
 
         m_SceneBuffers[i] = std::make_shared<Buffer>(sceneBufferDesc, fmt::format(L"Scene Buffer {}", i).c_str());
+
+        TextureDescription rtDesc;
+        rtDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+        rtDesc.Width = m_ViewportWidth;
+        rtDesc.Height = m_ViewportHeight;
+        rtDesc.MipLevels = 1;
+        rtDesc.InitialState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+        rtDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+
+        m_RenderTargets[i] = std::make_shared<Texture>(rtDesc, fmt::format(L"Render Target {}", i).c_str());
     }
+
+    m_SceneConstants.FrameIndex = 1;
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
@@ -51,12 +61,15 @@ void Renderer::BeginScene(const Camera& camera, const std::shared_ptr<Texture>& 
 
     m_SceneConstants.ViewMatrix = camera.GetViewMatrix();
     m_SceneConstants.ProjectionMatrix = camera.GetProjection();
-    m_SceneConstants.InvProjectionMatrix = glm::inverse(m_SceneConstants.ProjectionMatrix);
+    m_SceneConstants.InvProjMatrix = glm::inverse(m_SceneConstants.ProjectionMatrix);
     m_SceneConstants.InvViewMatrix = glm::inverse(m_SceneConstants.ViewMatrix);
     m_SceneConstants.CameraPosition = camera.GetPosition();
     m_SceneConstants.NumLights = 0;
+
+    if (camera.HasMoved())
+        m_SceneConstants.FrameIndex = 1;
     
-    m_ResourceBindTable.EnvironmentMap = environmentMap ? environmentMap->GetSRV() : DefaultResources::BlackTextureCube->GetSRV();
+    m_ResourceBindTable.EnvironmentMapIndex = environmentMap ? environmentMap->GetSRV() : DefaultResources::BlackTextureCube->GetSRV();
 
     m_Lights.clear();
     m_MeshInstances.clear();
@@ -66,7 +79,7 @@ void Renderer::BeginScene(const Camera& camera, const std::shared_ptr<Texture>& 
 void Renderer::SubmitDirectionalLight(const glm::vec3& color, const glm::vec3& direction, float intensity)
 {
     Light& light = m_Lights.emplace_back();
-    light.Type = LightType::DirLight;
+    light.LightType = LightType::DirLight;
     light.Color = { color.r, color.g, color.b };
     light.Direction = { direction.x, direction.y, direction.z };
     light.Intensity = intensity;
@@ -78,7 +91,7 @@ void Renderer::SubmitDirectionalLight(const glm::vec3& color, const glm::vec3& d
 void Renderer::SubmitPointLight(const glm::vec3& color, const glm::vec3& position, float intensity, const glm::vec3& attenuationFactors)
 {
     Light& light = m_Lights.emplace_back();
-    light.Type = LightType::PointLight;
+    light.LightType = LightType::PointLight;
     light.Color = { color.r, color.g, color.b };
     light.Position = { position.x, position.y, position.z };
     light.Intensity = intensity;
@@ -91,7 +104,7 @@ void Renderer::SubmitPointLight(const glm::vec3& color, const glm::vec3& positio
 void Renderer::SubmitSpotLight(const glm::vec3& color, const glm::vec3& position, const glm::vec3& direction, float intensity, float coneAngle, const glm::vec3& attenuationFactors)
 {
     Light& light = m_Lights.emplace_back();
-    light.Type = LightType::SpotLight;
+    light.LightType = LightType::SpotLight;
     light.Color = { color.r, color.g, color.b };
     light.Position = { position.x, position.y, position.z };
     light.Direction = { direction.x, direction.y, direction.z };
@@ -119,6 +132,7 @@ void Renderer::SetViewportSize(uint32_t width, uint32_t height)
 {
     m_ViewportWidth = width;
     m_ViewportHeight = height;
+    m_SceneConstants.FrameIndex = 1;
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
@@ -132,7 +146,7 @@ void Renderer::Render()
     // Update Render target
     std::shared_ptr<Texture>& renderTarget = m_RenderTargets[currentFrameIndex];
 
-    if (!renderTarget || renderTarget->GetWidth() != m_ViewportWidth || renderTarget->GetHeight() != m_ViewportHeight)
+    if (renderTarget->GetWidth() != m_ViewportWidth || renderTarget->GetHeight() != m_ViewportHeight)
     {
         TextureDescription rtDesc;
         rtDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
@@ -145,13 +159,16 @@ void Renderer::Render()
         renderTarget = std::make_shared<Texture>(rtDesc, fmt::format(L"Render Target {}", currentFrameIndex).c_str());
     }
 
-    m_ResourceBindTable.RenderTarget = renderTarget->GetUAV(0);
+    m_ResourceBindTable.RenderTargetIndex = renderTarget->GetUAV(0);
+
+    std::shared_ptr<Texture>& prevFrameRenderTarget = m_RenderTargets[currentFrameIndex == 0 ? FRAMES_IN_FLIGHT - 1 : currentFrameIndex - 1];
+    m_ResourceBindTable.PrevFrameRenderTargetIndex = prevFrameRenderTarget->GetUAV(0);
 
     // Update Scene buffer
     std::shared_ptr<Buffer> sceneBuffer = m_SceneBuffers[currentFrameIndex];
 
     memcpy(sceneBuffer->GetMappedData(), &m_SceneConstants, sizeof(SceneConstants));
-    m_ResourceBindTable.SceneBuffer = sceneBuffer->GetSRV();
+    m_ResourceBindTable.SceneBufferIndex = sceneBuffer->GetSRV();
 
     // Update Lights buffer
     if (!m_Lights.empty())
@@ -170,11 +187,11 @@ void Renderer::Render()
 
         memcpy(lightsBuffer->GetMappedData(), m_Lights.data(), m_Lights.size() * sizeof(Light));
 
-        m_ResourceBindTable.LightsBuffer = lightsBuffer->GetSRV();
+        m_ResourceBindTable.LightsBufferIndex = lightsBuffer->GetSRV();
     }
     else
     {
-        m_ResourceBindTable.LightsBuffer = InvalidDescriptorIndex;
+        m_ResourceBindTable.LightsBufferIndex = InvalidDescriptorIndex;
     }
 
     // Update Material buffer
@@ -194,15 +211,16 @@ void Renderer::Render()
             std::shared_ptr<Material> material = overrideMaterial ? overrideMaterial : meshMaterial;
 
             MaterialConstants& materialConstants = materials.emplace_back();
+            materialConstants.MaterialType = (uint32_t)material->GetType();
             material->GetProperty(MaterialPropertyType::AlbedoColor, materialConstants.AlbedoColor);
 
             TexturePtr albedoMap = nullptr;
             if (material->GetTexture(MaterialTextureType::Albedo, albedoMap))
-                materialConstants.AlbedoMap = albedoMap ? albedoMap->GetSRV() : InvalidDescriptorIndex;
+                materialConstants.AlbedoMapIndex = albedoMap ? albedoMap->GetSRV() : InvalidDescriptorIndex;
 
             TexturePtr normalMap = nullptr;
             if (material->GetTexture(MaterialTextureType::Normal, normalMap))
-                materialConstants.NormalMap = normalMap ? normalMap->GetSRV() : InvalidDescriptorIndex;
+                materialConstants.NormalMapIndex = normalMap ? normalMap->GetSRV() : InvalidDescriptorIndex;
 
             if (material->GetType() == MaterialType::Phong)
             {
@@ -216,11 +234,11 @@ void Renderer::Render()
 
                 TexturePtr roughnessMap = nullptr;
                 if (material->GetTexture(MaterialTextureType::Roughness, roughnessMap))
-                    materialConstants.RoughnessMap = roughnessMap ? roughnessMap->GetSRV() : InvalidDescriptorIndex;
+                    materialConstants.RoughnessMapIndex = roughnessMap ? roughnessMap->GetSRV() : InvalidDescriptorIndex;
 
                 TexturePtr metalnessMap = nullptr;
                 if (material->GetTexture(MaterialTextureType::Metalness, metalnessMap))
-                    materialConstants.MetalnessMap = metalnessMap ? metalnessMap->GetSRV() : InvalidDescriptorIndex;
+                    materialConstants.MetalnessMapIndex = metalnessMap ? metalnessMap->GetSRV() : InvalidDescriptorIndex;
             }
         }
     }
@@ -236,7 +254,7 @@ void Renderer::Render()
     }
 
     memcpy(materialBuffer->GetMappedData(), materials.data(), materials.size() * sizeof(MaterialConstants));
-    m_ResourceBindTable.MaterialBuffer = materialBuffer->GetSRV();
+    m_ResourceBindTable.MaterialBufferIndex = materialBuffer->GetSRV();
 
     // Update Geometry buffer
     std::shared_ptr<Buffer>& geometryBuffer = m_GeometryBuffers[currentFrameIndex];
@@ -250,8 +268,8 @@ void Renderer::Render()
         {
             GeometryConstants& geometry = geometries.emplace_back();
             geometry.MaterialIndex = geometries.size() - 1;
-            geometry.VertexBuffer = instance.Mesh->GetVertexBuffer(i)->GetSRV();
-            geometry.IndexBuffer = instance.Mesh->GetIndexBuffer(i)->GetSRV();
+            geometry.VertexBufferIndex = instance.Mesh->GetVertexBuffer(i)->GetSRV();
+            geometry.IndexBufferIndex = instance.Mesh->GetIndexBuffer(i)->GetSRV();
         }
     }
 
@@ -266,14 +284,16 @@ void Renderer::Render()
     }
 
     memcpy(geometryBuffer->GetMappedData(), geometries.data(), geometries.size() * sizeof(GeometryConstants));
-    m_ResourceBindTable.GeometryBuffer = geometryBuffer->GetSRV();
+    m_ResourceBindTable.GeometryBufferIndex = geometryBuffer->GetSRV();
 
     // Update Top-level Acceleration structure
     m_TopLevelAccelerationStructures[currentFrameIndex] = GraphicsContext::GetInstance()->BuildTopLevelAccelerationStructure(m_MeshInstances);
-    m_ResourceBindTable.AccelerationStructure = m_TopLevelAccelerationStructures[currentFrameIndex]->GetSRV();
+    m_ResourceBindTable.AccelerationStructureIndex = m_TopLevelAccelerationStructures[currentFrameIndex]->GetSRV();
 
     // Render
     GraphicsContext::GetInstance()->DispatchRays(m_ViewportWidth, m_ViewportHeight, m_ResourceBindTable, m_RTPipeline.get());
+
+    m_SceneConstants.FrameIndex++;
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------

@@ -1,129 +1,86 @@
 #ifndef __PHONGSHADING_HLSLI__
 #define __PHONGSHADING_HLSLI__
 
-#include "BindlessResources.hlsli"
-#include "common.hlsli"
+#include "resources.h"
 
-float3 CalculateDirectionalLight_Phong(Light light, float4 albedo, float4 specular, float shininess, float3 surfacePosition, float3 viewDir, float3 normal, bool isInShadow)
+float3 CalculateDirectionalLight_Phong(Light light, float3 V, float3 N, float3 albedo, float3 specular, float shininess)
 {
-    // Diffuse
-    float shadowFactor = isInShadow ? 0.35f : 1.0;
-    float lambertianTerm = max(0.0, dot(normal, -light.Direction));
-    float3 diffuseLight = shadowFactor * albedo.rgb * lambertianTerm * light.Color * light.Intensity;
+    float3 L = normalize(-light.Direction);
+    float NDotL = max(dot(N, L), 0.0);
     
-    // Specular
-    float3 specularLight = float3(0.0f, 0.0f, 0.0f);
-    if(!isInShadow)
-    {
-        float3 reflectedLightDir = reflect(light.Direction, normal);
-        float specularTerm = pow(max(0.0, dot(-viewDir, reflectedLightDir)), shininess);
-        float3 specularLight = specular.rgb * specularTerm * light.Color * light.Intensity;
-    }
+    // Diffuse BRDF
+    float3 diffuseBRDF = albedo;
     
-    return diffuseLight + specularLight;
+    // Specular BRDF
+    float specularTerm = pow(max(dot(V, reflect(-L, N)), 0.0), shininess);
+    float3 specularBRDF = specularTerm * specular;
+    
+    return (diffuseBRDF + specularBRDF) * light.Color * light.Intensity * NDotL;
 }
 
-float3 CalculatePointLight_Phong(Light light, float4 albedo, float4 specular, float shininess, float3 surfacePosition, float3 viewDir, float3 normal)
+float3 CalculatePointLight_Phong(Light light, float3 V, float3 N, float3 hitPosition, float3 albedo, float3 specular, float shininess)
 {
-    float3 lightToSurface = surfacePosition - light.Position;
+    // Calculate attenuation
+    float3 lightToSurface = hitPosition - light.Position.xyz;
     float distance = length(lightToSurface);
-    lightToSurface = normalize(lightToSurface);
+    float attenuation = 1.0 / max(light.AttenuationFactors[0] + light.AttenuationFactors[1] * distance + light.AttenuationFactors[2] * distance * distance, Epsilon);
     
-    float attenuation = 1.0f / max(0.0001, light.AttenuationFactors[0] + light.AttenuationFactors[1] * distance + light.AttenuationFactors[2] * distance * distance);
+    // Calculate color
+    float3 L = normalize(-lightToSurface);
+    float NDotL = max(dot(N, L), 0.0);
     
-    // Diffuse
-    float lambertianTerm = max(0.0, dot(normal, -lightToSurface));
-    float3 diffuseLight = albedo.rgb * lambertianTerm * light.Color * light.Intensity * attenuation;
+    // Diffuse BRDF
+    float3 diffuseBRDF = albedo;
     
-    // Specular
-    float3 reflectedLightDir = reflect(lightToSurface, normal);
-    float specularTerm = pow(max(0.0, dot(-viewDir, reflectedLightDir)), shininess);
-    float3 specularLight = specular.rgb * specularTerm * light.Color * light.Intensity * attenuation;
+    // Specular BRDF
+    float specularTerm = pow(max(dot(V, reflect(-L, N)), 0.0), shininess);
+    float3 specularBRDF = specularTerm * specular.rgb;
     
-    return diffuseLight + specularLight;
+    return (diffuseBRDF + specularBRDF) * light.Color * light.Intensity * attenuation * NDotL;
 }
 
-float3 CalculateSpotLight_Phong(Light light, float4 albedo, float4 specular, float shininess, float3 surfacePosition, float3 viewDir, float3 normal)
+float3 CalculateSpotLight_Phong(Light light, float3 V, float3 N, float3 hitPosition, float3 albedo, float3 specular, float shininess)
 {
-    float3 lightToSurface = surfacePosition - light.Position;
+    // Calculate attenuation
+    float3 lightToSurface = hitPosition - light.Position.xyz;
     float distance = length(lightToSurface);
-    lightToSurface = normalize(lightToSurface);
+    float attenuation = 1.0 / max(light.AttenuationFactors[0] + light.AttenuationFactors[1] * distance + light.AttenuationFactors[2] * distance * distance, Epsilon);
     
+    // Calculate spot intensity
     float minCos = cos(light.ConeAngle);
     float maxCos = (minCos + 1.0) / 2.0;
     float cosAngle = dot(light.Direction.xyz, normalize(lightToSurface));
     float spotIntensity = smoothstep(minCos, maxCos, cosAngle);
 
-    float attenuation = 1.0 / max(0.0001, light.AttenuationFactors[0] + light.AttenuationFactors[1] * distance + light.AttenuationFactors[2] * distance * distance);
+    // Calculate color
+    float3 L = normalize(-lightToSurface);
+    float NDotL = max(dot(N, L), 0.0);
     
-    // Diffuse
-    float lambertianTerm = max(0.0, dot(normal, -lightToSurface));
-    float3 diffuseLight = albedo.rgb * lambertianTerm * light.Color * light.Intensity * spotIntensity * attenuation;
+    // Diffuse BRDF
+    float3 diffuseBRDF = albedo;
     
-    // Specular
-    float3 reflectedLightDir = reflect(lightToSurface, normal);
-    float specularTerm = pow(max(0.0, dot(-viewDir, reflectedLightDir)), shininess);
-    float3 specularLight = specular.rgb * specularTerm * light.Color * light.Intensity * spotIntensity * attenuation;
+    // Specular BRDF
+    float specularTerm = pow(max(dot(V, reflect(-L, N)), 0.0), shininess);
+    float3 specularBRDF = specularTerm * specular.rgb;
     
-    return diffuseLight + specularLight;
+    return (diffuseBRDF + specularBRDF) * light.Color * light.Intensity * attenuation * spotIntensity * NDotL;
 }
 
-[shader("closesthit")]
-void ClosestHitShader_Phong(inout RayPayload payload, in BuiltInTriangleIntersectionAttributes attr)
+float3 CalculateDirectLighting_Phong(HitInfo hitInfo, float3 cameraPosition, Light light, float3 albedo, float3 specular, float shininess)
 {
-    uint geometryID = InstanceID();
-
-    MaterialConstants material = GetMeshMaterial(geometryID, g_ResourceIndices.MaterialBufferIndex);
-    GeometryConstants geometry = GetMesh(geometryID, g_ResourceIndices.GeometryBufferIndex);
-    SceneConstants sceneConstants = g_Buffers[g_ResourceIndices.SceneBufferIndex].Load<SceneConstants>(0);
+    float3 viewDir = normalize(hitInfo.WorldPosition - cameraPosition);
     
-    float3 bary = float3(1.0 - attr.barycentrics.x - attr.barycentrics.y, attr.barycentrics.x, attr.barycentrics.y);
-    Triangle tri = GetTriangle(geometry, PrimitiveIndex());
-    Vertex ip = GetIntersectionPointOS(tri, bary);
-    Vertex ipWS = GetIntersectionPointWS(ip);
-    
-    SampleGradValues sampleValues = GetSamplingValues(sceneConstants, tri, ipWS.Position, ipWS.Normal, ip.TexCoord);
-    
-    if (material.NormalMapIndex != INVALID_DESCRIPTOR_INDEX)
+    switch (light.LightType)
     {
-        ipWS.Normal = GetNormalFromMap(g_Textures[material.NormalMapIndex], ipWS, sampleValues);
-    }
-
-    float4 albedoColor = material.AlbedoMapIndex != INVALID_DESCRIPTOR_INDEX ? SampleTextureGrad(g_Textures[material.AlbedoMapIndex], g_LinearWrapSampler, sampleValues) : material.AlbedoColor;
-    float4 specularColor = material.SpecularColor;
-    float shininess = material.Shininess;
-    
-    float3 viewDir = normalize(ipWS.Position - sceneConstants.CameraPosition);
-    
-    float3 directLightColor = float3(0.0f, 0.0f, 0.0f);
-    
-    for (uint i = 0; i < sceneConstants.NumLights; i++)
-    {
-        Light light = GetLight(i, g_ResourceIndices.LightsBufferIndex);
-        if (light.LightType == DIRECTIONAL_LIGHT)
-        {
-            // Cast a shadow ray
-            Ray shadowRay;
-            shadowRay.Origin = ipWS.Position;
-            shadowRay.Direction = normalize(-light.Direction);
-        
-            bool isInShadow = TraceShadowRay(shadowRay, payload.RecursionDepth);
-            
-            directLightColor += CalculateDirectionalLight_Phong(light, albedoColor, specularColor, shininess, ipWS.Position, viewDir, ipWS.Normal, isInShadow);
-        }
-        else if (light.LightType == POINT_LIGHT)
-        {
-            directLightColor += CalculatePointLight_Phong(light, albedoColor, specularColor, shininess, ipWS.Position, viewDir, ipWS.Normal);
-        }
-        else if (light.LightType == SPOT_LIGHT)
-        {
-            directLightColor += CalculateSpotLight_Phong(light, albedoColor, specularColor, shininess, ipWS.Position, viewDir, ipWS.Normal);
-        }
+        case LightType::DirLight:
+            return CalculateDirectionalLight_Phong(light, -viewDir, hitInfo.WorldNormal, albedo, specular, shininess);
+        case LightType::PointLight:
+            return CalculatePointLight_Phong(light, -viewDir, hitInfo.WorldNormal, hitInfo.WorldPosition, albedo, specular, shininess);
+        case LightType::SpotLight:
+            return CalculateSpotLight_Phong(light, -viewDir, hitInfo.WorldNormal, hitInfo.WorldPosition, albedo, specular, shininess);
     }
     
-    float3 ambientLightColor = albedoColor.xyz * float3(0.2f, 0.2f, 0.2f);
-    
-    payload.Color = float4(directLightColor + ambientLightColor, albedoColor.a);
+    return float3(0.0, 0.0, 0.0);
 }
 
 #endif // __PHONGSHADING_HLSLI__

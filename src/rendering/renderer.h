@@ -6,43 +6,13 @@
 #include "rendering/raytracingpipeline.h"
 #include "rendering/mesh.h"
 #include "rendering/camera.h"
-
-#include <glm.hpp>
-
-enum class LightType
-{
-    DirLight,
-    PointLight,
-    SpotLight
-};
-
-struct Light
-{
-    glm::vec3 Position;
-    glm::vec3 Direction;
-    glm::vec3 Color;
-    float Intensity;
-    float ConeAngle;
-    glm::vec3 AttenuationFactors;
-    LightType Type;
-};
+#include "rendering/shaders/resources.h"
 
 struct MeshInstance
 {
     glm::mat4 Transform;
     std::shared_ptr<Mesh> Mesh;
     std::shared_ptr<MaterialTable> OverrideMaterialTable;
-};
-
-struct ResourceBindTable
-{
-    DescriptorIndex EnvironmentMap = InvalidDescriptorIndex;
-    DescriptorIndex RenderTarget = InvalidDescriptorIndex;
-    DescriptorIndex SceneBuffer = InvalidDescriptorIndex;
-    DescriptorIndex LightsBuffer = InvalidDescriptorIndex;
-    DescriptorIndex MaterialBuffer = InvalidDescriptorIndex;
-    DescriptorIndex GeometryBuffer = InvalidDescriptorIndex;
-    DescriptorIndex AccelerationStructure = InvalidDescriptorIndex;
 };
 
 struct RendererDescription
@@ -65,36 +35,6 @@ public:
     void Render();
 
     const std::shared_ptr<Texture>& GetFinalImage() const;
-private:
-    struct SceneConstants
-    {
-        glm::mat4 ViewMatrix = glm::mat4(1.0f);
-        glm::mat4 ProjectionMatrix = glm::mat4(1.0f);
-        glm::mat4 InvProjectionMatrix = glm::mat4(1.0f);
-        glm::mat4 InvViewMatrix = glm::mat4(1.0f);
-        glm::vec3 CameraPosition = glm::vec3(0.0f);
-        uint32_t NumLights = 0;
-    };
-
-    struct MaterialConstants
-    {
-        glm::vec4 AlbedoColor = glm::vec4(1.0f);
-        glm::vec4 SpecularColor = glm::vec4(1.0f);             // Phong
-        float Shininess = 0.5f;                                // Phong
-        float Roughness = 0.5f;                                // PBR
-        float Metalness = 0.5f;                                // PBR
-        DescriptorIndex AlbedoMap = InvalidDescriptorIndex;
-        DescriptorIndex NormalMap = InvalidDescriptorIndex;
-        DescriptorIndex RoughnessMap = InvalidDescriptorIndex; // PBR
-        DescriptorIndex MetalnessMap = InvalidDescriptorIndex; // PBR
-    };
-
-    struct GeometryConstants
-    {
-        uint32_t MaterialIndex = 0;
-        DescriptorIndex VertexBuffer = InvalidDescriptorIndex;
-        DescriptorIndex IndexBuffer = InvalidDescriptorIndex;
-    };
 private:
     RendererDescription m_Description;
     ResourceBindTable m_ResourceBindTable;

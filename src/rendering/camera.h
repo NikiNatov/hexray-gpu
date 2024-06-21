@@ -20,6 +20,7 @@ public:
 
 	inline void SetPerspectiveFOV(float fov) { m_PerspectiveFOV = fov; RecalculateProjection(); }
 
+	inline bool HasMoved() const { return m_HasMoved; }
 	inline float GetPerspectiveFOV() const { return m_PerspectiveFOV; }
 	inline float GetYawAngle() const { return m_YawAngle; }
 	inline float GetPitchAngle() const { return m_PitchAngle; }
@@ -37,7 +38,8 @@ private:
 	float m_YawAngle = 0.0f;
 	float m_PitchAngle = 30.0f;
 	float m_RotationSpeed = 30.0f;
-	float m_MovementSpeed = 30.0f;
+	float m_MovementSpeed = 5.0f;
 	glm::vec3 m_Position = glm::vec3(0.0f, 0.0f, 5.0f);
 	glm::vec2 m_LastMousePosition = glm::vec2(0.0f);
+	bool m_HasMoved = false;
 };

@@ -12,7 +12,7 @@
 
 #include <sstream>
 
-static const char* s_DefaultScenePath = "scenes/pbr_test/pbr_test.hexray";
+static const char* s_DefaultScenePath = "scenes/pbr_spheres/pbr_spheres.hexray";
 Application* Application::ms_Instance = nullptr;
 
 void CreatePBRTestScene()
@@ -20,7 +20,7 @@ void CreatePBRTestScene()
     std::filesystem::path scenePath = "scenes/pbr_test/pbr_test.hexray";
 
     AssetManager::Initialize(scenePath.parent_path() / "assets");
-    auto scene = std::make_shared<Scene>(scenePath.stem().string(), Camera(60.0f, 16.0f / 9.0f, glm::vec3(35.0f, 25.0f, -35.0f), 45.0f, -25.0f));
+    auto scene = std::make_shared<Scene>(scenePath.stem().string(), Camera(60.0f, 16.0f / 9.0f, glm::vec3(5.0f, 5.0f, -5.0f), 45.0f, -25.0f));
     {
         Entity e = scene->CreateEntity("SkyBox");
         e.AddComponent<SkyLightComponent>().EnvironmentMap = AssetManager::GetAsset<Texture>(AssetImporter::ImportTextureAsset("data/texture/Skybox.dds"));
@@ -31,14 +31,107 @@ void CreatePBRTestScene()
         e.GetComponent<TransformComponent>().Translation = { 1.0f, 3.0f, 2.0f };
         auto& c = e.AddComponent<DirectionalLightComponent>();
         c.Color = { 0.8f, 0.5f, 0.1f };
-        c.Intensity = 4.0f;
+        c.Intensity = 1.0f;
     }
 
     {
        
         Entity e = scene->CreateEntity("Pistol");
+        e.GetComponent<TransformComponent>().Scale = { 0.2f, 0.2f, 0.2f };
         auto& mc = e.AddComponent<MeshComponent>();
         mc.Mesh = AssetManager::GetAsset<Mesh>(AssetImporter::ImportMeshAsset("data/meshes/gun/gun.fbx"));
+    }
+
+    SceneSerializer::Serialize(scenePath, scene);
+}
+
+void CreatePBRSpheresScene()
+{
+    std::filesystem::path scenePath = "scenes/pbr_spheres/pbr_spheres.hexray";
+
+    AssetManager::Initialize(scenePath.parent_path() / "assets");
+    auto scene = std::make_shared<Scene>(scenePath.stem().string(), Camera(60.0f, 16.0f / 9.0f, glm::vec3(5.0f, 5.0f, -5.0f), 45.0f, -25.0f));
+    {
+        Entity e = scene->CreateEntity("SkyBox");
+        e.AddComponent<SkyLightComponent>().EnvironmentMap = AssetManager::GetAsset<Texture>(AssetImporter::ImportTextureAsset("data/texture/Skybox.dds"));
+    }
+
+    {
+        Entity e = scene->CreateEntity("Sun");
+        e.GetComponent<TransformComponent>().Translation = { 1.0f, 3.0f, 2.0f };
+        auto& c = e.AddComponent<DirectionalLightComponent>();
+        c.Color = { 1.0f, 1.0f, 1.0f };
+        c.Intensity = 1.0f;
+    }
+
+    std::vector<std::string> materialPaths = {
+        "materials/laminate.hexmat",
+        "materials/marble.hexmat",
+        "materials/sand.hexmat",
+        "materials/worn_metal.hexmat",
+    };
+
+    std::vector<std::string> materialTextures = {
+        "data/texture/pbr/laminate/laminate_albedo.png",
+        "data/texture/pbr/laminate/laminate_normal.png",
+        "data/texture/pbr/laminate/laminate_roughness.png",
+        "data/texture/pbr/laminate/laminate_metalness.png",
+
+        "data/texture/pbr/marble/marble_albedo.png",
+        "data/texture/pbr/marble/marble_normal.png",
+        "data/texture/pbr/marble/marble_roughness.png",
+        "data/texture/pbr/marble/marble_metalness.png",
+
+        "data/texture/pbr/sand/sand_albedo.png",
+        "data/texture/pbr/sand/sand_normal.png",
+        "data/texture/pbr/sand/sand_roughness.png",
+        "data/texture/pbr/sand/sand_metalness.png",
+
+        "data/texture/pbr/worn-metal/worn_metal_albedo.png",
+        "data/texture/pbr/worn-metal/worn_metal_normal.png",
+        "data/texture/pbr/worn-metal/worn_metal_roughness.png",
+        "data/texture/pbr/worn-metal/worn_metal_metalness.png",
+    };
+
+    TextureImportOptions importOptions;
+    importOptions.Compress = false;
+    importOptions.GenerateMips = true;
+    for (uint32_t i = 0; i < materialTextures.size() / 4; i++)
+    {
+        MaterialPtr material = AssetManager::GetAsset<Material>(AssetImporter::CreateMaterialAsset(materialPaths[i], MaterialType::PBR));
+        material->SetTexture(MaterialTextureType::Albedo, AssetManager::GetAsset<Texture>(AssetImporter::ImportTextureAsset(materialTextures[i * 4 + 0], importOptions)));
+        material->SetTexture(MaterialTextureType::Normal, AssetManager::GetAsset<Texture>(AssetImporter::ImportTextureAsset(materialTextures[i * 4 + 1], importOptions)));
+        material->SetTexture(MaterialTextureType::Roughness, AssetManager::GetAsset<Texture>(AssetImporter::ImportTextureAsset(materialTextures[i * 4 + 2], importOptions)));
+        material->SetTexture(MaterialTextureType::Metalness, AssetManager::GetAsset<Texture>(AssetImporter::ImportTextureAsset(materialTextures[i * 4 + 3], importOptions)));
+
+        AssetSerializer::Serialize(material->GetAssetFilepath(), material);
+
+        Entity e = scene->CreateEntity("Sphere");
+        e.GetComponent<TransformComponent>().Translation = { i * 2.4f, 0.0f, 0.0f };
+        e.GetComponent<TransformComponent>().Scale = { 2.0f, 2.0f, 2.0f };
+
+        auto& mc = e.AddComponent<MeshComponent>();
+        mc.Mesh = AssetManager::GetAsset<Mesh>(AssetImporter::ImportMeshAsset("data/meshes/sphere.fbx"));
+        mc.OverrideMaterialTable = std::make_shared<MaterialTable>(1);
+        mc.OverrideMaterialTable->SetMaterial(0, material);
+    }
+
+    {
+        MaterialPtr material = AssetManager::GetAsset<Material>(AssetImporter::CreateMaterialAsset("materials/material_big.hexmat", MaterialType::PBR));
+        material->SetProperty(MaterialPropertyType::AlbedoColor, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+        material->SetProperty(MaterialPropertyType::Roughness, 0.0f);
+        material->SetProperty(MaterialPropertyType::Metalness, 1.0f);
+
+        AssetSerializer::Serialize(material->GetAssetFilepath(), material);
+
+        Entity e = scene->CreateEntity("Sphere");
+        e.GetComponent<TransformComponent>().Translation = { 0.0f, 0.0f, 8.0f };
+        e.GetComponent<TransformComponent>().Scale = { 10.0f, 10.0f, 10.0f };
+
+        auto& mc = e.AddComponent<MeshComponent>();
+        mc.Mesh = AssetManager::GetAsset<Mesh>(AssetImporter::ImportMeshAsset("data/meshes/sphere.fbx"));
+        mc.OverrideMaterialTable = std::make_shared<MaterialTable>(1);
+        mc.OverrideMaterialTable->SetMaterial(0, material);
     }
 
     SceneSerializer::Serialize(scenePath, scene);
@@ -89,7 +182,7 @@ Application::Application(const ApplicationDescription& description)
 
     // Create renderer
     RendererDescription rendererDesc;
-    rendererDesc.RayRecursionDepth = 3;
+    rendererDesc.RayRecursionDepth = 8;
 
     m_SceneRenderer = std::make_shared<Renderer>(rendererDesc);
     m_SceneRenderer->SetViewportSize(m_Window->GetWidth(), m_Window->GetHeight());
@@ -101,7 +194,7 @@ Application::Application(const ApplicationDescription& description)
         OpenScene(s_DefaultScenePath);
     }
 
-    SetMaxFPS(60);
+    SetMaxFPS(120);
     SetMaxDeltaTime(2.0);
 }
 
