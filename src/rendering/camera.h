@@ -7,6 +7,9 @@
 class Camera
 {
 public:
+	friend class DefaultSceneParser;
+public:
+	Camera() = default;
 	Camera(float fov, float aspectRatio, const glm::vec3& position, float yaw, float pitch, float exposure);
 
 	void OnUpdate(float dt);

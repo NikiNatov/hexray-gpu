@@ -57,6 +57,7 @@ struct MaterialTextureMetaData
 class Material : public Asset
 {
     friend class AssetSerializer;
+    friend class DefaultSceneParser;
 public:
     Material(MaterialType type, MaterialFlags flags = MaterialFlags::None);
 

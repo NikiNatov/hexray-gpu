@@ -11,6 +11,7 @@ class Scene
     friend class Entity;
     friend class SceneSerializer;
 public:
+    Scene(const std::string& name);
     Scene(const std::string& name, const Camera& camera);
 
     Entity CreateEntity(const std::string& name = "Unnamed Entity");

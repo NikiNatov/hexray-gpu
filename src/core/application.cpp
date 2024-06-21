@@ -9,6 +9,7 @@
 #include "asset/assetimporter.h"
 #include "asset/assetmanager.h"
 #include "asset/assetserializer.h"
+#include "serialization/defaultsceneparser.h"
 
 #include <sstream>
 
@@ -381,6 +382,14 @@ void Application::ParseCommandlineArgs()
         if (strcmp(args[i], "-scene") == 0)
         {
             OpenScene(args[++i]);
+        }
+        else if (strcmp(args[i], "-hexray-scene") == 0)
+        {
+            std::filesystem::path filepath = args[++i];
+            AssetManager::Initialize(filepath.parent_path() / "assets");
+            m_Scene = std::make_shared<Scene>(filepath.string());
+            DefaultSceneParser parser;
+            parser.Parse(filepath.string().c_str(), m_Scene.get());
         }
     }
 }
