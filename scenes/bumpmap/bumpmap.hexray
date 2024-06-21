@@ -4,6 +4,7 @@ Camera:
   Yaw: 5
   Pitch: -20
   FOV: 60
+  Exposure: 1
 Entities:
   - Entity: 12508111270308788118
     TagComponent:
