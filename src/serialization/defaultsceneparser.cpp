@@ -38,7 +38,22 @@ bool DefaultSceneParser::AddSceneElement(const std::string& className, const std
 		pb.GetProperty("frameHeight", frameHeight);
 
 		Window* window = Application::GetInstance()->GetWindow();
-		window->Resize(frameWidth, frameHeight);
+
+		// Utillity to compare easily results side by side
+		auto hexrayHandle = FindWindowA(nullptr, "heX-Ray");
+		if (hexrayHandle)
+		{
+			RECT hexrayRect;
+			GetWindowRect(hexrayHandle, &hexrayRect);
+
+			MoveWindow(window->GetWindowHandle(), hexrayRect.left - frameWidth, hexrayRect.top, hexrayRect.right - hexrayRect.left, hexrayRect.bottom - hexrayRect.top, false);
+
+			DestroyWindow(hexrayHandle);
+		}
+		else
+		{
+			window->Resize(frameWidth, frameHeight);
+		}
 	}
 
 	if (className == "Camera")
