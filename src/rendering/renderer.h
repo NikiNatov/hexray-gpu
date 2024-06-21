@@ -4,6 +4,7 @@
 #include "rendering/texture.h"
 #include "rendering/buffer.h"
 #include "rendering/raytracingpipeline.h"
+#include "rendering/computepipeline.h"
 #include "rendering/mesh.h"
 #include "rendering/camera.h"
 #include "rendering/shaders/resources.h"
@@ -18,6 +19,9 @@ struct MeshInstance
 struct RendererDescription
 {
     uint32_t RayRecursionDepth = 3;
+    bool EnableBloom = true;
+    uint32_t BloomDownsampleSteps = 9;
+    float BloomStrength = 0.06f;
 };
 
 class Renderer
@@ -36,14 +40,20 @@ public:
 
     const std::shared_ptr<Texture>& GetFinalImage() const;
 private:
+    void RecreateTextures(uint32_t frameIndex);
+    void ApplyBloom();
+    void ApplyTonemapping();
+private:
     RendererDescription m_Description;
     ResourceBindTable m_ResourceBindTable;
     SceneConstants m_SceneConstants;
     uint32_t m_ViewportWidth = 1;
     uint32_t m_ViewportHeight = 1;
+    float m_CameraExposure = 0.0f;
     std::vector<Light> m_Lights;
     std::vector<MeshInstance> m_MeshInstances;
 
+    // Raytracing
     std::shared_ptr<RaytracingPipeline> m_RTPipeline;
     std::shared_ptr<Texture> m_RenderTargets[FRAMES_IN_FLIGHT];
     std::shared_ptr<Buffer> m_SceneBuffers[FRAMES_IN_FLIGHT];
@@ -51,4 +61,15 @@ private:
     std::shared_ptr<Buffer> m_MaterialBuffers[FRAMES_IN_FLIGHT];
     std::shared_ptr<Buffer> m_GeometryBuffers[FRAMES_IN_FLIGHT];
     std::shared_ptr<Buffer> m_TopLevelAccelerationStructures[FRAMES_IN_FLIGHT];
+
+    // Bloom
+    std::shared_ptr<ComputePipeline> m_BloomDownsamplePipeline;
+    std::shared_ptr<ComputePipeline> m_BloomUpsamplePipeline;
+    std::shared_ptr<ComputePipeline> m_BloomCompositePipeline;
+    std::shared_ptr<Texture> m_BloomTextures[FRAMES_IN_FLIGHT];
+    std::shared_ptr<Texture> m_BloomCompositeTextures[FRAMES_IN_FLIGHT];
+
+    // Tonemap
+    std::shared_ptr<ComputePipeline> m_TonemapPipeline;
+    std::shared_ptr<Texture> m_FinalOutputTexture[FRAMES_IN_FLIGHT];
 };

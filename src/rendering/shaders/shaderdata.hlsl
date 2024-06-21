@@ -8,11 +8,6 @@
 #include "phongshading.hlsli"
 #include "pbrshading.hlsli"
 
-bool IsNaN(float x)
-{
-    return (asuint(x) & 0x7fffffff) > 0x7f800000;
-}
-
 [shader("raygeneration")]
 void RayGenShader()
 {
@@ -42,16 +37,9 @@ void RayGenShader()
     
     ColorRayPayload payload = TraceColorRay(rayOrigin, rayDirection, seed, 0, accelerationStructure);
     
-    // Apply tone-mapping
-    const float PureWhite = 1.0;
-    const float Gamma = 2.2;
-    float3 hdrColor = payload.Color.rgb * sceneConstants.CameraExposure;
-    float luminance = dot(hdrColor, float3(0.2126, 0.7152, 0.0722));
-    
-    float mappedLuminance = (luminance * (1.0 + luminance / (PureWhite * PureWhite))) / (1.0 + luminance);
-    float3 mappedColor = (mappedLuminance / luminance) * hdrColor;
-
-    payload.Color.rgb = pow(abs(mappedColor), 1.0 / Gamma);
+    // Check for NaN values: Not ideal, we should investigate why some pixels are NaN
+    bool colorsNan = any(isnan(payload.Color));
+    payload.Color = colorsNan ? float4(0.0, 0.0, 0.0, 1.0) : payload.Color;
     
     // Accumulate color with previous frame
     renderTarget[rayID.xy] = ((sceneConstants.FrameIndex - 1) * prevFrameRenderTarget[rayID.xy] + payload.Color) / sceneConstants.FrameIndex;

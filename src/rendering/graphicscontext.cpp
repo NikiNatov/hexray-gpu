@@ -312,6 +312,19 @@ void GraphicsContext::DispatchRays(uint32_t width, uint32_t height, const Resour
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
+void GraphicsContext::DispatchComputeShader(uint32_t threadCountX, uint32_t threadCountY, uint32_t threadCountZ, const ResourceBindTable& resourceBindings, const ComputePipeline* pipeline)
+{
+    ID3D12DescriptorHeap* heaps[] = { m_ResourceDescriptorHeap->GetHeap().Get() };
+    m_CommandList->SetDescriptorHeaps(1, heaps);
+    m_CommandList->SetPipelineState(pipeline->GetPipelineState().Get());
+    m_CommandList->SetComputeRootSignature(m_BindlessRootSignature.Get());
+    m_CommandList->SetComputeRoot32BitConstants(0, sizeof(resourceBindings) / sizeof(uint32_t), &resourceBindings, 0);
+    m_CommandList->SetComputeRootDescriptorTable(1, m_ResourceDescriptorHeap->GetBaseGPUHandle());
+
+    m_CommandList->Dispatch(threadCountX, threadCountY, threadCountZ);
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
 void GraphicsContext::CopyTextureToSwapChain(Texture* texture, D3D12_RESOURCE_STATES textureCurrentState)
 {
     if (!texture)
@@ -330,6 +343,19 @@ void GraphicsContext::CopyTextureToSwapChain(Texture* texture, D3D12_RESOURCE_ST
     m_CommandList->ResourceBarrier(2, preCopyBarriers);
     m_CommandList->CopyResource(m_BackBuffers[m_BackBufferIndex].Get(), texture->GetResource().Get());
     m_CommandList->ResourceBarrier(2, postCopyBarriers);
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+void GraphicsContext::AddUAVBarrier(Texture* texture)
+{
+    if (!texture)
+        return;
+
+    D3D12_RESOURCE_BARRIER barriers[] = {
+       CD3DX12_RESOURCE_BARRIER::UAV(texture->GetResource().Get())
+    };
+
+    m_CommandList->ResourceBarrier(1, barriers);
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------

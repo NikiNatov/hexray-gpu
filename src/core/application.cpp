@@ -204,6 +204,9 @@ Application::Application(const ApplicationDescription& description)
     // Create renderer
     RendererDescription rendererDesc;
     rendererDesc.RayRecursionDepth = 8;
+    rendererDesc.EnableBloom = true;
+    rendererDesc.BloomDownsampleSteps = 8;
+    rendererDesc.BloomStrength = 0.06f;
 
     m_SceneRenderer = std::make_shared<Renderer>(rendererDesc);
     m_SceneRenderer->SetViewportSize(m_Window->GetWidth(), m_Window->GetHeight());

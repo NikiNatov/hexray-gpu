@@ -39,12 +39,11 @@ struct SceneConstants
     matrix InvProjMatrix;
     matrix InvViewMatrix;
     float3 CameraPosition;
-    float CameraExposure;
     uint NumLights;
     uint FrameIndex;
 };
 
-static const uint c_SceneConstantsStructSize = 280;
+static const uint c_SceneConstantsStructSize = 276;
 
 // -----------------------------------------------------------------------
 enum MaterialType
@@ -104,6 +103,43 @@ struct Light
 static const uint c_LightStructSize = 60;
 
 // -----------------------------------------------------------------------
+// ---------------------------- Post FX ----------------------------------
+// -----------------------------------------------------------------------
+struct BloomDownsampleConstants
+{
+    float SourceMipLevel;
+    float DownsampledMipLevel;
+    uint SourceTextureIndex;
+    uint DownsampledTextureIndex;
+};
+
+// -----------------------------------------------------------------------
+struct BloomUpsampleConstants
+{
+    float FilterRadius;
+    float SourceMipLevel;
+    uint SourceTextureIndex;
+    uint UpsampledTextureIndex;
+};
+
+// -----------------------------------------------------------------------
+struct BloomCompositeConstants
+{
+    float BloomStrength;
+    uint SceneTextureIndex;
+    uint BloomTextureIndex;
+    uint OutputTextureIndex;
+};
+
+struct TonemapConstants
+{
+    float CameraExposure;
+    float Gamma;
+    uint InputTextureIndex;
+    uint OutputTextureIndex;
+};
+
+// -----------------------------------------------------------------------
 struct ResourceBindTable
 {
     uint EnvironmentMapIndex;
@@ -114,6 +150,13 @@ struct ResourceBindTable
     uint MaterialBufferIndex;
     uint GeometryBufferIndex;
     uint AccelerationStructureIndex;
+
+    // PostFX constants
+    BloomDownsampleConstants BloomDownsampleConstants;
+    BloomUpsampleConstants BloomUpsampleConstants;
+    BloomCompositeConstants BloomCompositeConstants;
+
+    TonemapConstants TonemapConstants;
 };
 
 // -----------------------------------------------------------------------
@@ -158,7 +201,7 @@ static const float Epsilon = 0.000001;
 #define RWBUFFERS_SPACE space2
 
 #define INVALID_DESCRIPTOR_INDEX 0xffffffff
-#define MAX_RAY_RECURSION_DEPTH 6
+#define MAX_RAY_RECURSION_DEPTH 4
 
 ConstantBuffer<ResourceBindTable> g_ResourceIndices          : register(b0, RESOURCE_INDICES_SPACE);
 RaytracingAccelerationStructure   g_AccelerationStructures[] : register(t0, ACCELERATION_STRUCTURES_SPACE);

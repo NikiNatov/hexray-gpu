@@ -29,7 +29,9 @@ public:
     void UploadBufferData(Buffer* destBuffer, const void* data);
     void UploadTextureData(Texture* destTexture, const void* data, uint32_t mip = 0, uint32_t face = 0);
     void DispatchRays(uint32_t width, uint32_t height, const ResourceBindTable& resourceBindings, const RaytracingPipeline* pipeline);
+    void DispatchComputeShader(uint32_t threadCountX, uint32_t threadCountY, uint32_t threadCountZ, const ResourceBindTable& resourceBindings, const ComputePipeline* pipeline);
     void CopyTextureToSwapChain(Texture* texture, D3D12_RESOURCE_STATES textureCurrentState);
+    void AddUAVBarrier(Texture* texture);
     std::shared_ptr<Buffer> BuildBottomLevelAccelerationStructure(Mesh* mesh, uint32_t submeshIndex);
     std::shared_ptr<Buffer> BuildTopLevelAccelerationStructure(const std::vector<MeshInstance>& meshInstances);
 
