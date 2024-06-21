@@ -213,6 +213,8 @@ void Renderer::Render()
             MaterialConstants& materialConstants = materials.emplace_back();
             materialConstants.MaterialType = (uint32_t)material->GetType();
             material->GetProperty(MaterialPropertyType::AlbedoColor, materialConstants.AlbedoColor);
+            material->GetProperty(MaterialPropertyType::EmissiveColor, materialConstants.EmissiveColor);
+            material->GetProperty(MaterialPropertyType::EmissionPower, materialConstants.EmissivePower);
 
             TexturePtr albedoMap = nullptr;
             if (material->GetTexture(MaterialTextureType::Albedo, albedoMap))

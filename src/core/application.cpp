@@ -57,11 +57,11 @@ void CreatePBRSpheresScene()
     }
 
     {
-        Entity e = scene->CreateEntity("Sun");
-        e.GetComponent<TransformComponent>().Translation = { 1.0f, 3.0f, 2.0f };
-        auto& c = e.AddComponent<DirectionalLightComponent>();
-        c.Color = { 1.0f, 1.0f, 1.0f };
-        c.Intensity = 1.0f;
+        //Entity e = scene->CreateEntity("Sun");
+        //e.GetComponent<TransformComponent>().Translation = { 1.0f, 3.0f, 2.0f };
+        //auto& c = e.AddComponent<DirectionalLightComponent>();
+        //c.Color = { 1.0f, 1.0f, 1.0f };
+        //c.Intensity = 1.0f;
     }
 
     std::vector<std::string> materialPaths = {
@@ -121,15 +121,35 @@ void CreatePBRSpheresScene()
         material->SetProperty(MaterialPropertyType::AlbedoColor, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
         material->SetProperty(MaterialPropertyType::Roughness, 0.0f);
         material->SetProperty(MaterialPropertyType::Metalness, 1.0f);
+        material->SetProperty(MaterialPropertyType::EmissiveColor, glm::vec4(0.8f, 0.5f, 0.1f, 1.0f));
+        material->SetProperty(MaterialPropertyType::EmissionPower, 6.0f);
 
         AssetSerializer::Serialize(material->GetAssetFilepath(), material);
 
         Entity e = scene->CreateEntity("Sphere");
-        e.GetComponent<TransformComponent>().Translation = { 0.0f, 0.0f, 8.0f };
-        e.GetComponent<TransformComponent>().Scale = { 10.0f, 10.0f, 10.0f };
+        e.GetComponent<TransformComponent>().Translation = { 0.0f, 0.0f, 15.0f };
+        e.GetComponent<TransformComponent>().Scale = { 20.0f, 20.0f, 20.0f };
 
         auto& mc = e.AddComponent<MeshComponent>();
         mc.Mesh = AssetManager::GetAsset<Mesh>(AssetImporter::ImportMeshAsset("data/meshes/sphere.fbx"));
+        mc.OverrideMaterialTable = std::make_shared<MaterialTable>(1);
+        mc.OverrideMaterialTable->SetMaterial(0, material);
+    }
+
+    {
+        MaterialPtr material = AssetManager::GetAsset<Material>(AssetImporter::CreateMaterialAsset("materials/material_floor.hexmat", MaterialType::PBR));
+        material->SetProperty(MaterialPropertyType::AlbedoColor, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+        material->SetProperty(MaterialPropertyType::Roughness, 1.0f);
+        material->SetProperty(MaterialPropertyType::Metalness, 0.0f);
+
+        AssetSerializer::Serialize(material->GetAssetFilepath(), material);
+
+        Entity e = scene->CreateEntity("Floor");
+        e.GetComponent<TransformComponent>().Translation = { 0.0f, -1.0f, 0.0f };
+        e.GetComponent<TransformComponent>().Scale = { 100.0f, 0.1f, 100.0f };
+
+        auto& mc = e.AddComponent<MeshComponent>();
+        mc.Mesh = AssetManager::GetAsset<Mesh>(AssetImporter::ImportMeshAsset("data/meshes/cube.obj"));
         mc.OverrideMaterialTable = std::make_shared<MaterialTable>(1);
         mc.OverrideMaterialTable->SetMaterial(0, material);
     }
@@ -187,6 +207,7 @@ Application::Application(const ApplicationDescription& description)
     m_SceneRenderer = std::make_shared<Renderer>(rendererDesc);
     m_SceneRenderer->SetViewportSize(m_Window->GetWidth(), m_Window->GetHeight());
 
+    CreatePBRSpheresScene();
     ParseCommandlineArgs();
 
     if (!m_Scene)

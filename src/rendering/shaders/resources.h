@@ -57,6 +57,8 @@ struct MaterialConstants
 {
     uint MaterialType;
     float4 AlbedoColor;
+    float4 EmissiveColor;
+    float EmissivePower;
     float4 SpecularColor;   // Phong
     float Shininess;        // Phong
     float Roughness;        // PBR
@@ -67,7 +69,7 @@ struct MaterialConstants
     uint MetalnessMapIndex; // PBR
 };
 
-static const uint c_MaterialConstantsStructSize = 64;
+static const uint c_MaterialConstantsStructSize = 84;
 
 // -----------------------------------------------------------------------
 struct GeometryConstants

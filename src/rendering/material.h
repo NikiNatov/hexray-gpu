@@ -19,6 +19,8 @@ ENUM_FLAGS(MaterialFlags);
 enum class MaterialPropertyType
 {
     AlbedoColor,
+    EmissiveColor,
+    EmissionPower,
 
     // Phong specific
     SpecularColor,

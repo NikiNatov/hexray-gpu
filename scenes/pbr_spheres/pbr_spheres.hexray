@@ -5,7 +5,23 @@ Camera:
   Pitch: -25
   FOV: 60
 Entities:
-  - Entity: 10212821202673451405
+  - Entity: 15405121264667194845
+    TagComponent:
+      Tag: Floor
+    SceneHierarchyComponent:
+      Parent: 0
+      FirstChild: 0
+      NextSibling: 0
+      PreviousSibling: 0
+    TransformComponent:
+      Translation: [0, -1, 0]
+      Rotation: [0, 0, 0]
+      Scale: [100, 0.100000001, 100]
+    MeshComponent:
+      Mesh: 1627730646426167054
+      Materials:
+        - 12369002980049367363
+  - Entity: 4137269495263761756
     TagComponent:
       Tag: Sphere
     SceneHierarchyComponent:
@@ -14,14 +30,14 @@ Entities:
       NextSibling: 0
       PreviousSibling: 0
     TransformComponent:
-      Translation: [0, 0, 8]
+      Translation: [0, 0, 15]
       Rotation: [0, 0, 0]
-      Scale: [10, 10, 10]
+      Scale: [20, 20, 20]
     MeshComponent:
-      Mesh: 16325624282694119969
+      Mesh: 5104248700359231176
       Materials:
-        - 9215370629855428657
-  - Entity: 6348591630393959774
+        - 15800579866238718237
+  - Entity: 11053395937753439794
     TagComponent:
       Tag: Sphere
     SceneHierarchyComponent:
@@ -34,10 +50,10 @@ Entities:
       Rotation: [0, 0, 0]
       Scale: [2, 2, 2]
     MeshComponent:
-      Mesh: 16325624282694119969
+      Mesh: 5104248700359231176
       Materials:
-        - 15426669971618511260
-  - Entity: 8250086932649049815
+        - 25273240164973306
+  - Entity: 14941018898829177905
     TagComponent:
       Tag: Sphere
     SceneHierarchyComponent:
@@ -50,10 +66,10 @@ Entities:
       Rotation: [0, 0, 0]
       Scale: [2, 2, 2]
     MeshComponent:
-      Mesh: 16325624282694119969
+      Mesh: 5104248700359231176
       Materials:
-        - 3341419239815796775
-  - Entity: 8289484911073955154
+        - 11813287398548598153
+  - Entity: 11774587639219791081
     TagComponent:
       Tag: Sphere
     SceneHierarchyComponent:
@@ -66,10 +82,10 @@ Entities:
       Rotation: [0, 0, 0]
       Scale: [2, 2, 2]
     MeshComponent:
-      Mesh: 16325624282694119969
+      Mesh: 5104248700359231176
       Materials:
-        - 17674866018143584163
-  - Entity: 9811220920499494596
+        - 8549552023636143736
+  - Entity: 2863833070463973636
     TagComponent:
       Tag: Sphere
     SceneHierarchyComponent:
@@ -82,25 +98,10 @@ Entities:
       Rotation: [0, 0, 0]
       Scale: [2, 2, 2]
     MeshComponent:
-      Mesh: 16325624282694119969
+      Mesh: 5104248700359231176
       Materials:
-        - 3306385820756075865
-  - Entity: 7189545466632774860
-    TagComponent:
-      Tag: Sun
-    SceneHierarchyComponent:
-      Parent: 0
-      FirstChild: 0
-      NextSibling: 0
-      PreviousSibling: 0
-    TransformComponent:
-      Translation: [1, 3, 2]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    DirectionalLightComponent:
-      Color: [1, 1, 1]
-      Intensity: 1
-  - Entity: 3359655639290426987
+        - 12227276797886887362
+  - Entity: 10422356381588483676
     TagComponent:
       Tag: SkyBox
     SceneHierarchyComponent:
@@ -113,4 +114,4 @@ Entities:
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     SkyLightComponent:
-      EnvironmentMap: 7884058071470161461
+      EnvironmentMap: 16346714930474034845
