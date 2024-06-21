@@ -126,10 +126,27 @@ Uuid AssetImporter::ImportMeshAsset(const std::filesystem::path& sourceFilepath)
 
             Vertex& v = vertices.emplace_back();
             v.Position = { position.x, position.y, position.z };
-            v.TexCoord = { texCoord.x, texCoord.y };
+
+            if (submesh->HasTextureCoords(0))
+            {
+                v.TexCoord = { texCoord.x, texCoord.y };
+            }
+            
             v.Normal = { normal.x, normal.y, normal.z };
-            v.Tangent = { tangent.x, tangent.y, tangent.z };
-            v.Bitangent = { bitangent.x, bitangent.y, bitangent.z };
+
+            if (submesh->HasTangentsAndBitangents())
+            {
+                v.Tangent = { tangent.x, tangent.y, tangent.z };
+                v.Bitangent = { bitangent.x, bitangent.y, bitangent.z };
+            }
+            else
+            {
+                v.Bitangent = glm::cross(v.Normal, glm::vec3(0.0, 1.0, 0.0));
+                v.Tangent = glm::cross(v.Bitangent, v.Normal);
+                HEXRAY_ASSERT(abs(glm::dot(v.Bitangent, v.Tangent)) < 0.01f);
+                HEXRAY_ASSERT(abs(glm::dot(v.Bitangent, v.Normal)) < 0.01f);
+                HEXRAY_ASSERT(abs(glm::dot(v.Normal, v.Tangent)) < 0.01f);
+            }
 
             vertexCount++;
         }
