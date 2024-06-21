@@ -41,6 +41,7 @@ public:
     void OnEvent(Event& event);
 
     const ApplicationDescription& GetDescription() const { return m_Description; }
+    Window* GetWindow() { return m_Window.get(); }
     const Window* GetWindow() const { return m_Window.get(); }
     inline GraphicsContext* GetGraphicsContext() { return m_GraphicsContext.get(); }
 

@@ -83,6 +83,15 @@ void Window::SetTitle(const std::string& title)
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
+void Window::Resize(int width, int height)
+{
+	GetWindowRect(m_WindowHandle, &m_WindowRect);
+	MoveWindow(m_WindowHandle, m_WindowRect.top, m_WindowRect.left, width, height, false);
+	m_WindowRect.right = m_WindowRect.left + width;
+	m_WindowRect.bottom = m_WindowRect.top + height;
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
 LRESULT WINAPI Window::WindowProcSetup(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 {
 	if (Msg == WM_CREATE)

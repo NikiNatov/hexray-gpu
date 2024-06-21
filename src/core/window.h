@@ -25,6 +25,7 @@ public:
     void SetMinimized(bool state);
     void ToggleVSync();
     void SetTitle(const std::string& title);
+    void Resize(int width, int height);
 
     inline const std::string& GetTitle() const { return m_Description.Title; }
     inline uint32_t GetWidth() const { return m_Description.Width; }
