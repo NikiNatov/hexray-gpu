@@ -2,6 +2,7 @@
 #define __PHONGSHADING_HLSLI__
 
 #include "resources.h"
+#include "random.hlsli"
 
 float3 CalculateDirectionalLight_Phong(Light light, float3 V, float3 N, float3 albedo, float3 specular, float shininess)
 {
@@ -81,6 +82,50 @@ float3 CalculateDirectLighting_Phong(HitInfo hitInfo, float3 cameraPosition, Lig
     }
     
     return float3(0.0, 0.0, 0.0);
+}
+
+float3 CalculateIndirectLighting_Phong(HitInfo hitInfo, inout uint seed, uint recursionDepth, float3 cameraPosition, float3 albedo, float3 specular, float shininess, RaytracingAccelerationStructure accelerationStruct)
+{
+    float3 N = hitInfo.WorldNormal;
+    
+    float3 diffuseLight = float3(0.0, 0.0, 0.0);
+    {
+        // For diffuse lighting, pick a random cosine-weighted direction.
+        float3 L = GetRandomDirectionCosineWeighted(seed, hitInfo.WorldNormal, hitInfo.WorldTangent, hitInfo.WorldBitangent);
+        float NDotL = max(dot(N, L), 0.0);
+        
+        ColorRayPayload diffusePayload = TraceColorRay(hitInfo.WorldPosition, L, seed, recursionDepth, accelerationStruct);
+        
+        float3 diffuseBRDF = albedo / PI;
+        float cosineSampleProbability = NDotL / PI;
+        
+        diffuseLight = (diffuseBRDF * diffusePayload.Color.rgb * NDotL) / max(cosineSampleProbability, Epsilon);
+    }
+    
+    float3 specularLight = float3(0.0, 0.0, 0.0);
+    {
+        // For specular lighting, pick a random direction using the Blinn-Phong distribution function. This is effectively the microfacet half-vector
+        float3 H = GetRandomDirectionBlinnPhong(seed, shininess, hitInfo.WorldNormal, hitInfo.WorldTangent, hitInfo.WorldBitangent);
+        float3 V = normalize(cameraPosition - hitInfo.WorldPosition);
+        
+        float VDotH = max(dot(V, H), 0.0);
+        
+        float3 L = normalize(2.0 * VDotH * H - V);
+    
+        ColorRayPayload specularPayload = TraceColorRay(hitInfo.WorldPosition, L, seed, recursionDepth, accelerationStruct);
+        
+        float NDotL = max(dot(N, L), 0.0);
+        float NDotH = max(dot(N, H), 0.0);
+    
+        float specularTerm = pow(NDotH, shininess);
+        float3 specularBRDF = specularTerm * specular;
+    
+        float blinnPhongSampleProbability = (shininess + 2.0) * pow(NDotH, shininess) / (2.0 * PI);
+    
+        specularLight = (specularBRDF * specularPayload.Color.rgb * NDotL) / max(blinnPhongSampleProbability, Epsilon);
+    }
+    
+    return diffuseLight + specularLight;
 }
 
 #endif // __PHONGSHADING_HLSLI__

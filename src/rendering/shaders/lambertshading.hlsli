@@ -2,6 +2,7 @@
 #define __LAMBERTSHADING_HLSLI__
 
 #include "resources.h"
+#include "random.hlsli"
 
 float3 CalculateDirectionalLight_Lambert(Light light, float3 N, float3 albedo)
 {
@@ -64,6 +65,22 @@ float3 CalculateDirectLighting_Lambert(HitInfo hitInfo, Light light, float3 albe
     }
     
     return float3(0.0, 0.0, 0.0);
+}
+
+float3 CalculateIndirectLighting_Lambert(HitInfo hitInfo, inout uint seed, uint recursionDepth, float3 albedo, RaytracingAccelerationStructure accelerationStruct)
+{
+    float3 N = hitInfo.WorldNormal;
+    
+    // For diffuse lighting, pick a random cosine-weighted direction.
+    float3 L = GetRandomDirectionCosineWeighted(seed, hitInfo.WorldNormal, hitInfo.WorldTangent, hitInfo.WorldBitangent);
+    float NDotL = max(dot(N, L), 0.0);
+    
+    ColorRayPayload diffusePayload = TraceColorRay(hitInfo.WorldPosition, L, seed, recursionDepth, accelerationStruct);
+    
+    float3 diffuseBRDF = albedo;
+    float cosineSampleProbability = NDotL / PI;
+    
+    return (diffuseBRDF * diffusePayload.Color.rgb * NDotL) / max(cosineSampleProbability, Epsilon);
 }
 
 #endif // __LAMBERTSHADING_HLSLI__

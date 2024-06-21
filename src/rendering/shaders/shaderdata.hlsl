@@ -114,10 +114,14 @@ void ClosestHitShader_Color(inout ColorRayPayload payload, in BuiltInTriangleInt
     {
         case MaterialType::Lambert:
         {
+            finalColor += CalculateIndirectLighting_Lambert(hitInfo, payload.Seed, payload.RayDepth, albedo.rgb, accelerationStructure);
             break;
         }
         case MaterialType::Phong:
         {
+            float4 specular = material.SpecularColor;
+            float shininess = material.Shininess;
+            finalColor += CalculateIndirectLighting_Phong(hitInfo, payload.Seed, payload.RayDepth, WorldRayOrigin(), albedo.rgb, specular.rgb, shininess, accelerationStructure);
             break;
         }
         case MaterialType::PBR:

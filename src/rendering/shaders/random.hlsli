@@ -56,4 +56,20 @@ float3 GetRandomDirectionGGX(inout uint seed, float roughness, float3 normal, fl
     return normalize(tangent * microfacetNormal.x + bitangent * microfacetNormal.y + normal * microfacetNormal.z);
 }
 
+float3 GetRandomDirectionBlinnPhong(inout uint seed, float shininess, float3 normal, float3 tangent, float3 bitangent)
+{
+	// Get our uniform random numbers
+    float2 randValues = float2(RandomFloat(seed), RandomFloat(seed));
+
+	// Blinn-Phong distribution function sampling
+    // https://www.mathematik.uni-marburg.de/~thormae/lectures/graphics1/code/ImportanceSampling/importance_sampling_notes.pdf
+    float cosTheta = pow(1.0 - randValues.x, 1.0 / (shininess + 1.0));
+    float sinTheta = sqrt(1.0f - cosTheta * cosTheta);
+    float phi = 2.0 * PI * randValues.y;
+
+	// Get our Blinn-Phong distribution function sample direction
+    float3 microfacetNormal = float3(sinTheta * cos(phi), sinTheta * sin(phi), cosTheta);
+    return normalize(tangent * microfacetNormal.x + bitangent * microfacetNormal.y + normal * microfacetNormal.z);
+}
+
 #endif // __RANDOM_HLSLI__

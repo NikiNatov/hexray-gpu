@@ -135,11 +135,6 @@ float3 CalculateDirectLighting_PBR(HitInfo hitInfo, float3 cameraPosition, Light
     return float3(0.0, 0.0, 0.0);
 }
 
-float GetLuminance(float3 color)
-{
-    return (color.r * 0.3) + (color.g * 0.59) + (color.b * 0.11);
-}
-
 float3 CalculateIndirectLighting_PBR(HitInfo hitInfo, inout uint seed, uint recursionDepth, float3 cameraPosition, float3 albedo, float roughness, float metalness, RaytracingAccelerationStructure accelerationStruct)
 {
     roughness = clamp(roughness, 0.001, 1.0);
