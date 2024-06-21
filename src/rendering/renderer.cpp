@@ -64,6 +64,7 @@ void Renderer::BeginScene(const Camera& camera, const std::shared_ptr<Texture>& 
     m_SceneConstants.InvProjMatrix = glm::inverse(m_SceneConstants.ProjectionMatrix);
     m_SceneConstants.InvViewMatrix = glm::inverse(m_SceneConstants.ViewMatrix);
     m_SceneConstants.CameraPosition = camera.GetPosition();
+    m_SceneConstants.CameraExposure = camera.GetExposure();
     m_SceneConstants.NumLights = 0;
 
     if (camera.HasMoved())

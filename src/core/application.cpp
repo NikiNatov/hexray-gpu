@@ -20,7 +20,7 @@ void CreatePBRTestScene()
     std::filesystem::path scenePath = "scenes/pbr_test/pbr_test.hexray";
 
     AssetManager::Initialize(scenePath.parent_path() / "assets");
-    auto scene = std::make_shared<Scene>(scenePath.stem().string(), Camera(60.0f, 16.0f / 9.0f, glm::vec3(5.0f, 5.0f, -5.0f), 45.0f, -25.0f));
+    auto scene = std::make_shared<Scene>(scenePath.stem().string(), Camera(60.0f, 16.0f / 9.0f, glm::vec3(5.0f, 5.0f, -5.0f), 45.0f, -25.0f, 0.5f));
     {
         Entity e = scene->CreateEntity("SkyBox");
         e.AddComponent<SkyLightComponent>().EnvironmentMap = AssetManager::GetAsset<Texture>(AssetImporter::ImportTextureAsset("data/texture/Skybox.dds"));
@@ -50,7 +50,7 @@ void CreatePBRSpheresScene()
     std::filesystem::path scenePath = "scenes/pbr_spheres/pbr_spheres.hexray";
 
     AssetManager::Initialize(scenePath.parent_path() / "assets");
-    auto scene = std::make_shared<Scene>(scenePath.stem().string(), Camera(60.0f, 16.0f / 9.0f, glm::vec3(5.0f, 5.0f, -5.0f), 45.0f, -25.0f));
+    auto scene = std::make_shared<Scene>(scenePath.stem().string(), Camera(60.0f, 16.0f / 9.0f, glm::vec3(5.0f, 5.0f, -5.0f), 45.0f, -25.0f, 0.5f));
     {
         Entity e = scene->CreateEntity("SkyBox");
         e.AddComponent<SkyLightComponent>().EnvironmentMap = AssetManager::GetAsset<Texture>(AssetImporter::ImportTextureAsset("data/texture/Skybox.dds"));
@@ -122,7 +122,7 @@ void CreatePBRSpheresScene()
         material->SetProperty(MaterialPropertyType::Roughness, 0.0f);
         material->SetProperty(MaterialPropertyType::Metalness, 1.0f);
         material->SetProperty(MaterialPropertyType::EmissiveColor, glm::vec4(0.8f, 0.5f, 0.1f, 1.0f));
-        material->SetProperty(MaterialPropertyType::EmissionPower, 6.0f);
+        material->SetProperty(MaterialPropertyType::EmissionPower, 16.0f);
 
         AssetSerializer::Serialize(material->GetAssetFilepath(), material);
 
@@ -207,7 +207,7 @@ Application::Application(const ApplicationDescription& description)
     m_SceneRenderer = std::make_shared<Renderer>(rendererDesc);
     m_SceneRenderer->SetViewportSize(m_Window->GetWidth(), m_Window->GetHeight());
 
-    CreatePBRSpheresScene();
+    //CreatePBRSpheresScene();
     ParseCommandlineArgs();
 
     if (!m_Scene)

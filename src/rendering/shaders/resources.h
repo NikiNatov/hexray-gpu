@@ -39,11 +39,12 @@ struct SceneConstants
     matrix InvProjMatrix;
     matrix InvViewMatrix;
     float3 CameraPosition;
+    float CameraExposure;
     uint NumLights;
     uint FrameIndex;
 };
 
-static const uint c_SceneConstantsStructSize = 276;
+static const uint c_SceneConstantsStructSize = 280;
 
 // -----------------------------------------------------------------------
 enum MaterialType

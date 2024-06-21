@@ -89,6 +89,7 @@ void SceneSerializer::Serialize(const std::filesystem::path& filepath, const std
 	out << YAML::Key << "Yaw" << YAML::Value << camera.GetYawAngle();
 	out << YAML::Key << "Pitch" << YAML::Value << camera.GetPitchAngle();
 	out << YAML::Key << "FOV" << YAML::Value << camera.GetPerspectiveFOV();
+	out << YAML::Key << "Exposure" << YAML::Value << camera.GetExposure();
 	out << YAML::EndMap;
 
 	out << YAML::Key << "Entities" << YAML::Value << YAML::BeginSeq;
@@ -230,8 +231,9 @@ bool SceneSerializer::Deserialize(const std::filesystem::path& filepath, std::sh
 	float yaw = cameraNode["Yaw"].as<float>();
 	float pitch = cameraNode["Pitch"].as<float>();
 	float fov = cameraNode["FOV"].as<float>();
+	float exposure = cameraNode["Exposure"].as<float>();
 
-	Camera camera(fov, 16.0f / 9.0f, position, yaw, pitch);
+	Camera camera(fov, 16.0f / 9.0f, position, yaw, pitch, exposure);
 	scene = std::make_shared<Scene>(sceneName, camera);
 
 	if (YAML::Node entities = data["Entities"])

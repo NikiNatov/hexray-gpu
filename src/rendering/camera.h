@@ -7,7 +7,7 @@
 class Camera
 {
 public:
-	Camera(float fov, float aspectRatio, const glm::vec3& position, float yaw, float pitch);
+	Camera(float fov, float aspectRatio, const glm::vec3& position, float yaw, float pitch, float exposure);
 
 	void OnUpdate(float dt);
 
@@ -24,6 +24,7 @@ public:
 	inline float GetPerspectiveFOV() const { return m_PerspectiveFOV; }
 	inline float GetYawAngle() const { return m_YawAngle; }
 	inline float GetPitchAngle() const { return m_PitchAngle; }
+	inline float GetExposure() const { return m_Exposure; }
 	inline const glm::vec3& GetPosition() const { return m_Position; }
 	inline const glm::mat4& GetProjection() const { return m_ProjectionMatrix; }
 	inline const glm::mat4& GetViewMatrix() const { return m_ViewMatrix; }
@@ -41,5 +42,6 @@ private:
 	float m_MovementSpeed = 5.0f;
 	glm::vec3 m_Position = glm::vec3(0.0f, 0.0f, 5.0f);
 	glm::vec2 m_LastMousePosition = glm::vec2(0.0f);
+	float m_Exposure = 1.0f;
 	bool m_HasMoved = false;
 };

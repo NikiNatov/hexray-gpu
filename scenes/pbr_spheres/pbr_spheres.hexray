@@ -4,8 +4,9 @@ Camera:
   Yaw: 45
   Pitch: -25
   FOV: 60
+  Exposure: 0.5
 Entities:
-  - Entity: 15405121264667194845
+  - Entity: 10480840617356239205
     TagComponent:
       Tag: Floor
     SceneHierarchyComponent:
@@ -21,7 +22,7 @@ Entities:
       Mesh: 1627730646426167054
       Materials:
         - 12369002980049367363
-  - Entity: 4137269495263761756
+  - Entity: 16696420137702621021
     TagComponent:
       Tag: Sphere
     SceneHierarchyComponent:
@@ -37,7 +38,7 @@ Entities:
       Mesh: 5104248700359231176
       Materials:
         - 15800579866238718237
-  - Entity: 11053395937753439794
+  - Entity: 4989485811395872654
     TagComponent:
       Tag: Sphere
     SceneHierarchyComponent:
@@ -53,7 +54,7 @@ Entities:
       Mesh: 5104248700359231176
       Materials:
         - 25273240164973306
-  - Entity: 14941018898829177905
+  - Entity: 14963933914846941211
     TagComponent:
       Tag: Sphere
     SceneHierarchyComponent:
@@ -69,7 +70,7 @@ Entities:
       Mesh: 5104248700359231176
       Materials:
         - 11813287398548598153
-  - Entity: 11774587639219791081
+  - Entity: 12159694362782058600
     TagComponent:
       Tag: Sphere
     SceneHierarchyComponent:
@@ -85,7 +86,7 @@ Entities:
       Mesh: 5104248700359231176
       Materials:
         - 8549552023636143736
-  - Entity: 2863833070463973636
+  - Entity: 6710997621245824714
     TagComponent:
       Tag: Sphere
     SceneHierarchyComponent:
@@ -101,7 +102,7 @@ Entities:
       Mesh: 5104248700359231176
       Materials:
         - 12227276797886887362
-  - Entity: 10422356381588483676
+  - Entity: 14103896218325849143
     TagComponent:
       Tag: SkyBox
     SceneHierarchyComponent:

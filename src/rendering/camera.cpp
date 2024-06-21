@@ -7,8 +7,8 @@
 #include <gtc/quaternion.hpp>
 
 // ------------------------------------------------------------------------------------------------------------------------------------
-Camera::Camera(float fov, float aspectRatio, const glm::vec3& position, float yaw, float pitch)
-    : m_PerspectiveFOV(fov), m_AspectRatio(aspectRatio), m_Position(position), m_YawAngle(yaw), m_PitchAngle(pitch)
+Camera::Camera(float fov, float aspectRatio, const glm::vec3& position, float yaw, float pitch, float exposure)
+    : m_PerspectiveFOV(fov), m_AspectRatio(aspectRatio), m_Position(position), m_YawAngle(yaw), m_PitchAngle(pitch), m_Exposure(exposure)
 {
     RecalculateProjection();
     RecalculateView();
