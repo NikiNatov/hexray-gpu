@@ -200,7 +200,10 @@ static const float Epsilon = 0.000001;
 #define RWBUFFERS_SPACE space2
 
 #define INVALID_DESCRIPTOR_INDEX 0xffffffff
+
+#ifndef MAX_RAY_RECURSION_DEPTH
 #define MAX_RAY_RECURSION_DEPTH 4
+#endif
 
 ConstantBuffer<ResourceBindTable> g_ResourceIndices          : register(b0, RESOURCE_INDICES_SPACE);
 RaytracingAccelerationStructure   g_AccelerationStructures[] : register(t0, ACCELERATION_STRUCTURES_SPACE);

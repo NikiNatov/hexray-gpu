@@ -3,6 +3,7 @@
 #include "core/logger.h"
 #include "core/timer.h"
 #include "core/input.h"
+#include "core/utils.h"
 #include "scene/component.h"
 #include "scene/sceneserializer.h"
 #include "rendering/defaultresources.h"
@@ -464,6 +465,8 @@ void Application::CompileShaders()
 #endif
 
     compileInput.Defines.emplace_back(L"HLSL");
+    std::wstring maxRayRecursionDepth = L"MAX_RAY_RECURSION_DEPTH=" + ToWString(std::to_string(m_RendererDescription.RayRecursionDepth - 1));
+    compileInput.Defines.emplace_back(maxRayRecursionDepth.c_str());
 
     for (const std::pair<std::filesystem::path, std::wstring>& shaderDesc : shaders)
     {
