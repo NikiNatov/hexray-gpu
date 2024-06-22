@@ -6,7 +6,7 @@ Camera:
   FOV: 60
   Exposure: 0.5
 Entities:
-  - Entity: 10695895950983500075
+  - Entity: 3859851019958288757
     TagComponent:
       Tag: Floor
     SceneHierarchyComponent:
@@ -19,10 +19,10 @@ Entities:
       Rotation: [0, 0, 0]
       Scale: [100, 0.100000001, 100]
     MeshComponent:
-      Mesh: 1627730646426167054
+      Mesh: 5021690134070548488
       Materials:
-        - 12369002980049367363
-  - Entity: 14779871731081707390
+        - 13867480182931701887
+  - Entity: 2296982959329296036
     TagComponent:
       Tag: Sphere
     SceneHierarchyComponent:
@@ -35,10 +35,10 @@ Entities:
       Rotation: [0, 0, 0]
       Scale: [20, 20, 20]
     MeshComponent:
-      Mesh: 5104248700359231176
+      Mesh: 15501521136206435757
       Materials:
-        - 15800579866238718237
-  - Entity: 9572605148779370994
+        - 10147372063284767906
+  - Entity: 11875245864824552167
     TagComponent:
       Tag: Sphere
     SceneHierarchyComponent:
@@ -51,10 +51,10 @@ Entities:
       Rotation: [0, 0, 0]
       Scale: [2, 2, 2]
     MeshComponent:
-      Mesh: 5104248700359231176
+      Mesh: 15501521136206435757
       Materials:
-        - 25273240164973306
-  - Entity: 17257269668256662271
+        - 6487798091956334690
+  - Entity: 16200698739619582314
     TagComponent:
       Tag: Sphere
     SceneHierarchyComponent:
@@ -67,10 +67,10 @@ Entities:
       Rotation: [0, 0, 0]
       Scale: [2, 2, 2]
     MeshComponent:
-      Mesh: 5104248700359231176
+      Mesh: 15501521136206435757
       Materials:
-        - 11813287398548598153
-  - Entity: 6930678915473000692
+        - 6972512923229960787
+  - Entity: 11249533125586043481
     TagComponent:
       Tag: Sphere
     SceneHierarchyComponent:
@@ -83,10 +83,10 @@ Entities:
       Rotation: [0, 0, 0]
       Scale: [2, 2, 2]
     MeshComponent:
-      Mesh: 5104248700359231176
+      Mesh: 15501521136206435757
       Materials:
-        - 8549552023636143736
-  - Entity: 14024430219991997160
+        - 6120379912620158440
+  - Entity: 2802803763360649716
     TagComponent:
       Tag: Sphere
     SceneHierarchyComponent:
@@ -99,10 +99,10 @@ Entities:
       Rotation: [0, 0, 0]
       Scale: [2, 2, 2]
     MeshComponent:
-      Mesh: 5104248700359231176
+      Mesh: 15501521136206435757
       Materials:
-        - 12227276797886887362
-  - Entity: 567457102671884113
+        - 9615413044843332789
+  - Entity: 6552909107361503479
     TagComponent:
       Tag: SkyBox
     SceneHierarchyComponent:
@@ -115,4 +115,4 @@ Entities:
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     SkyLightComponent:
-      EnvironmentMap: 16346714930474034845
+      EnvironmentMap: 4454164063600556984
