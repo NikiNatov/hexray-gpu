@@ -33,7 +33,8 @@ project "hexray-gpu"
 		"%{wks.location}/extern/stb/**.h",
 		"%{wks.location}/extern/stb/**.cpp",
 		"%{wks.location}/extern/DirectXTex/**.h",
-		"%{wks.location}/extern/DirectXTex/**.cpp"
+		"%{wks.location}/extern/DirectXTex/**.cpp",
+		"%{wks.location}/extern/DirectXShaderCompiler/**.h",
 	}
 
 	includedirs
@@ -47,6 +48,7 @@ project "hexray-gpu"
 		"%{wks.location}/extern/stb",
 		"%{wks.location}/extern/DirectXTex",
 		"%{wks.location}/extern/yaml-cpp/include",
+		"%{wks.location}/extern/DirectXShaderCompiler/include",
 	}
 
 	libdirs
@@ -66,7 +68,9 @@ project "hexray-gpu"
 
 	postbuildcommands
 	{
-		"XCOPY %{wks.location}\\extern\\pix\\lib\\WinPixEventRuntime.dll \"%{cfg.targetdir}\"  /S /Y"
+		"XCOPY %{wks.location}\\extern\\pix\\lib\\WinPixEventRuntime.dll \"%{cfg.targetdir}\"  /S /Y",
+		"XCOPY %{wks.location}\\extern\\DirectXShaderCompiler\\lib\\dxcompiler.dll \"%{cfg.targetdir}\"  /S /Y",
+		"XCOPY %{wks.location}\\extern\\DirectXShaderCompiler\\lib\\dxil.dll \"%{cfg.targetdir}\"  /S /Y",
 	}
 
 	filter "configurations:Debug"
