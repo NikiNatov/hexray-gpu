@@ -319,7 +319,7 @@ const std::shared_ptr<Texture>& Renderer::GetFinalImage() const
 void Renderer::RecreateTextures(uint32_t frameIndex)
 {
     TextureDescription rtDesc;
-    rtDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+    rtDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
     rtDesc.Width = m_ViewportWidth;
     rtDesc.Height = m_ViewportHeight;
     rtDesc.MipLevels = 1;
@@ -331,7 +331,7 @@ void Renderer::RecreateTextures(uint32_t frameIndex)
     uint32_t maxBloomMips = glm::log2((float)glm::max(m_ViewportWidth, m_ViewportHeight)) + 1;
 
     TextureDescription bloomTextureDesc;
-    bloomTextureDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+    bloomTextureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
     bloomTextureDesc.Width = m_ViewportWidth;
     bloomTextureDesc.Height = m_ViewportHeight;
     bloomTextureDesc.MipLevels = std::min(maxBloomMips, m_Description.BloomDownsampleSteps);
@@ -341,7 +341,7 @@ void Renderer::RecreateTextures(uint32_t frameIndex)
     m_BloomTextures[frameIndex] = std::make_shared<Texture>(bloomTextureDesc, fmt::format(L"Bloom Texture {}", frameIndex).c_str());
 
     TextureDescription bloomCompositeTextureDesc;
-    bloomCompositeTextureDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+    bloomCompositeTextureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
     bloomCompositeTextureDesc.Width = m_ViewportWidth;
     bloomCompositeTextureDesc.Height = m_ViewportHeight;
     bloomCompositeTextureDesc.MipLevels = 1;
