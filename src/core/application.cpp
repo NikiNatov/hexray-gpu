@@ -15,37 +15,102 @@
 #include <sstream>
 #include <fstream>
 
-static const char* s_DefaultScenePath = "scenes/pbr_spheres/pbr_spheres.hexray";
+static const char* s_DefaultScenePath = "scenes/bloom_test/bloom_test.hexray";
 Application* Application::ms_Instance = nullptr;
 
-void CreatePBRTestScene()
+void CreateBloomTestScene()
 {
-    std::filesystem::path scenePath = "scenes/pbr_test/pbr_test.hexray";
+    std::filesystem::path scenePath = "scenes/bloom_test/bloom_test.hexray";
 
     AssetManager::Initialize(scenePath.parent_path() / "assets");
-    auto scene = std::make_shared<Scene>(scenePath.stem().string(), Camera(60.0f, 16.0f / 9.0f, glm::vec3(5.0f, 5.0f, -5.0f), 45.0f, -25.0f, 0.5f));
+    auto scene = std::make_shared<Scene>(scenePath.stem().string(), Camera(60.0f, 16.0f / 9.0f, glm::vec3(5.0f, 5.0f, -5.0f), 45.0f, -25.0f, 0.3f));
     {
         Entity e = scene->CreateEntity("SkyBox");
         e.AddComponent<SkyLightComponent>().EnvironmentMap = AssetManager::GetAsset<Texture>(AssetImporter::ImportTextureAsset("data/texture/Skybox.dds"));
     }
 
+    Uuid lightsaberMeshID = AssetImporter::ImportMeshAsset("data/meshes/lightsaber.fbx");
+
+    std::vector<std::string> materialPaths = {
+        "materials/emissive_red.hexmat",
+        "materials/emissive_green.hexmat",
+        "materials/emissive_blue.hexmat",
+        "materials/emissive_magenta.hexmat",
+    };
+
+    std::vector<glm::vec4> materialEmissiveColors = {
+        glm::vec4(0.8f, 0.1f, 0.1f, 1.0f) * 50.0f,
+        glm::vec4(0.1f, 0.8f, 0.1f, 1.0f) * 50.0f,
+        glm::vec4(0.1f, 0.1f, 0.8f, 1.0f) * 50.0f,
+        glm::vec4(0.8f, 0.1f, 0.8f, 1.0f) * 50.0f
+    };
+
+    // Lightsabers
+    for(uint32_t i = 0 ; i < 4; i++)
     {
-        Entity e = scene->CreateEntity("Sun");
-        e.GetComponent<TransformComponent>().Translation = { 1.0f, 3.0f, 2.0f };
-        auto& c = e.AddComponent<DirectionalLightComponent>();
-        c.Color = { 0.8f, 0.5f, 0.1f };
-        c.Intensity = 1.0f;
+        MaterialPtr overrideMaterial = AssetManager::GetAsset<Material>(AssetImporter::CreateMaterialAsset(materialPaths[i], MaterialType::PBR));
+        overrideMaterial->SetProperty(MaterialPropertyType::AlbedoColor, glm::vec4(1.0f));
+        overrideMaterial->SetProperty(MaterialPropertyType::EmissiveColor, materialEmissiveColors[i]);
+        overrideMaterial->SetProperty(MaterialPropertyType::Roughness, 1.0f);
+        overrideMaterial->SetProperty(MaterialPropertyType::Metalness, 0.0f);
+
+        AssetSerializer::Serialize(overrideMaterial->GetAssetFilepath(), overrideMaterial);
+
+        Entity e = scene->CreateEntity("Lightsaber");
+        e.GetComponent<TransformComponent>().Translation = { i * 3.0f, 0.0f, 0.0f };
+        e.GetComponent<TransformComponent>().Scale = { 0.2f, 0.2f, 0.2f };
+
+        auto& mc = e.AddComponent<MeshComponent>();
+        mc.Mesh = AssetManager::GetAsset<Mesh>(lightsaberMeshID);
+        mc.OverrideMaterialTable = std::make_shared<MaterialTable>(mc.Mesh->GetMaterialTable()->GetSize());
+        mc.OverrideMaterialTable->SetMaterial(6, overrideMaterial);
     }
 
+    // Sun
     {
+        MaterialPtr material = AssetManager::GetAsset<Material>(AssetImporter::CreateMaterialAsset("materials/material_big.hexmat", MaterialType::PBR));
+        material->SetProperty(MaterialPropertyType::AlbedoColor, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+        material->SetProperty(MaterialPropertyType::Roughness, 0.0f);
+        material->SetProperty(MaterialPropertyType::Metalness, 1.0f);
+        material->SetProperty(MaterialPropertyType::EmissiveColor, glm::vec4(0.8f, 0.5f, 0.1f, 1.0f) * 100.0f);
 
-        Entity e = scene->CreateEntity("Pistol");
-        e.GetComponent<TransformComponent>().Scale = { 0.2f, 0.2f, 0.2f };
+        AssetSerializer::Serialize(material->GetAssetFilepath(), material);
+
+        Entity e = scene->CreateEntity("Sun");
+        e.GetComponent<TransformComponent>().Translation = { 100.0f, 100.0f, 100.0f };
+        e.GetComponent<TransformComponent>().Scale = { 50.0f, 50.0f, 50.0f };
+
         auto& mc = e.AddComponent<MeshComponent>();
-        mc.Mesh = AssetManager::GetAsset<Mesh>(AssetImporter::ImportMeshAsset("data/meshes/gun/gun.fbx"));
+        mc.Mesh = AssetManager::GetAsset<Mesh>(AssetImporter::ImportMeshAsset("data/meshes/sphere.fbx"));
+        mc.OverrideMaterialTable = std::make_shared<MaterialTable>(1);
+        mc.OverrideMaterialTable->SetMaterial(0, material);
+    }
+
+    // Floor
+    {
+        MaterialPtr material = AssetManager::GetAsset<Material>(AssetImporter::CreateMaterialAsset("materials/material_floor.hexmat", MaterialType::PBR));
+        material->SetProperty(MaterialPropertyType::AlbedoColor, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+        material->SetProperty(MaterialPropertyType::Roughness, 1.0f);
+        material->SetProperty(MaterialPropertyType::Metalness, 0.0f);
+
+        AssetSerializer::Serialize(material->GetAssetFilepath(), material);
+
+        Entity e = scene->CreateEntity("Floor");
+        e.GetComponent<TransformComponent>().Translation = { 0.0f, 0.0f, 0.0f };
+        e.GetComponent<TransformComponent>().Scale = { 100.0f, 0.1f, 100.0f };
+
+        auto& mc = e.AddComponent<MeshComponent>();
+        mc.Mesh = AssetManager::GetAsset<Mesh>(AssetImporter::ImportMeshAsset("data/meshes/cube.obj"));
+        mc.OverrideMaterialTable = std::make_shared<MaterialTable>(1);
+        mc.OverrideMaterialTable->SetMaterial(0, material);
     }
 
     RendererDescription rendererDesc;
+    rendererDesc.RayRecursionDepth = 8;
+    rendererDesc.EnableBloom = true;
+    rendererDesc.BloomDownsampleSteps = 8;
+    rendererDesc.BloomStrength = 0.06f;
+
     SceneSerializer::Serialize(scenePath, scene, rendererDesc);
 }
 
@@ -209,7 +274,7 @@ Application::Application(const ApplicationDescription& description)
 
     DefaultResources::Initialize();
 
-    //CreatePBRSpheresScene();
+    //CreateBloomTestScene();
     ParseCommandlineArgs();
 
     if (!m_Scene)

@@ -1,0 +1,155 @@
+Name: bloom_test
+Camera:
+  Position: [5, 5, -5]
+  Yaw: 45
+  Pitch: -25
+  FOV: 60
+  Exposure: 0.300000012
+RendererDescription:
+  RayRecursionDepth: 8
+  EnableBloom: true
+  BloomDownsampleSteps: 8
+  BloomStrength: 0.0599999987
+Entities:
+  - Entity: 16091242701585639184
+    TagComponent:
+      Tag: Floor
+    SceneHierarchyComponent:
+      Parent: 0
+      FirstChild: 0
+      NextSibling: 0
+      PreviousSibling: 0
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [100, 0.100000001, 100]
+    MeshComponent:
+      Mesh: 13027973286616260903
+      Materials:
+        - 17113663883117415332
+  - Entity: 7047209351318528082
+    TagComponent:
+      Tag: Sun
+    SceneHierarchyComponent:
+      Parent: 0
+      FirstChild: 0
+      NextSibling: 0
+      PreviousSibling: 0
+    TransformComponent:
+      Translation: [100, 100, 100]
+      Rotation: [0, 0, 0]
+      Scale: [50, 50, 50]
+    MeshComponent:
+      Mesh: 8644023380739614575
+      Materials:
+        - 13961899099291645719
+  - Entity: 12602070357300864881
+    TagComponent:
+      Tag: Lightsaber
+    SceneHierarchyComponent:
+      Parent: 0
+      FirstChild: 0
+      NextSibling: 0
+      PreviousSibling: 0
+    TransformComponent:
+      Translation: [9, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.200000003, 0.200000003, 0.200000003]
+    MeshComponent:
+      Mesh: 630917119651979345
+      Materials:
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 12625562737749855152
+        - 0
+        - 0
+  - Entity: 6783454063984977291
+    TagComponent:
+      Tag: Lightsaber
+    SceneHierarchyComponent:
+      Parent: 0
+      FirstChild: 0
+      NextSibling: 0
+      PreviousSibling: 0
+    TransformComponent:
+      Translation: [6, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.200000003, 0.200000003, 0.200000003]
+    MeshComponent:
+      Mesh: 630917119651979345
+      Materials:
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 3750657024317053930
+        - 0
+        - 0
+  - Entity: 17966749087675950023
+    TagComponent:
+      Tag: Lightsaber
+    SceneHierarchyComponent:
+      Parent: 0
+      FirstChild: 0
+      NextSibling: 0
+      PreviousSibling: 0
+    TransformComponent:
+      Translation: [3, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.200000003, 0.200000003, 0.200000003]
+    MeshComponent:
+      Mesh: 630917119651979345
+      Materials:
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 16025313942153313099
+        - 0
+        - 0
+  - Entity: 5303935560421358739
+    TagComponent:
+      Tag: Lightsaber
+    SceneHierarchyComponent:
+      Parent: 0
+      FirstChild: 0
+      NextSibling: 0
+      PreviousSibling: 0
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.200000003, 0.200000003, 0.200000003]
+    MeshComponent:
+      Mesh: 630917119651979345
+      Materials:
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 13713610369814485381
+        - 0
+        - 0
+  - Entity: 1411219618203302582
+    TagComponent:
+      Tag: SkyBox
+    SceneHierarchyComponent:
+      Parent: 0
+      FirstChild: 0
+      NextSibling: 0
+      PreviousSibling: 0
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SkyLightComponent:
+      EnvironmentMap: 11023403761237286554
