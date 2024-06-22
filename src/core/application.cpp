@@ -124,8 +124,7 @@ void CreatePBRSpheresScene()
         material->SetProperty(MaterialPropertyType::AlbedoColor, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
         material->SetProperty(MaterialPropertyType::Roughness, 0.0f);
         material->SetProperty(MaterialPropertyType::Metalness, 1.0f);
-        material->SetProperty(MaterialPropertyType::EmissiveColor, glm::vec4(0.8f, 0.5f, 0.1f, 1.0f));
-        material->SetProperty(MaterialPropertyType::EmissionPower, 16.0f);
+        material->SetProperty(MaterialPropertyType::EmissiveColor, glm::vec4(0.8f, 0.5f, 0.1f, 1.0f) * 16.0f);
 
         AssetSerializer::Serialize(material->GetAssetFilepath(), material);
 

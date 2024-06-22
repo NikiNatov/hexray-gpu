@@ -235,6 +235,13 @@ Uuid AssetImporter::ImportMaterialAsset(const aiMaterial* assimpMaterial, const 
         material->SetProperty(MaterialPropertyType::AlbedoColor, glm::vec4(albedo.r, albedo.g, albedo.b, albedo.a));
     }
 
+    // Set emissive color
+    aiColor4D emissive;
+    if (assimpMaterial->Get(AI_MATKEY_COLOR_EMISSIVE, emissive) == AI_SUCCESS)
+    {
+        material->SetProperty(MaterialPropertyType::EmissiveColor, glm::vec4(emissive.r, emissive.g, emissive.b, emissive.a));
+    }
+
     // Set roughness
     float roughness;
     if (assimpMaterial->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness) == AI_SUCCESS)

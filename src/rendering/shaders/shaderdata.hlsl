@@ -64,7 +64,7 @@ void ClosestHitShader_Color(inout ColorRayPayload payload, in BuiltInTriangleInt
     float4 albedo = material.AlbedoMapIndex != INVALID_DESCRIPTOR_INDEX ? g_Textures[material.AlbedoMapIndex].SampleLevel(g_LinearWrapSampler, hitInfo.TexCoords, 0) : material.AlbedoColor;
     float3 finalColor = float3(0.0, 0.0, 0.0);
     
-    finalColor += material.EmissiveColor.rgb * material.EmissivePower;
+    finalColor += material.EmissiveColor.rgb;
     
     // Direct lighting
     if (sceneConstants.NumLights > 0)

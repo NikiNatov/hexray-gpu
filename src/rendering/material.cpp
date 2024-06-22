@@ -6,7 +6,6 @@ std::unordered_map<MaterialType, std::vector<MaterialPropertyMetaData>> Material
         {
             MaterialPropertyMetaData{ MaterialPropertyType::AlbedoColor, 0, 16 }, // type, offset, size
             MaterialPropertyMetaData{ MaterialPropertyType::EmissiveColor, 16, 16 },
-            MaterialPropertyMetaData{ MaterialPropertyType::EmissionPower, 32, 4 },
         },
     },
 
@@ -15,9 +14,8 @@ std::unordered_map<MaterialType, std::vector<MaterialPropertyMetaData>> Material
         {
             MaterialPropertyMetaData{ MaterialPropertyType::AlbedoColor, 0, 16 },
             MaterialPropertyMetaData{ MaterialPropertyType::EmissiveColor, 16, 16 },
-            MaterialPropertyMetaData{ MaterialPropertyType::EmissionPower, 32, 4 },
-            MaterialPropertyMetaData{ MaterialPropertyType::SpecularColor, 36, 16 },
-            MaterialPropertyMetaData{ MaterialPropertyType::Shininess, 52, 4 },
+            MaterialPropertyMetaData{ MaterialPropertyType::SpecularColor, 32, 16 },
+            MaterialPropertyMetaData{ MaterialPropertyType::Shininess, 48, 4 },
         },
     },
 
@@ -26,9 +24,8 @@ std::unordered_map<MaterialType, std::vector<MaterialPropertyMetaData>> Material
         {
             MaterialPropertyMetaData{ MaterialPropertyType::AlbedoColor, 0, 16 },
             MaterialPropertyMetaData{ MaterialPropertyType::EmissiveColor, 16, 16 },
-            MaterialPropertyMetaData{ MaterialPropertyType::EmissionPower, 32, 4 },
-            MaterialPropertyMetaData{ MaterialPropertyType::Roughness, 36, 4 },
-            MaterialPropertyMetaData{ MaterialPropertyType::Metalness, 40, 4 },
+            MaterialPropertyMetaData{ MaterialPropertyType::Roughness, 32, 4 },
+            MaterialPropertyMetaData{ MaterialPropertyType::Metalness, 36, 4 },
         },
     },
 };
