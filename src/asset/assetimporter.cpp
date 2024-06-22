@@ -1,5 +1,6 @@
 #include "assetimporter.h"
 
+#include "core/utils.h"
 #include "asset/assetmanager.h"
 #include "asset/assetserializer.h"
 
@@ -385,21 +386,14 @@ bool AssetImporter::GetExistingOrSetupImport(AssetType type, const std::string& 
 // ------------------------------------------------------------------------------------------------------------------------------------
 bool AssetImporter::ImportDDS(const std::filesystem::path& filepath, TextureDescription& outTextureDesc, std::vector<uint8_t>& outPixels)
 {
-    std::ifstream ifs(filepath, std::ios::in | std::ios::binary | std::ios::ate);
-
-    if (!ifs)
+    std::vector<uint8_t> fileContents;
+    if (!ReadFile(filepath, fileContents))
     {
         HEXRAY_ERROR("Asset Importer: Could not open texture asset file: {}", filepath.string());
         return false;
     }
 
-    uint32_t fileSize = ifs.tellg();
-    std::vector<uint8_t> fileContents(fileSize);
-    ifs.seekg(0, std::ios::beg);
-    ifs.read((char*)fileContents.data(), fileSize);
-    ifs.close();
-
-    if (!ImportDDS(fileContents.data(), fileSize, outTextureDesc, outPixels))
+    if (!ImportDDS(fileContents.data(), fileContents.size(), outTextureDesc, outPixels))
     {
         HEXRAY_ERROR("Asset Importer: Failed decoding file: {}", filepath.string());
         return false;
@@ -444,21 +438,14 @@ bool AssetImporter::ImportDDS(const uint8_t* data, uint32_t size, TextureDescrip
 // ------------------------------------------------------------------------------------------------------------------------------------
 bool AssetImporter::ImportSTB(const std::filesystem::path& filepath, TextureDescription& outTextureDesc, std::vector<uint8_t>& outPixels)
 {
-    std::ifstream ifs(filepath, std::ios::in | std::ios::binary | std::ios::ate);
-
-    if (!ifs)
+    std::vector<uint8_t> fileContents;
+    if (!ReadFile(filepath, fileContents))
     {
         HEXRAY_ERROR("Asset Importer: Could not open texture asset file: {}", filepath.string());
         return false;
     }
 
-    uint32_t fileSize = ifs.tellg();
-    std::vector<uint8_t> fileContents(fileSize);
-    ifs.seekg(0, std::ios::beg);
-    ifs.read((char*)fileContents.data(), fileSize);
-    ifs.close();
-
-    if (!ImportSTB(fileContents.data(), fileSize, outTextureDesc, outPixels))
+    if (!ImportSTB(fileContents.data(), fileContents.size(), outTextureDesc, outPixels))
     {
         HEXRAY_ERROR("Asset Importer: Failed decoding file: {}", filepath.string());
         return false;

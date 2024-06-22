@@ -10,8 +10,10 @@
 #include "asset/assetmanager.h"
 #include "asset/assetserializer.h"
 #include "serialization/defaultsceneparser.h"
+#include "shadercompiler/shadercompiler.h"
 
 #include <sstream>
+#include <fstream>
 
 static const char* s_DefaultScenePath = "scenes/pbr_spheres/pbr_spheres.hexray";
 Application* Application::ms_Instance = nullptr;
@@ -201,6 +203,8 @@ Application::Application(const ApplicationDescription& description)
 
     DefaultResources::Initialize();
 
+    CompileShaders();
+
     // Create renderer
     RendererDescription rendererDesc;
     rendererDesc.RayRecursionDepth = 8;
@@ -374,6 +378,61 @@ void Application::EndFrame()
     newTitle << std::fixed << std::setprecision(1) << m_AvgDeltaTimeMS;
     newTitle << " ms)";
     m_Window->SetTitle(newTitle.str());
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+void Application::CompileShaders()
+{
+    std::filesystem::path sourceDirectory = "src/rendering/shaders";
+    std::filesystem::path destinationDirectory = GetExecutablePath().parent_path();
+
+    std::vector<std::pair<std::filesystem::path, std::wstring>> shaders = {
+        { "shaderdata.hlsl", L"lib_6_5" },
+        { "postfx/bloomcomposite.hlsl", L"cs_6_5" },
+        { "postfx/bloomdownsample.hlsl", L"cs_6_5" },
+        { "postfx/bloomupsample.hlsl", L"cs_6_5" },
+        { "postfx/tonemap.hlsl", L"cs_6_5" },
+    };
+
+    ShaderCompilerInput compileInput;
+#if defined(_DEBUG)
+    compileInput.Flags = SCF_Debug;
+#else
+    compileInput.Flags = SCF_Release;
+#endif
+
+    compileInput.Defines.emplace_back(L"HLSL");
+
+    for (const std::pair<std::filesystem::path, std::wstring>& shaderDesc : shaders)
+    {
+        compileInput.SourcePath = sourceDirectory / shaderDesc.first;
+        compileInput.ShaderVersion = shaderDesc.second;
+        compileInput.EntryPoint = shaderDesc.second.find(L"lib") != std::string::npos ? L"" : L"CSMain";
+
+        ShaderCompilerResult compileResult;
+        if (!ShaderCompiler::Compile(compileInput, compileResult))
+        {
+            HEXRAY_ERROR("ShaderCompiler: Failed compiling shader file {}", compileInput.SourcePath.string());
+            for (const auto& error : compileResult.Errors)
+            {
+                HEXRAY_ERROR("{}", error);
+                UNREACHED;
+            }
+            continue;
+        }
+
+        std::filesystem::path destinationPath = destinationDirectory / shaderDesc.first.stem();
+        destinationPath += ".cso";
+        std::ofstream ofs(destinationPath, std::ios::out | std::ios::binary | std::ios::trunc);
+        if (!ofs)
+        {
+            HEXRAY_ERROR("ShaderCompiler: Failed creating/opening shader file {}", destinationPath.string());
+            continue;
+        }
+
+        ofs.write((const char*)compileResult.Code.data(), compileResult.Code.size());
+        ofs.close();
+    }
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------

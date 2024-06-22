@@ -99,6 +99,7 @@ private:
     void Update();
     void EndFrame();
 private:
+    void CompileShaders();
     void ParseCommandlineArgs();
     void OpenScene(const std::filesystem::path& filepath);
 private:

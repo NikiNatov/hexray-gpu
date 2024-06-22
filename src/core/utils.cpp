@@ -1,5 +1,74 @@
 #include "utils.h"
 
+#include <cstdarg>
+#include <fstream>
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+bool ReadFile(const std::filesystem::path& path, std::vector<uint8_t>& outData)
+{
+	std::ifstream ifs(path, std::ios::in | std::ios::binary | std::ios::ate);
+
+	if (!ifs)
+	{
+		return false;
+	}
+
+	uint32_t fileSize = ifs.tellg();
+	outData.resize(fileSize);
+	ifs.seekg(0, std::ios::beg);
+	ifs.read((char*)outData.data(), fileSize);
+	ifs.close();
+	return true;
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+bool ReadFile(const std::filesystem::path& path, std::string& outData)
+{
+	std::ifstream ifs(path, std::ios::in | std::ios::binary | std::ios::ate);
+
+	if (!ifs)
+	{
+		return false;
+	}
+
+	uint32_t fileSize = ifs.tellg();
+	outData.resize(fileSize);
+	ifs.seekg(0, std::ios::beg);
+	ifs.read(outData.data(), fileSize);
+	ifs.close();
+	return true;
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+std::string Printf(const char* format, ...)
+{
+	va_list args;
+	va_start(args, format);
+
+	constexpr uint32_t kStartSize = 256;
+	char buffer[kStartSize];
+
+	int32_t result = _vsnprintf(buffer, kStartSize, format, args);
+	if (result == -1)
+	{
+		uint32_t numTry = 2;
+		std::string heapBuffer;
+		while (result == -1)
+		{
+			heapBuffer.resize(kStartSize * numTry);
+			result = _vsnprintf(heapBuffer.data(), heapBuffer.size(), format, args);
+			numTry++;
+		}
+
+		heapBuffer.resize(uint32_t(result));
+		va_end(args);
+		return heapBuffer;
+	}
+
+	va_end(args);
+	return buffer;
+}
+
 // ------------------------------------------------------------------------------------------------------------------------------------
 std::string ToString(const std::wstring& str)
 {
