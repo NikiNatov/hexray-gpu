@@ -38,14 +38,15 @@ void CreatePBRTestScene()
     }
 
     {
-       
+
         Entity e = scene->CreateEntity("Pistol");
         e.GetComponent<TransformComponent>().Scale = { 0.2f, 0.2f, 0.2f };
         auto& mc = e.AddComponent<MeshComponent>();
         mc.Mesh = AssetManager::GetAsset<Mesh>(AssetImporter::ImportMeshAsset("data/meshes/gun/gun.fbx"));
     }
 
-    SceneSerializer::Serialize(scenePath, scene);
+    RendererDescription rendererDesc;
+    SceneSerializer::Serialize(scenePath, scene, rendererDesc);
 }
 
 void CreatePBRSpheresScene()
@@ -156,7 +157,13 @@ void CreatePBRSpheresScene()
         mc.OverrideMaterialTable->SetMaterial(0, material);
     }
 
-    SceneSerializer::Serialize(scenePath, scene);
+    RendererDescription rendererDesc;
+    rendererDesc.RayRecursionDepth = 8;
+    rendererDesc.EnableBloom = true;
+    rendererDesc.BloomDownsampleSteps = 8;
+    rendererDesc.BloomStrength = 0.06f;
+
+    SceneSerializer::Serialize(scenePath, scene, rendererDesc);
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
@@ -202,18 +209,6 @@ Application::Application(const ApplicationDescription& description)
 
     DefaultResources::Initialize();
 
-    CompileShaders();
-
-    // Create renderer
-    RendererDescription rendererDesc;
-    rendererDesc.RayRecursionDepth = 8;
-    rendererDesc.EnableBloom = true;
-    rendererDesc.BloomDownsampleSteps = 8;
-    rendererDesc.BloomStrength = 0.06f;
-
-    m_SceneRenderer = std::make_shared<Renderer>(rendererDesc);
-    m_SceneRenderer->SetViewportSize(m_Window->GetWidth(), m_Window->GetHeight());
-
     //CreatePBRSpheresScene();
     ParseCommandlineArgs();
 
@@ -221,6 +216,9 @@ Application::Application(const ApplicationDescription& description)
     {
         OpenScene(s_DefaultScenePath);
     }
+
+    CompileShaders();
+    InitSceneRenderer();
 
     SetMaxFPS(120);
     SetMaxDeltaTime(2.0);
@@ -280,7 +278,7 @@ bool Application::OnWindowResized(WindowResizedEvent& event)
         return true;
     }
 
-    if(m_GraphicsContext)
+    if (m_GraphicsContext)
         m_GraphicsContext->ResizeSwapChain(event.GetWidth(), event.GetHeight());
 
     if (m_Scene)
@@ -458,24 +456,30 @@ void Application::ParseCommandlineArgs()
 // ------------------------------------------------------------------------------------------------------------------------------------
 void Application::OpenScene(const std::filesystem::path& filepath)
 {
-    bool loadDefaultScene = false;
-
     if (!std::filesystem::exists(filepath))
     {
         HEXRAY_ERROR("Scene with path {} doesn't exist. Loading default...", filepath.string());
         return;
     }
 
-    double startTime = m_Timer.GetTimeNow();
-
     AssetManager::Initialize(filepath.parent_path() / "assets");
 
-    if (!SceneSerializer::Deserialize(filepath, m_Scene))
+    if (!SceneSerializer::Deserialize(filepath, m_Scene, m_RendererDescription))
     {
         HEXRAY_ERROR("Failed loading scene with path {}. Loading default...", filepath.string());
         AssetManager::Shutdown();
         return;
     }
+
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+void Application::InitSceneRenderer()
+{
+    double startTime = m_Timer.GetTimeNow();
+
+    m_SceneRenderer = std::make_shared<Renderer>(m_RendererDescription);
+    m_SceneRenderer->SetViewportSize(m_Window->GetWidth(), m_Window->GetHeight());
 
     double endTime = m_Timer.GetTimeNow();
     HEXRAY_INFO("Scene load took {}ms", endTime - startTime);

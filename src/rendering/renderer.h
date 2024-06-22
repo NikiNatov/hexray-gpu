@@ -19,7 +19,7 @@ struct MeshInstance
 struct RendererDescription
 {
     uint32_t RayRecursionDepth = 3;
-    bool EnableBloom = true;
+    bool EnableBloom = false;
     uint32_t BloomDownsampleSteps = 9;
     float BloomStrength = 0.06f;
 };
@@ -39,6 +39,7 @@ public:
     void Render();
 
     const std::shared_ptr<Texture>& GetFinalImage() const;
+    inline const RendererDescription& GetDescription() const { return m_Description; }
 private:
     void RecreateTextures(uint32_t frameIndex);
     void ApplyBloom();

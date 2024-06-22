@@ -5,8 +5,13 @@ Camera:
   Pitch: -25
   FOV: 60
   Exposure: 0.5
+RendererDescription:
+  RayRecursionDepth: 8
+  EnableBloom: true
+  BloomDownsampleSteps: 8
+  BloomStrength: 0.0599999987
 Entities:
-  - Entity: 3859851019958288757
+  - Entity: 8157142437439922776
     TagComponent:
       Tag: Floor
     SceneHierarchyComponent:
@@ -22,7 +27,7 @@ Entities:
       Mesh: 5021690134070548488
       Materials:
         - 13867480182931701887
-  - Entity: 2296982959329296036
+  - Entity: 17503523573800601421
     TagComponent:
       Tag: Sphere
     SceneHierarchyComponent:
@@ -38,7 +43,7 @@ Entities:
       Mesh: 15501521136206435757
       Materials:
         - 10147372063284767906
-  - Entity: 11875245864824552167
+  - Entity: 11818410772236796504
     TagComponent:
       Tag: Sphere
     SceneHierarchyComponent:
@@ -54,7 +59,7 @@ Entities:
       Mesh: 15501521136206435757
       Materials:
         - 6487798091956334690
-  - Entity: 16200698739619582314
+  - Entity: 16377423000457518364
     TagComponent:
       Tag: Sphere
     SceneHierarchyComponent:
@@ -70,7 +75,7 @@ Entities:
       Mesh: 15501521136206435757
       Materials:
         - 6972512923229960787
-  - Entity: 11249533125586043481
+  - Entity: 7122846567051871025
     TagComponent:
       Tag: Sphere
     SceneHierarchyComponent:
@@ -86,7 +91,7 @@ Entities:
       Mesh: 15501521136206435757
       Materials:
         - 6120379912620158440
-  - Entity: 2802803763360649716
+  - Entity: 17981793400673576375
     TagComponent:
       Tag: Sphere
     SceneHierarchyComponent:
@@ -102,7 +107,7 @@ Entities:
       Mesh: 15501521136206435757
       Materials:
         - 9615413044843332789
-  - Entity: 6552909107361503479
+  - Entity: 12152687000612772329
     TagComponent:
       Tag: SkyBox
     SceneHierarchyComponent:

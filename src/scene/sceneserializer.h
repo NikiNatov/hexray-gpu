@@ -6,6 +6,6 @@
 class SceneSerializer
 {
 public:
-    static void Serialize(const std::filesystem::path& filepath, const std::shared_ptr<Scene>& scene);
-    static bool Deserialize(const std::filesystem::path& filepath, std::shared_ptr<Scene>& scene);
+    static void Serialize(const std::filesystem::path& filepath, const std::shared_ptr<Scene>& scene, const RendererDescription& rendererDescription);
+    static bool Deserialize(const std::filesystem::path& filepath, std::shared_ptr<Scene>& scene, RendererDescription& rendererDescription);
 };

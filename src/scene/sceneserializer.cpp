@@ -10,6 +10,9 @@
 
 namespace YAML
 {
+#define SERIALIZE_VARIABLE(Struct, Variable) out << YAML::Key << #Variable << YAML::Value << Struct.Variable;
+#define DESERIALIZE_VARIABLE(Struct, Variable, NodeVariable) if (NodeVariable[#Variable]) { Struct.Variable = NodeVariable[#Variable].as<decltype(Struct.Variable)>(); }
+
 	template<>
 	struct convert<glm::vec3>
 	{
@@ -59,6 +62,20 @@ namespace YAML
 			return true;
 		}
 	};
+
+	template<>
+	struct convert<Uuid>
+	{
+		static Node encode(const Uuid& rhs)
+		{
+			return convert<uint64_t>::encode(rhs);
+		}
+
+		static bool decode(const Node& node, Uuid& rhs)
+		{
+			return convert<uint64_t>::decode(node, (uint64_t&)rhs);
+		}
+	};
 }
 
 YAML::Emitter& operator<<(YAML::Emitter& out, const glm::vec3& v)
@@ -76,7 +93,7 @@ YAML::Emitter& operator<<(YAML::Emitter& out, const glm::vec4& v)
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
-void SceneSerializer::Serialize(const std::filesystem::path& filepath, const std::shared_ptr<Scene>& scene)
+void SceneSerializer::Serialize(const std::filesystem::path& filepath, const std::shared_ptr<Scene>& scene, const RendererDescription& rendererDescription)
 {
 	YAML::Emitter out;
 	out << YAML::BeginMap;
@@ -92,123 +109,131 @@ void SceneSerializer::Serialize(const std::filesystem::path& filepath, const std
 	out << YAML::Key << "Exposure" << YAML::Value << camera.GetExposure();
 	out << YAML::EndMap;
 
+	out << YAML::Key << "RendererDescription" << YAML::Value;
+	out << YAML::BeginMap;
+	SERIALIZE_VARIABLE(rendererDescription, RayRecursionDepth);
+	SERIALIZE_VARIABLE(rendererDescription, EnableBloom);
+	SERIALIZE_VARIABLE(rendererDescription, BloomDownsampleSteps);
+	SERIALIZE_VARIABLE(rendererDescription, BloomStrength);
+	out << YAML::EndMap;
+
 	out << YAML::Key << "Entities" << YAML::Value << YAML::BeginSeq;
 
 	scene->m_Registry.each([&](auto entityID)
+		{
+			Entity entity = { entityID, scene.get() };
+
+	if (!entity)
+		return;
+
+	out << YAML::BeginMap;
+	out << YAML::Key << "Entity" << YAML::Value << entity.GetUUID();
+
+	if (entity.HasComponent<TagComponent>())
 	{
-		Entity entity = { entityID, scene.get() };
-	
-		if (!entity)
-			return;
-	
+		TagComponent& tc = entity.GetComponent<TagComponent>();
+		out << YAML::Key << "TagComponent";
 		out << YAML::BeginMap;
-		out << YAML::Key << "Entity" << YAML::Value << entity.GetUUID();
-	
-		if (entity.HasComponent<TagComponent>())
-		{
-			TagComponent& tc = entity.GetComponent<TagComponent>();
-			out << YAML::Key << "TagComponent";
-			out << YAML::BeginMap;
-			out << YAML::Key << "Tag" << YAML::Value << tc.Tag;
-			out << YAML::EndMap;
-		}
-	
-		if (entity.HasComponent<SceneHierarchyComponent>())
-		{
-			SceneHierarchyComponent& shc = entity.GetComponent<SceneHierarchyComponent>();
-			out << YAML::Key << "SceneHierarchyComponent";
-			out << YAML::BeginMap;
-			out << YAML::Key << "Parent" << YAML::Value << shc.Parent;
-			out << YAML::Key << "FirstChild" << YAML::Value << shc.FirstChild;
-			out << YAML::Key << "NextSibling" << YAML::Value << shc.NextSibling;
-			out << YAML::Key << "PreviousSibling" << YAML::Value << shc.PreviousSibling;
-			out << YAML::EndMap;
-		}
-	
-		if (entity.HasComponent<TransformComponent>())
-		{
-			TransformComponent& tc = entity.GetComponent<TransformComponent>();
-			out << YAML::Key << "TransformComponent";
-			out << YAML::BeginMap;
-			out << YAML::Key << "Translation" << YAML::Value << tc.Translation;
-			out << YAML::Key << "Rotation" << YAML::Value << tc.Rotation;
-			out << YAML::Key << "Scale" << YAML::Value << tc.Scale;
-			out << YAML::EndMap;
-		}
-	
-		if (entity.HasComponent<MeshComponent>())
-		{
-			MeshComponent& mc = entity.GetComponent<MeshComponent>();
-			out << YAML::Key << "MeshComponent";
-			out << YAML::BeginMap;
-			out << YAML::Key << "Mesh" << YAML::Value << mc.Mesh->GetID();
-			out << YAML::Key << "Materials" << YAML::Value << YAML::BeginSeq;
-			if (mc.OverrideMaterialTable)
-			{
-				for (const MaterialPtr& material : *mc.OverrideMaterialTable)
-				{
-					out << YAML::Dec << (material ? material->GetID() : Uuid::Invalid);
-				}
-			}
-			out << YAML::EndSeq;
-			out << YAML::EndMap;
-		}
-	
-		if (entity.HasComponent<SkyLightComponent>())
-		{
-			SkyLightComponent& slc = entity.GetComponent<SkyLightComponent>();
-			out << YAML::Key << "SkyLightComponent";
-			out << YAML::BeginMap;
-			out << YAML::Key << "EnvironmentMap" << YAML::Value << slc.EnvironmentMap->GetID();
-			out << YAML::EndMap;
-		}
-	
-		if (entity.HasComponent<DirectionalLightComponent>())
-		{
-			DirectionalLightComponent& dlc = entity.GetComponent<DirectionalLightComponent>();
-			out << YAML::Key << "DirectionalLightComponent";
-			out << YAML::BeginMap;
-			out << YAML::Key << "Color" << YAML::Value << dlc.Color;
-			out << YAML::Key << "Intensity" << YAML::Value << dlc.Intensity;
-			out << YAML::EndMap;
-		}
-	
-		if (entity.HasComponent<PointLightComponent>())
-		{
-			PointLightComponent& plc = entity.GetComponent<PointLightComponent>();
-			out << YAML::Key << "PointLightComponent";
-			out << YAML::BeginMap;
-			out << YAML::Key << "Color" << YAML::Value << plc.Color;
-			out << YAML::Key << "Intensity" << YAML::Value << plc.Intensity;
-			out << YAML::Key << "AttenuationFactors" << YAML::Value << plc.AttenuationFactors;
-			out << YAML::EndMap;
-		}
-	
-		if (entity.HasComponent<SpotLightComponent>())
-		{
-			SpotLightComponent& slc = entity.GetComponent<SpotLightComponent>();
-			out << YAML::Key << "SpotLightComponent";
-			out << YAML::BeginMap;
-			out << YAML::Key << "Color" << YAML::Value << slc.Color;
-			out << YAML::Key << "Direction" << YAML::Value << slc.Direction;
-			out << YAML::Key << "ConeAngle" << YAML::Value << slc.ConeAngle;
-			out << YAML::Key << "Intensity" << YAML::Value << slc.Intensity;
-			out << YAML::Key << "AttenuationFactors" << YAML::Value << slc.AttenuationFactors;
-			out << YAML::EndMap;
-		}
-	
+		SERIALIZE_VARIABLE(tc, Tag);
 		out << YAML::EndMap;
-	});
-	
+	}
+
+	if (entity.HasComponent<SceneHierarchyComponent>())
+	{
+		SceneHierarchyComponent& shc = entity.GetComponent<SceneHierarchyComponent>();
+		out << YAML::Key << "SceneHierarchyComponent";
+		out << YAML::BeginMap;
+		SERIALIZE_VARIABLE(shc, Parent);
+		SERIALIZE_VARIABLE(shc, FirstChild);
+		SERIALIZE_VARIABLE(shc, NextSibling);
+		SERIALIZE_VARIABLE(shc, PreviousSibling);
+		out << YAML::EndMap;
+	}
+
+	if (entity.HasComponent<TransformComponent>())
+	{
+		TransformComponent& tc = entity.GetComponent<TransformComponent>();
+		out << YAML::Key << "TransformComponent";
+		out << YAML::BeginMap;
+		SERIALIZE_VARIABLE(tc, Translation);
+		SERIALIZE_VARIABLE(tc, Rotation);
+		SERIALIZE_VARIABLE(tc, Scale);
+		out << YAML::EndMap;
+	}
+
+	if (entity.HasComponent<MeshComponent>())
+	{
+		MeshComponent& mc = entity.GetComponent<MeshComponent>();
+		out << YAML::Key << "MeshComponent";
+		out << YAML::BeginMap;
+		out << YAML::Key << "Mesh" << YAML::Value << mc.Mesh->GetID();
+		out << YAML::Key << "Materials" << YAML::Value << YAML::BeginSeq;
+		if (mc.OverrideMaterialTable)
+		{
+			for (const MaterialPtr& material : *mc.OverrideMaterialTable)
+			{
+				out << YAML::Dec << (material ? material->GetID() : Uuid::Invalid);
+			}
+		}
+		out << YAML::EndSeq;
+		out << YAML::EndMap;
+	}
+
+	if (entity.HasComponent<SkyLightComponent>())
+	{
+		SkyLightComponent& slc = entity.GetComponent<SkyLightComponent>();
+		out << YAML::Key << "SkyLightComponent";
+		out << YAML::BeginMap;
+		out << YAML::Key << "EnvironmentMap" << YAML::Value << slc.EnvironmentMap->GetID();
+		out << YAML::EndMap;
+	}
+
+	if (entity.HasComponent<DirectionalLightComponent>())
+	{
+		DirectionalLightComponent& dlc = entity.GetComponent<DirectionalLightComponent>();
+		out << YAML::Key << "DirectionalLightComponent";
+		out << YAML::BeginMap;
+		SERIALIZE_VARIABLE(dlc, Color);
+		SERIALIZE_VARIABLE(dlc, Intensity);
+		out << YAML::EndMap;
+	}
+
+	if (entity.HasComponent<PointLightComponent>())
+	{
+		PointLightComponent& plc = entity.GetComponent<PointLightComponent>();
+		out << YAML::Key << "PointLightComponent";
+		out << YAML::BeginMap;
+		SERIALIZE_VARIABLE(plc, Color);
+		SERIALIZE_VARIABLE(plc, Intensity);
+		SERIALIZE_VARIABLE(plc, AttenuationFactors);
+		out << YAML::EndMap;
+	}
+
+	if (entity.HasComponent<SpotLightComponent>())
+	{
+		SpotLightComponent& slc = entity.GetComponent<SpotLightComponent>();
+		out << YAML::Key << "SpotLightComponent";
+		out << YAML::BeginMap;
+		SERIALIZE_VARIABLE(slc, Color);
+		SERIALIZE_VARIABLE(slc, Direction);
+		SERIALIZE_VARIABLE(slc, ConeAngle);
+		SERIALIZE_VARIABLE(slc, Intensity);
+		SERIALIZE_VARIABLE(slc, AttenuationFactors);
+		out << YAML::EndMap;
+	}
+
+	out << YAML::EndMap;
+		});
+
 	out << YAML::EndSeq;
 	out << YAML::EndMap;
-	
+
 	std::ofstream fout(filepath);
 	fout << out.c_str();
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
-bool SceneSerializer::Deserialize(const std::filesystem::path& filepath, std::shared_ptr<Scene>& scene)
+bool SceneSerializer::Deserialize(const std::filesystem::path& filepath, std::shared_ptr<Scene>& scene, RendererDescription& rendererDescription)
 {
 	std::ifstream stream(filepath);
 	std::stringstream strStream;
@@ -224,6 +249,15 @@ bool SceneSerializer::Deserialize(const std::filesystem::path& filepath, std::sh
 	YAML::Node cameraNode = data["Camera"];
 	if (!cameraNode)
 		return false;
+
+	YAML::Node rendererDescriptionNode = data["RendererDescription"];
+	if (rendererDescriptionNode)
+	{
+		DESERIALIZE_VARIABLE(rendererDescription, RayRecursionDepth, rendererDescriptionNode);
+		DESERIALIZE_VARIABLE(rendererDescription, EnableBloom, rendererDescriptionNode);
+		DESERIALIZE_VARIABLE(rendererDescription, BloomDownsampleSteps, rendererDescriptionNode);
+		DESERIALIZE_VARIABLE(rendererDescription, BloomStrength, rendererDescriptionNode);
+	}
 
 	std::string sceneName = nameNode.as<std::string>();
 
@@ -249,18 +283,18 @@ bool SceneSerializer::Deserialize(const std::filesystem::path& filepath, std::sh
 			if (YAML::Node sceneNodeComponent = entities[it]["SceneHierarchyComponent"])
 			{
 				SceneHierarchyComponent& shc = deserializedEntity.GetComponent<SceneHierarchyComponent>();
-				shc.Parent = sceneNodeComponent["Parent"].as<uint64_t>();
-				shc.FirstChild = sceneNodeComponent["FirstChild"].as<uint64_t>();
-				shc.NextSibling = sceneNodeComponent["NextSibling"].as<uint64_t>();
-				shc.PreviousSibling = sceneNodeComponent["PreviousSibling"].as<uint64_t>();
+				DESERIALIZE_VARIABLE(shc, Parent, sceneNodeComponent);
+				DESERIALIZE_VARIABLE(shc, FirstChild, sceneNodeComponent);
+				DESERIALIZE_VARIABLE(shc, NextSibling, sceneNodeComponent);
+				DESERIALIZE_VARIABLE(shc, PreviousSibling, sceneNodeComponent);
 			}
 
 			if (YAML::Node transformComponent = entities[it]["TransformComponent"])
 			{
 				TransformComponent& tc = deserializedEntity.GetComponent<TransformComponent>();
-				tc.Translation = transformComponent["Translation"].as<glm::vec3>();
-				tc.Rotation = transformComponent["Rotation"].as<glm::vec3>();
-				tc.Scale = transformComponent["Scale"].as<glm::vec3>();
+				DESERIALIZE_VARIABLE(tc, Translation, transformComponent);
+				DESERIALIZE_VARIABLE(tc, Rotation, transformComponent);
+				DESERIALIZE_VARIABLE(tc, Scale, transformComponent);
 			}
 
 			if (YAML::Node meshComponent = entities[it]["MeshComponent"])
@@ -298,26 +332,26 @@ bool SceneSerializer::Deserialize(const std::filesystem::path& filepath, std::sh
 			if (YAML::Node dirLightComponent = entities[it]["DirectionalLightComponent"])
 			{
 				DirectionalLightComponent& dlc = deserializedEntity.AddComponent<DirectionalLightComponent>();
-				dlc.Color = dirLightComponent["Color"].as<glm::vec3>();
-				dlc.Intensity = dirLightComponent["Intensity"].as<float>();
+				DESERIALIZE_VARIABLE(dlc, Color, dirLightComponent);
+				DESERIALIZE_VARIABLE(dlc, Intensity, dirLightComponent);
 			}
 
 			if (YAML::Node pointLightComponent = entities[it]["PointLightComponent"])
 			{
 				PointLightComponent& plc = deserializedEntity.AddComponent<PointLightComponent>();
-				plc.Color = pointLightComponent["Color"].as<glm::vec3>();
-				plc.Intensity = pointLightComponent["Intensity"].as<float>();
-				plc.AttenuationFactors = pointLightComponent["AttenuationFactors"].as<glm::vec3>();
+				DESERIALIZE_VARIABLE(plc, Color, pointLightComponent);
+				DESERIALIZE_VARIABLE(plc, Intensity, pointLightComponent);
+				DESERIALIZE_VARIABLE(plc, AttenuationFactors, pointLightComponent);
 			}
 
 			if (YAML::Node spotLightComponent = entities[it]["SpotLightComponent"])
 			{
 				SpotLightComponent& slc = deserializedEntity.AddComponent<SpotLightComponent>();
-				slc.Color = spotLightComponent["Color"].as<glm::vec3>();
-				slc.Direction = spotLightComponent["Direction"].as<glm::vec3>();
-				slc.ConeAngle = spotLightComponent["ConeAngle"].as<float>();
-				slc.Intensity = spotLightComponent["Intensity"].as<float>();
-				slc.AttenuationFactors = spotLightComponent["AttenuationFactors"].as<glm::vec3>();
+				DESERIALIZE_VARIABLE(slc, Color, spotLightComponent);
+				DESERIALIZE_VARIABLE(slc, Direction, spotLightComponent);
+				DESERIALIZE_VARIABLE(slc, ConeAngle, spotLightComponent);
+				DESERIALIZE_VARIABLE(slc, Intensity, spotLightComponent);
+				DESERIALIZE_VARIABLE(slc, AttenuationFactors, spotLightComponent);
 			}
 		}
 	}

@@ -79,7 +79,7 @@ void Renderer::BeginScene(const Camera& camera, const std::shared_ptr<Texture>& 
 
     if (camera.HasMoved())
         m_SceneConstants.FrameIndex = 1;
-    
+
     m_ResourceBindTable.EnvironmentMapIndex = environmentMap ? environmentMap->GetSRV() : DefaultResources::BlackTextureCube->GetSRV();
 
     m_Lights.clear();
@@ -164,7 +164,7 @@ void Renderer::Render()
     {
         RecreateTextures(currentFrameIndex);
     }
-    
+
     m_ResourceBindTable.RenderTargetIndex = renderTarget->GetUAV(0);
 
     std::shared_ptr<Texture>& prevFrameRenderTarget = m_RenderTargets[currentFrameIndex == 0 ? FRAMES_IN_FLIGHT - 1 : currentFrameIndex - 1];

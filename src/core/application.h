@@ -102,6 +102,7 @@ private:
     void CompileShaders();
     void ParseCommandlineArgs();
     void OpenScene(const std::filesystem::path& filepath);
+    void InitSceneRenderer();
 private:
     ApplicationDescription m_Description;
     std::unique_ptr<Window> m_Window;
@@ -120,6 +121,7 @@ private:
     uint16_t m_MaxFPS;
     bool m_IsRunning = false;
 
+    RendererDescription m_RendererDescription;
     std::filesystem::path m_ExecutablePath;
 
     static Application* ms_Instance;
