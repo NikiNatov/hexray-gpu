@@ -159,7 +159,7 @@ public:
 
     inline void Resize(uint32_t size) { m_Materials.resize(size); }
     inline void SetMaterial(uint32_t index, const MaterialPtr& material) { m_Materials[index] = material; }
-    inline const MaterialPtr& GetMaterial(uint32_t index) const { return index < m_Materials.size() ? m_Materials[index] : nullptr; }
+    inline MaterialPtr GetMaterial(uint32_t index) const { return index < m_Materials.size() ? m_Materials[index] : nullptr; }
     inline bool IsValid(uint32_t index) const { return m_Materials[index] != nullptr; }
 
     inline uint32_t GetSize() const { return m_Materials.size(); }

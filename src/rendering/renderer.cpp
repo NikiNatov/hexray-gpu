@@ -160,7 +160,7 @@ void Renderer::Render()
     // Update Render target
     std::shared_ptr<Texture>& renderTarget = m_RenderTargets[currentFrameIndex];
 
-    if (renderTarget->GetWidth() != m_ViewportWidth || renderTarget->GetHeight() != m_ViewportWidth)
+    if (renderTarget->GetWidth() != m_ViewportWidth || renderTarget->GetHeight() != m_ViewportHeight)
     {
         RecreateTextures(currentFrameIndex);
     }
@@ -171,7 +171,7 @@ void Renderer::Render()
     m_ResourceBindTable.PrevFrameRenderTargetIndex = prevFrameRenderTarget->GetUAV(0);
 
     // Update Scene buffer
-    std::shared_ptr<Buffer> sceneBuffer = m_SceneBuffers[currentFrameIndex];
+    std::shared_ptr<Buffer>& sceneBuffer = m_SceneBuffers[currentFrameIndex];
 
     memcpy(sceneBuffer->GetMappedData(), &m_SceneConstants, sizeof(SceneConstants));
     m_ResourceBindTable.SceneBufferIndex = sceneBuffer->GetSRV();
@@ -214,7 +214,7 @@ void Renderer::Render()
             MaterialPtr overrideMaterial = instance.OverrideMaterialTable ? instance.OverrideMaterialTable->GetMaterial(materialIndex) : nullptr;
             MaterialPtr meshMaterial = instance.Mesh->GetMaterial(i);
 
-            std::shared_ptr<Material> material = overrideMaterial ? overrideMaterial : meshMaterial;
+            MaterialPtr material = overrideMaterial ? overrideMaterial : meshMaterial;
 
             MaterialConstants& materialConstants = materials.emplace_back();
             materialConstants.MaterialType = (uint32_t)material->GetType();

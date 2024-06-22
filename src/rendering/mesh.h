@@ -37,7 +37,7 @@ public:
     inline const std::vector<Submesh>& GetSubmeshes() const { return m_Description.Submeshes; }
 
     inline const Submesh& GetSubmesh(uint32_t submeshIndex) const { return m_Description.Submeshes[submeshIndex]; }
-    inline const MaterialPtr& GetMaterial(uint32_t submeshIndex) const { return m_Description.MaterialTable->GetMaterial(GetSubmesh(submeshIndex).MaterialIndex); }
+    inline MaterialPtr GetMaterial(uint32_t submeshIndex) const { return m_Description.MaterialTable->GetMaterial(GetSubmesh(submeshIndex).MaterialIndex); }
     inline const BufferPtr& GetVertexBuffer(uint32_t submeshIndex) const { return m_VertexBuffers[submeshIndex]; }
     inline const BufferPtr& GetIndexBuffer(uint32_t submeshIndex) const { return m_IndexBuffers[submeshIndex]; }
     inline const BufferPtr& GetAccelerationStructure(uint32_t submeshIndex) const { return m_AccelerationStructures[submeshIndex]; }
