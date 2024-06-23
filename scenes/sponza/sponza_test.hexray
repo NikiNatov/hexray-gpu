@@ -4,6 +4,9 @@ Camera:
   Yaw: 90
   Pitch: -25
   FOV: 60
+RendererDescription:
+  RayRecursionDepth: 3
+  EnableBloom: false
 Entities:
   - Entity: 15249286607863821465
     TagComponent:
@@ -32,7 +35,7 @@ Entities:
       Rotation: [0, 0, 0]
       Scale: [0.0500000007, 0.0500000007, 0.0500000007]
     MeshComponent:
-      Mesh: 2446930999705944993
+      Mesh: 15599247349166970429
   - Entity: 9781792816327191898
     TagComponent:
       Tag: Spot Light
@@ -140,9 +143,9 @@ Entities:
       NextSibling: 0
       PreviousSibling: 0
     TransformComponent:
-      Translation: [1, 1.5, 1]
+      Translation: [0.1, 1, 0.1]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     DirectionalLightComponent:
-      Color: [0.600000024, 0.400000006, 0]
-      Intensity: 1.0
+      Color: [0.600000024, 0.400000006, 0.400000006]
+      Intensity: 35.0
