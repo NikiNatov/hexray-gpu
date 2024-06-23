@@ -92,7 +92,8 @@ void Renderer::SubmitDirectionalLight(const glm::vec3& color, const glm::vec3& d
     Light& light = m_Lights.emplace_back();
     light.LightType = LightType::DirLight;
     light.Color = { color.r, color.g, color.b };
-    light.Direction = { direction.x, direction.y, direction.z };
+    light.Position = direction * -(MAX_RAY_DEPTH - 0.1f); // somewhere reaaaaally far
+    light.Direction = direction;
     light.Intensity = intensity;
 
     m_SceneConstants.NumLights++;

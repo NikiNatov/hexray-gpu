@@ -74,11 +74,10 @@ void ClosestHitShader_Color(inout ColorRayPayload payload, in BuiltInTriangleInt
         float lightSampleProbability = 1.0 / float(sceneConstants.NumLights);
         
         Light light = GetLight(lightIndex, g_ResourceIndices.LightsBufferIndex);
-        bool isDirLight = light.LightType == LightType::DirLight;
-            
+
         // Check if the surface is in shadow
-        float3 shadowRayDirection = isDirLight ? -light.Direction : normalize(light.Position - hitInfo.WorldPosition);
-        float shadowRayMaxDistance = isDirLight ? 1000.0 : length(light.Position - hitInfo.WorldPosition);
+        float3 shadowRayDirection = normalize(light.Position - hitInfo.WorldPosition);
+        float shadowRayMaxDistance = length(light.Position - hitInfo.WorldPosition);
             
         bool isVisible = TraceShadowRay(hitInfo.WorldPosition, shadowRayDirection, shadowRayMaxDistance, accelerationStructure);
             
@@ -99,8 +98,8 @@ void ClosestHitShader_Color(inout ColorRayPayload payload, in BuiltInTriangleInt
             }
             case MaterialType::PBR:
             {
-                float roughness = material.RoughnessMapIndex != INVALID_DESCRIPTOR_INDEX ? g_Textures[material.RoughnessMapIndex].SampleLevel(g_LinearWrapSampler, hitInfo.TexCoords, 0) : material.Roughness;
-                float metalness = material.MetalnessMapIndex != INVALID_DESCRIPTOR_INDEX ? g_Textures[material.MetalnessMapIndex].SampleLevel(g_LinearWrapSampler, hitInfo.TexCoords, 0) : material.Metalness;
+                float roughness = material.RoughnessMapIndex != INVALID_DESCRIPTOR_INDEX ? g_Textures[material.RoughnessMapIndex].SampleLevel(g_LinearWrapSampler, hitInfo.TexCoords, 0).r : material.Roughness;
+                float metalness = material.MetalnessMapIndex != INVALID_DESCRIPTOR_INDEX ? g_Textures[material.MetalnessMapIndex].SampleLevel(g_LinearWrapSampler, hitInfo.TexCoords, 0).r : material.Metalness;
                 finalColor += CalculateDirectLighting_PBR(hitInfo, WorldRayOrigin(), light, albedo.rgb, roughness, metalness);
                 break;
             }
@@ -127,8 +126,8 @@ void ClosestHitShader_Color(inout ColorRayPayload payload, in BuiltInTriangleInt
         }
         case MaterialType::PBR:
         {
-            float roughness = material.RoughnessMapIndex != INVALID_DESCRIPTOR_INDEX ? g_Textures[material.RoughnessMapIndex].SampleLevel(g_LinearWrapSampler, hitInfo.TexCoords, 0) : material.Roughness;
-            float metalness = material.MetalnessMapIndex != INVALID_DESCRIPTOR_INDEX ? g_Textures[material.MetalnessMapIndex].SampleLevel(g_LinearWrapSampler, hitInfo.TexCoords, 0) : material.Metalness;
+            float roughness = material.RoughnessMapIndex != INVALID_DESCRIPTOR_INDEX ? g_Textures[material.RoughnessMapIndex].SampleLevel(g_LinearWrapSampler, hitInfo.TexCoords, 0).r : material.Roughness;
+            float metalness = material.MetalnessMapIndex != INVALID_DESCRIPTOR_INDEX ? g_Textures[material.MetalnessMapIndex].SampleLevel(g_LinearWrapSampler, hitInfo.TexCoords, 0).r : material.Metalness;
             finalColor += CalculateIndirectLighting_PBR(hitInfo, payload.Seed, payload.RayDepth, WorldRayOrigin(), albedo.rgb, roughness, metalness, accelerationStructure);
             break;
         }

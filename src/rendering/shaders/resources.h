@@ -1,6 +1,10 @@
 #ifndef __BINDLESS_RESOURCES_H__
 #define __BINDLESS_RESOURCES_H__
 
+#ifndef MAX_RAY_DEPTH
+#define MAX_RAY_DEPTH 10000.0f
+#endif
+
 #ifndef HLSL
 #include <glm.hpp>
 typedef glm::vec2 float2;
@@ -226,7 +230,7 @@ ColorRayPayload TraceColorRay(float3 origin, float3 direction, uint seed, uint c
     ray.Origin = origin;
     ray.Direction = direction;
     ray.TMin = 0.001;
-    ray.TMax = 1000.0;
+    ray.TMax = MAX_RAY_DEPTH;
 
     ColorRayPayload payload;
     payload.Seed = seed;
