@@ -8,6 +8,7 @@ GlobalSettings {
 	frameWidth          640
 	frameHeight         480
 	ambientLight        (0.5, 0.5, 0.5)
+	gi off
 }
 
 PointLight sun {
