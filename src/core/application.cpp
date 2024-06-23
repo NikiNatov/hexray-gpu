@@ -520,7 +520,7 @@ void Application::ParseCommandlineArgs()
             AssetManager::Initialize(filepath.parent_path() / "assets");
             m_Scene = std::make_shared<Scene>(filepath.string());
             DefaultSceneParser parser;
-            parser.Parse(filepath.string().c_str(), m_Scene.get());
+            parser.Parse(filepath.string().c_str(), m_Scene.get(), &m_RendererDescription);
         }
     }
 }
