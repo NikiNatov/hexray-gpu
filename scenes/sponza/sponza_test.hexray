@@ -4,6 +4,7 @@ Camera:
   Yaw: 90
   Pitch: -25
   FOV: 60
+  Exposure: 0.8
 RendererDescription:
   RayRecursionDepth: 3
   EnableBloom: false
