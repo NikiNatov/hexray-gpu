@@ -19,6 +19,7 @@ struct MeshInstance
 struct RendererDescription
 {
     uint32_t RayRecursionDepth = 3;
+    bool EnableACESTonemap = true;
     bool EnableBloom = false;
     uint32_t BloomDownsampleSteps = 9;
     float BloomStrength = 0.06f;

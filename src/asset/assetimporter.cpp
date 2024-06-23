@@ -63,7 +63,7 @@ Uuid AssetImporter::ImportTextureAsset(const byte* compressedData, uint32_t data
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
-Uuid AssetImporter::ImportMeshAsset(const std::filesystem::path& sourceFilepath)
+Uuid AssetImporter::ImportMeshAsset(const std::filesystem::path& sourceFilepath, MeshImportOptions options)
 {
     AssetMetaData metaData;
     if (GetExistingOrSetupImport(AssetType::Mesh, sourceFilepath.stem().string(), sourceFilepath, metaData))
@@ -84,9 +84,13 @@ Uuid AssetImporter::ImportMeshAsset(const std::filesystem::path& sourceFilepath)
         aiProcess_ValidateDataStructure |
         aiProcess_OptimizeMeshes |
         aiProcess_JoinIdenticalVertices |
-        aiProcess_ConvertToLeftHanded |
         aiProcess_PreTransformVertices |
         aiProcess_GenSmoothNormals;
+
+    if (options.ConvertToLeftHanded)
+    {
+        processingFlags |= aiProcess_ConvertToLeftHanded;
+    }
 
     Assimp::Importer importer;
     const aiScene* scene = importer.ReadFile(sourceFilepath.string(), processingFlags);

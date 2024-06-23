@@ -15,12 +15,17 @@ struct TextureImportOptions
     bool GenerateMips = true;
 };
 
+struct MeshImportOptions
+{
+    bool ConvertToLeftHanded = true;
+};
+
 class AssetImporter
 {
 public:
     static Uuid ImportTextureAsset(const std::filesystem::path& sourceFilepath, TextureImportOptions options = TextureImportOptions());
     static Uuid ImportTextureAsset(const byte* compressedData, uint32_t dataSize, const std::string& assetName, TextureImportOptions options = TextureImportOptions());
-    static Uuid ImportMeshAsset(const std::filesystem::path& sourceFilepath);
+    static Uuid ImportMeshAsset(const std::filesystem::path& sourceFilepath, MeshImportOptions options = MeshImportOptions());
     static Uuid ImportMaterialAsset(const aiMaterial* assimpMaterial, const aiScene* assimpScene, const std::filesystem::path& meshSourcePath);
     static Uuid CreateMeshAsset(const std::filesystem::path& filepath, const MeshDescription& meshDesc, const Vertex* vertexData, const uint32_t* indexData);
     static Uuid CreateMaterialAsset(const std::filesystem::path& filepath, MaterialType materialType, MaterialFlags materialFlags = MaterialFlags::None);

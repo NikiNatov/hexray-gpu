@@ -11,6 +11,7 @@
 
 class ParsedBlockImpl;
 class Scene;
+struct RendererDescription;
 
 
 class DefaultSceneParser : public SceneParser
@@ -25,12 +26,13 @@ public:
 	virtual TexturePtr FindTextureByName(const char* name) const;
 	virtual MeshPtr FindMeshByName(const char* name) const;
 
-	bool Parse(const char* filename, Scene* s);
+	bool Parse(const char* filename, Scene* s, RendererDescription* rendererDesc);
 private:
 	bool PostParse(const char* filename, std::vector<ParsedBlockImpl>& parsedBlocks);
 	void ReplaceRandomNumbers(int srcLine, char line[]);
 private:
 	Scene* m_Scene;
+	RendererDescription* m_RendererDescription;
 
 	std::unordered_map<std::string, MaterialPtr> m_Materials;
 	std::unordered_map<std::string, MeshPtr> m_Meshes;

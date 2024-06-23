@@ -9,7 +9,9 @@ class ParsedBlockImpl : public ParsedBlock
 {
 public:
 	virtual bool GetProperty(const char* name, int& value, int minValue = INT_MIN, int maxValue = INT_MAX);
+	virtual bool GetProperty(const char* name, uint32_t& value, uint32_t minValue = 0, uint32_t maxValue = UINT_MAX);
 	virtual bool GetProperty(const char* name, bool& value);
+	virtual bool GetProperty(const char* name, bool& value, bool defaultValue);
 	virtual bool GetProperty(const char* name, float& value, float minValue = -FLT_MAX, float maxValue = FLT_MAX);
 	virtual bool GetProperty(const char* name, double& value, double minValue = -DBL_MAX, double maxValue = DBL_MAX);
 	virtual bool GetProperty(const char* name, glm::vec4& value, float minValue = -FLT_MAX, float maxValue = FLT_MAX);

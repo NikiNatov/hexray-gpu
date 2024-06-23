@@ -467,6 +467,10 @@ void Application::CompileShaders()
     compileInput.Defines.emplace_back(L"HLSL");
     std::wstring maxRayRecursionDepth = L"MAX_RAY_RECURSION_DEPTH=" + ToWString(std::to_string(m_RendererDescription.RayRecursionDepth - 1));
     compileInput.Defines.emplace_back(maxRayRecursionDepth.c_str());
+    if (m_RendererDescription.EnableACESTonemap)
+    {
+        compileInput.Defines.emplace_back(L"ACES_TONEMAP");
+    }
 
     for (const std::pair<std::filesystem::path, std::wstring>& shaderDesc : shaders)
     {

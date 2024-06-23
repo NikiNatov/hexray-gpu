@@ -9,9 +9,7 @@ float3 CalculateDirectionalLight_Lambert(Light light, float3 N, float3 albedo)
     float3 L = normalize(-light.Direction);
     float NDotL = max(dot(N, L), 0.0);
     
-    // Diffuse BRDF
-    float3 diffuseBRDF = albedo;
-    return diffuseBRDF * light.Color * light.Intensity * NDotL;
+    return (albedo * light.Color) * (light.Intensity * NDotL);
 }
 
 float3 CalculatePointLight_Lambert(Light light, float3 N, float3 hitPosition, float3 albedo)
@@ -25,9 +23,7 @@ float3 CalculatePointLight_Lambert(Light light, float3 N, float3 hitPosition, fl
     float3 L = normalize(-lightToSurface);
     float NDotL = max(dot(N, L), 0.0);
     
-    // Diffuse BRDF
-    float3 diffuseBRDF = albedo;
-    return diffuseBRDF * light.Color * light.Intensity * attenuation * NDotL;
+    return (albedo * light.Color) * light.Intensity * attenuation * NDotL;
 }
 
 float3 CalculateSpotLight_Lambert(Light light, float3 N, float3 hitPosition, float3 albedo)
@@ -47,9 +43,7 @@ float3 CalculateSpotLight_Lambert(Light light, float3 N, float3 hitPosition, flo
     float3 L = normalize(-lightToSurface);
     float NDotL = max(dot(N, L), 0.0);
     
-    // Diffuse BRDF
-    float3 diffuseBRDF = albedo;
-    return diffuseBRDF * light.Color * light.Intensity * attenuation * spotIntensity * NDotL;
+    return (albedo * light.Color) * (light.Intensity * attenuation * spotIntensity * NDotL);
 }
 
 float3 CalculateDirectLighting_Lambert(HitInfo hitInfo, Light light, float3 albedo)

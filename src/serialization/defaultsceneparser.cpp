@@ -31,11 +31,20 @@ bool DefaultSceneParser::AddSceneElement(const std::string& className, const std
 	noCompressNoMipMapTexOptions.Compress = false;
 	noCompressNoMipMapTexOptions.GenerateMips = false;
 
+	MeshImportOptions noFlipMeshOptions;
+	noFlipMeshOptions.ConvertToLeftHanded = false;
+
 	if (className == "GlobalSettings")
 	{
 		int frameWidth, frameHeight;
 		pb.GetProperty("frameWidth", frameWidth);
 		pb.GetProperty("frameHeight", frameHeight);
+		pb.GetProperty("maxTraceDepth", m_RendererDescription->RayRecursionDepth);
+		//pb.GetProperty("gi", m_RendererDescription->EnableGlobalIllumination, false);
+		//pb.GetProperty("ambientLight", m_RendererDescription->AmbientLight);
+		//pb.GetProperty("tonemap", m_RendererDescription->EnableTonemap, false);
+
+		m_RendererDescription->EnableACESTonemap = false;
 
 		Window* window = Application::GetInstance()->GetWindow();
 
@@ -114,7 +123,7 @@ bool DefaultSceneParser::AddSceneElement(const std::string& className, const std
 		float radius = 1.0f;
 		pb.GetProperty("R", radius);
 
-		MeshPtr mesh = AssetManager::GetAsset<Mesh>(AssetImporter::ImportMeshAsset("data/meshes/sphere.fbx"));
+		MeshPtr mesh = AssetManager::GetAsset<Mesh>(AssetImporter::ImportMeshAsset("data/meshes/sphere.fbx", noFlipMeshOptions));
 		m_Meshes[objectName] = mesh;
 		m_MeshesTransforms[mesh].Translation = center; // not correct, but ok for now
 		m_MeshesTransforms[mesh].Scale = { radius, radius, radius }; // not correct, but ok for now
@@ -129,7 +138,7 @@ bool DefaultSceneParser::AddSceneElement(const std::string& className, const std
 		float side = 1.0f;
 		pb.GetProperty("side", side);
 
-		MeshPtr mesh = AssetManager::GetAsset<Mesh>(AssetImporter::ImportMeshAsset("data/meshes/cube.obj"));
+		MeshPtr mesh = AssetManager::GetAsset<Mesh>(AssetImporter::ImportMeshAsset("data/meshes/cube.obj", noFlipMeshOptions));
 		m_Meshes[objectName] = mesh;
 		m_MeshesTransforms[mesh].Translation = center;
 		m_MeshesTransforms[mesh].Scale = { side, side, side };
@@ -145,7 +154,7 @@ bool DefaultSceneParser::AddSceneElement(const std::string& className, const std
 		pb.GetProperty("y", y);
 		pb.GetProperty("limit", limit);
 
-		MeshPtr mesh = AssetManager::GetAsset<Mesh>(AssetImporter::ImportMeshAsset("data/meshes/cube.obj"));
+		MeshPtr mesh = AssetManager::GetAsset<Mesh>(AssetImporter::ImportMeshAsset("data/meshes/cube.obj", noFlipMeshOptions));
 		m_Meshes[objectName] = mesh;
 		m_MeshesTransforms[mesh].Translation = { 0, y, 0 };
 		m_MeshesTransforms[mesh].Scale = { limit, 1, limit };
@@ -158,7 +167,7 @@ bool DefaultSceneParser::AddSceneElement(const std::string& className, const std
 		if (!pb.GetFilenameProp("file", filename))
 			pb.RequiredProp("file");
 
-		m_Meshes[objectName] = AssetManager::GetAsset<Mesh>(AssetImporter::ImportMeshAsset(filename));
+		m_Meshes[objectName] = AssetManager::GetAsset<Mesh>(AssetImporter::ImportMeshAsset(filename, noFlipMeshOptions));
 		return true;
 	}
 
@@ -277,9 +286,10 @@ static void StripWhiteSpace(char* s)
 	}
 }
 
-bool DefaultSceneParser::Parse(const char* filename, Scene* ss)
+bool DefaultSceneParser::Parse(const char* filename, Scene* ss, RendererDescription* rendererDesc)
 {
 	m_Scene = ss;
+	m_RendererDescription = rendererDesc;
 	m_CurrentLine = 0;
 
 	//

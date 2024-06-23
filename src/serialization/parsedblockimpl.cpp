@@ -114,12 +114,28 @@ bool ParsedBlockImpl::GetProperty(const char* name, int& value, int minValue, in
 	return true;
 }
 
+bool ParsedBlockImpl::GetProperty(const char* name, uint32_t& value, uint32_t minValue, uint32_t maxValue)
+{
+	PBEGIN;
+	int x;
+	if (1 != sscanf(value_s, "%u", &x)) throw SyntaxError(line, "Invalid integer");
+	if (x < minValue || x > maxValue) throw SyntaxError(line, "Value outside the allowed bounds (%u .. %u)\n", minValue, maxValue);
+	value = x;
+	return true;
+}
+
 bool ParsedBlockImpl::GetProperty(const char* name, bool& value)
 {
 	PBEGIN;
 	if (!strcmp(value_s, "off") || !strcmp(value_s, "false") || !strcmp(value_s, "0")) value = false;
 	else value = true;
 	return true;
+}
+
+bool ParsedBlockImpl::GetProperty(const char* name, bool& value, bool defaultValue)
+{
+	value = defaultValue;
+	return GetProperty(name, value);
 }
 
 bool ParsedBlockImpl::GetProperty(const char* name, float& value, float minValue, float maxValue)
