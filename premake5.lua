@@ -94,7 +94,9 @@ project "hexray-gpu"
 
 		postbuildcommands
 		{
-			"XCOPY %{wks.location}\\extern\\assimp\\lib\\assimp-vc143-mtd.dll \"%{cfg.targetdir}\"  /S /Y"
+			"XCOPY %{wks.location}\\extern\\assimp\\lib\\assimp-vc143-mtd.dll \"%{cfg.targetdir}\"  /S /Y",
+			"XCOPY %{wks.location}\\extern\\openexr\\lib\\**-2_5_d.dll \"%{cfg.targetdir}\"  /S /Y",
+			"XCOPY %{wks.location}\\extern\\zlib\\lib\\zlibd1.dll \"%{cfg.targetdir}\"  /S /Y",
 		}
 
 	filter "configurations:Release"
@@ -115,5 +117,7 @@ project "hexray-gpu"
 
 		postbuildcommands
 		{
-			"XCOPY %{wks.location}\\extern\\assimp\\lib\\assimp-vc143-mt.dll \"%{cfg.targetdir}\"  /S /Y"
+			"XCOPY %{wks.location}\\extern\\assimp\\lib\\assimp-vc143-mt.dll \"%{cfg.targetdir}\"  /S /Y",
+			"XCOPY %{wks.location}\\extern\\openexr\\lib\\*-2_5.dll \"%{cfg.targetdir}\"  /S /Y",
+			"XCOPY %{wks.location}\\extern\\zlib\\lib\\zlib1.dll \"%{cfg.targetdir}\"  /S /Y",
 		}
