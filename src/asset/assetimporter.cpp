@@ -154,8 +154,17 @@ Uuid AssetImporter::ImportMeshAsset(const std::filesystem::path& sourceFilepath,
             }
             else
             {
-                v.Bitangent = glm::cross(v.Normal, glm::vec3(0.0, 1.0, 0.0));
+                if (abs(glm::dot(v.Normal, glm::vec3(0.0, 1.0, 0.0))) < 0.01f)
+                {
+                    v.Bitangent = glm::cross(v.Normal, glm::vec3(0.0, 1.0, 0.0));
+                }
+                else
+                {
+                    v.Bitangent = glm::cross(v.Normal, glm::vec3(0.0, 0.0, 1.0));
+                }
+
                 v.Tangent = glm::cross(v.Bitangent, v.Normal);
+                v.Normal = glm::cross(v.Tangent, v.Bitangent);
                 HEXRAY_ASSERT(abs(glm::dot(v.Bitangent, v.Tangent)) < 0.01f);
                 HEXRAY_ASSERT(abs(glm::dot(v.Bitangent, v.Normal)) < 0.01f);
                 HEXRAY_ASSERT(abs(glm::dot(v.Normal, v.Tangent)) < 0.01f);

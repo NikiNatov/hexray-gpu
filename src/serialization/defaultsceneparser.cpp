@@ -81,6 +81,8 @@ bool DefaultSceneParser::AddSceneElement(const std::string& className, const std
 		//pb.GetProperty("autoFocus", &autoFocus);
 		//pb.GetProperty("stereoSeparation", &stereoSeparation, 0.0);
 
+		// For some reason the original scenes are more zoomed
+		camera.m_Position += camera.GetCameraFront() * 250.0f;
 		camera.m_MovementSpeed = 1130.f;
 		camera.RecalculateProjection();
 		camera.RecalculateView();
@@ -225,7 +227,29 @@ bool DefaultSceneParser::AddSceneElement(const std::string& className, const std
 		pb.GetProperty("pos", e.GetComponent<TransformComponent>().Translation);
 		return true;
 	}
-	//if (className == "RectLight") return new RectLight;
+
+	if (className == "RectLight")
+	{
+		Entity e = m_Scene->CreateEntity(objectName);
+		pb.GetProperty(e.GetComponent<TransformComponent>());
+
+		glm::vec4 emissive;
+		pb.GetProperty("color", emissive);
+
+		float power;
+		pb.GetProperty("power", power);
+		power /= 1000000;
+
+		MaterialPtr material = std::make_shared<Material>(MaterialType::Lambert);
+		material->SetProperty(MaterialPropertyType::AlbedoColor, emissive);
+		material->SetProperty(MaterialPropertyType::EmissiveColor, emissive * power);
+
+		MeshComponent& mc = e.AddComponent<MeshComponent>();
+		mc.Mesh = AssetManager::GetAsset<Mesh>(AssetImporter::ImportMeshAsset("data/meshes/cube.obj", noFlipMeshOptions));
+		mc.OverrideMaterialTable = std::make_shared<MaterialTable>(1);
+		mc.OverrideMaterialTable->SetMaterial(0, material);
+		return true;
+	}
 
 	// Equivalent to Node is entity
 	if (className == "Node")
