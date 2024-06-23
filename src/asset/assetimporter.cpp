@@ -5,6 +5,7 @@
 #include "asset/assetserializer.h"
 
 #include <DirectXTex.h>
+#include <DirectXTexEXR.h>
 #include <stb_image.h>
 #include <stb_image_resize2.h>
 #include <assimp/Importer.hpp>
@@ -27,6 +28,13 @@ Uuid AssetImporter::ImportTextureAsset(const std::filesystem::path& sourceFilepa
     if (sourceFilepath.extension() == ".dds")
     {
         if (!ImportDDS(sourceFilepath, textureDesc, pixels))
+        {
+            return Uuid::Invalid;
+        }
+    }
+    else if (sourceFilepath.extension() == ".exr")
+    {
+        if (!ImportEXR(sourceFilepath, textureDesc, pixels))
         {
             return Uuid::Invalid;
         }
@@ -461,6 +469,39 @@ bool AssetImporter::ImportSTB(const std::filesystem::path& filepath, TextureDesc
         HEXRAY_ERROR("Asset Importer: Failed decoding file: {}", filepath.string());
         return false;
     }
+
+    return true;
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+bool AssetImporter::ImportEXR(const std::filesystem::path& filepath, TextureDescription& outTextureDesc, std::vector<uint8_t>& outPixels)
+{
+    DirectX::ScratchImage imageData;
+    HRESULT loadResult = DirectX::LoadFromEXRFile(filepath.wstring().c_str(), nullptr, imageData);
+
+    if (FAILED(loadResult))
+    {
+        HEXRAY_ERROR("Asset Importer: Failed loading EXR file");
+        return false;
+    }
+
+    const DirectX::TexMetadata& textureMetaData = imageData.GetMetadata();
+
+    if (textureMetaData.dimension == DirectX::TEX_DIMENSION_TEXTURE1D || textureMetaData.dimension == DirectX::TEX_DIMENSION_TEXTURE3D)
+    {
+        HEXRAY_ERROR("Asset Importer: TEX_DIMENSION_TEXTURE1D and TEX_DIMENSION_TEXTURE3D are not currently supported");
+        return false;
+    }
+
+    outTextureDesc.Format = textureMetaData.format;
+    outTextureDesc.ArrayLevels = textureMetaData.arraySize;
+    outTextureDesc.Width = textureMetaData.width;
+    outTextureDesc.Height = textureMetaData.height;
+    outTextureDesc.MipLevels = textureMetaData.mipLevels;
+    outTextureDesc.IsCubeMap = textureMetaData.IsCubemap();
+
+    outPixels.resize(imageData.GetPixelsSize());
+    memcpy(outPixels.data(), imageData.GetPixels(), imageData.GetPixelsSize());
 
     return true;
 }

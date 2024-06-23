@@ -109,7 +109,7 @@ bool DefaultSceneParser::AddSceneElement(const std::string& className, const std
 			pb.RequiredProp("folder");
 
 		Entity sky = m_Scene->CreateEntity(objectName);
-		sky.AddComponent<SkyLightComponent>().EnvironmentMap = AssetManager::GetAsset<Texture>(AssetImporter::ImportTextureAsset(folder + std::string("/skybox.dds"), noCompressNoMipMapTexOptions));
+		sky.AddComponent<SkyLightComponent>().EnvironmentMap = AssetManager::GetAsset<Texture>(AssetImporter::ImportTextureAsset(folder + std::string("/skybox.exr"), noCompressNoMipMapTexOptions));
 
 		return true;
 	}
