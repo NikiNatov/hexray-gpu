@@ -35,6 +35,7 @@ project "hexray-gpu"
 		"%{wks.location}/extern/DirectXTex/**.h",
 		"%{wks.location}/extern/DirectXTex/**.cpp",
 		"%{wks.location}/extern/DirectXShaderCompiler/**.h",
+		"%{wks.location}/extern/openexr/**.h",
 	}
 
 	includedirs
@@ -49,6 +50,7 @@ project "hexray-gpu"
 		"%{wks.location}/extern/DirectXTex",
 		"%{wks.location}/extern/yaml-cpp/include",
 		"%{wks.location}/extern/DirectXShaderCompiler/include",
+		"%{wks.location}/extern/openexr/include/OpenEXR",
 	}
 
 	libdirs
@@ -56,6 +58,7 @@ project "hexray-gpu"
 		"%{wks.location}/extern/pix/lib",
 		"%{wks.location}/extern/assimp/lib",
 		"%{wks.location}/extern/yaml-cpp/lib",
+		"%{wks.location}/extern/openexr/lib",
 	}
 
 	links
@@ -63,7 +66,7 @@ project "hexray-gpu"
 		"d3d12",
 		"dxgi",
 		"dxguid",
-		"WinPixEventRuntime"
+		"WinPixEventRuntime",
 	}
 
 	postbuildcommands
