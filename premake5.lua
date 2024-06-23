@@ -90,6 +90,13 @@ project "hexray-gpu"
 		{
 			"assimp-vc143-mtd",
 			"yaml_d",
+			"Half-2_5_d",
+			"Iex-2_5_d",
+			"IexMath-2_5_d",
+			"IlmImf-2_5_d",
+			"IlmImfUtil-2_5_d",
+			"IlmThread-2_5_d",
+			"Imath-2_5_d",
 		}
 
 		postbuildcommands
@@ -113,6 +120,13 @@ project "hexray-gpu"
 		{
 			"assimp-vc143-mt",
 			"yaml_r",
+			"Half-2_5",
+			"Iex-2_5",
+			"IexMath-2_5",
+			"IlmImf-2_5",
+			"IlmImfUtil-2_5",
+			"IlmThread-2_5",
+			"Imath-2_5",
 		}
 
 		postbuildcommands
