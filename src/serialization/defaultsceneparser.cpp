@@ -345,6 +345,8 @@ bool DefaultSceneParser::AddSceneElement(const std::string& className, const std
 		pb.GetProperty("color", light.Color);
 		pb.GetProperty("power", light.Intensity);
 		pb.GetProperty("pos", e.GetComponent<TransformComponent>().Translation);
+
+		light.Intensity /= 1000000;
 		return true;
 	}
 

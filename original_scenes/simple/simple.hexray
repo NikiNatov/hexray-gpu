@@ -138,8 +138,8 @@ Layered glass {
 
 Node wineglass {
 	geometry wineglass
-	shader	white_flat
-	//shader	 glass
+	//shader	white_flat
+	shader	 glass
 	translate (126, 0, 80)
 	scale (17, 17, 17)
 }
