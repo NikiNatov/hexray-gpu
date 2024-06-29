@@ -37,10 +37,6 @@ void RayGenShader()
     
     ColorRayPayload payload = TraceColorRay(rayOrigin, rayDirection, seed, 0, accelerationStructure);
     
-    // Check for NaN values: Not ideal, we should investigate why some pixels are NaN
-    bool colorsNan = any(isnan(payload.Color));
-    payload.Color = colorsNan ? float4(0.0, 0.0, 0.0, 1.0) : payload.Color;
-    
     // Accumulate color with previous frame
     renderTarget[rayID.xy] = ((sceneConstants.FrameIndex - 1) * prevFrameRenderTarget[rayID.xy] + payload.Color) / sceneConstants.FrameIndex;
 }

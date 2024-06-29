@@ -8,6 +8,26 @@ struct SampleGradValues
     float2 Ddy;
 };
 
+float Pow2(float v)
+{
+    return v * v;
+}
+
+float Pow3(float v)
+{
+    return Pow2(v) * v;
+}
+
+float Pow4(float v)
+{
+    return Pow2(v) * Pow2(v);
+}
+
+float Pow5(float v)
+{
+    return Pow2(v) * Pow3(v);
+}
+
 void GenerateCameraRay(SceneConstants sceneConstants, uint2 index, inout float3 origin, inout float3 direction)
 {
     float2 screenPos = (index + 0.5) / (float2) DispatchRaysDimensions().xy * 2.0 - 1.0; // Clip Space [-1, 1]

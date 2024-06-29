@@ -127,6 +127,16 @@ Uuid AssetImporter::ImportMeshAsset(const std::filesystem::path& sourceFilepath,
         uint32_t startVertex = vertices.size();
         uint32_t startIndex = indices.size();
 
+        if (!submesh->HasTangentsAndBitangents())
+        {
+            HEXRAY_WARNING("Mesh {} doesn't have tangents and bitangents!", sourceFilepath.string());
+        }
+
+        if (!submesh->HasTextureCoords(0))
+        {
+            HEXRAY_WARNING("Mesh {} doesn't have texcoords!", sourceFilepath.string());
+        }
+
         // Construct all vertices
         uint32_t vertexCount = 0;
         for (uint32_t vertexIdx = 0; vertexIdx < submesh->mNumVertices; vertexIdx++)
@@ -145,12 +155,13 @@ Uuid AssetImporter::ImportMeshAsset(const std::filesystem::path& sourceFilepath,
                 v.TexCoord = { texCoord.x, texCoord.y };
             }
             
-            v.Normal = { normal.x, normal.y, normal.z };
+            v.Normal = glm::normalize(glm::vec3(normal.x, normal.y, normal.z));
+            HEXRAY_ASSERT(glm::length(v.Normal) >= 0.99f);
 
             if (submesh->HasTangentsAndBitangents())
             {
-                v.Tangent = { tangent.x, tangent.y, tangent.z };
-                v.Bitangent = { bitangent.x, bitangent.y, bitangent.z };
+                v.Tangent = glm::normalize(glm::vec3(tangent.x, tangent.y, tangent.z));
+                v.Bitangent = glm::normalize(glm::vec3(bitangent.x, bitangent.y, bitangent.z));
             }
             else
             {
@@ -165,11 +176,14 @@ Uuid AssetImporter::ImportMeshAsset(const std::filesystem::path& sourceFilepath,
 
                 v.Tangent = glm::cross(v.Bitangent, v.Normal);
                 v.Normal = glm::cross(v.Tangent, v.Bitangent);
-                HEXRAY_ASSERT(abs(glm::dot(v.Bitangent, v.Tangent)) < 0.01f);
-                HEXRAY_ASSERT(abs(glm::dot(v.Bitangent, v.Normal)) < 0.01f);
-                HEXRAY_ASSERT(abs(glm::dot(v.Normal, v.Tangent)) < 0.01f);
             }
 
+            HEXRAY_ASSERT(glm::length(v.Normal) >= 0.99f);
+            HEXRAY_ASSERT(glm::length(v.Tangent) >= 0.99f);
+            HEXRAY_ASSERT(glm::length(v.Bitangent) >= 0.99f);
+            HEXRAY_ASSERT(abs(glm::dot(v.Normal, v.Tangent)) < 0.01f);
+            HEXRAY_ASSERT(abs(glm::dot(v.Normal, v.Bitangent)) < 0.01f);
+            HEXRAY_ASSERT(abs(glm::dot(v.Tangent, v.Bitangent)) < 0.01f);
             vertexCount++;
         }
 

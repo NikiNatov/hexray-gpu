@@ -120,7 +120,7 @@ float3 CalculateIndirectLighting_Phong(HitInfo hitInfo, inout uint seed, uint re
         float specularTerm = pow(NDotH, shininess);
         float3 specularBRDF = specularTerm * specular;
     
-        float blinnPhongSampleProbability = (shininess + 2.0) * pow(NDotH, shininess) / (2.0 * PI);
+        float blinnPhongSampleProbability = (shininess + 2.0) * specularTerm / (2.0 * PI);
     
         specularLight = (specularBRDF * specularPayload.Color.rgb * NDotL) / max(blinnPhongSampleProbability, Epsilon);
     }
