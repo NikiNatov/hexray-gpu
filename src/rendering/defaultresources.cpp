@@ -10,6 +10,64 @@ std::shared_ptr<Texture> DefaultResources::ErrorTexture = nullptr;
 std::shared_ptr<Texture> DefaultResources::ErrorTextureCube = nullptr;
 std::shared_ptr<Material> DefaultResources::DefaultMaterial = nullptr;
 std::shared_ptr<Mesh> DefaultResources::QuadMesh = nullptr;
+std::unordered_map<glm::vec4, TexturePtr> DefaultResources::m_RuntimeColorTextures;
+std::unordered_map<std::pair<glm::vec4, glm::vec4>, TexturePtr> DefaultResources::m_RuntimeCheckerTextures;
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+TexturePtr DefaultResources::GetColorTexture(const glm::vec4& color)
+{
+    auto found = m_RuntimeColorTextures.find(color);
+    if (found != m_RuntimeColorTextures.end())
+    {
+        found->second;
+    }
+
+    TextureDescription colorTextureDesc;
+    colorTextureDesc.Width = 1;
+    colorTextureDesc.Height = 1;
+    colorTextureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    colorTextureDesc.MipLevels = 1;
+    colorTextureDesc.InitialState = D3D12_RESOURCE_STATE_COPY_DEST;
+
+    uint8_t textureData[] = { color.r * 255.f, color.g * 255.f, color.b * 255.f, color.a * 255.f };
+
+    TexturePtr colorTexture = std::make_shared<Texture>(colorTextureDesc, L"DefaultResources::ColorTexture");
+    colorTexture->UploadGPUData(textureData);
+
+    m_RuntimeColorTextures[color] = colorTexture;
+    return colorTexture;
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+TexturePtr DefaultResources::GetCheckerTexture(const glm::vec4& colorA, const glm::vec4& colorB)
+{
+    std::pair<glm::vec4, glm::vec4> key(colorA, colorB);
+    auto found = m_RuntimeCheckerTextures.find(key);
+    if (found != m_RuntimeCheckerTextures.end())
+    {
+        return found->second;
+    }
+
+    TextureDescription checkerTextureDesc;
+    checkerTextureDesc.Width = 2;
+    checkerTextureDesc.Height = 2;
+    checkerTextureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    checkerTextureDesc.MipLevels = 1;
+    checkerTextureDesc.InitialState = D3D12_RESOURCE_STATE_COPY_DEST;
+
+    uint8_t checkerTextureData[] = {
+        colorA.r * 255.f, colorA.g * 255.f, colorA.b * 255.f, colorA.a * 255.f,
+        colorB.r * 255.f, colorB.g * 255.f, colorB.b * 255.f, colorB.a * 255.f,
+        colorB.r * 255.f, colorB.g * 255.f, colorB.b * 255.f, colorB.a * 255.f,
+        colorA.r * 255.f, colorA.g * 255.f, colorA.b * 255.f, colorA.a * 255.f,
+    };
+
+    TexturePtr texture = std::make_shared<Texture>(checkerTextureDesc, L"DefaultResources::CheckerTexture");
+    texture->UploadGPUData(checkerTextureData);
+    texture->SetSamplerType(SamplerType::PointWrap);
+    m_RuntimeCheckerTextures[key] = texture;
+    return texture;
+}
 
 // ------------------------------------------------------------------------------------------------------------------------------------
 void DefaultResources::Initialize()
@@ -132,6 +190,9 @@ void DefaultResources::Shutdown()
     WhiteTextureCube = nullptr;
     ErrorTexture = nullptr;
     ErrorTextureCube = nullptr;
+
+    m_RuntimeColorTextures.clear();
+    m_RuntimeCheckerTextures.clear();
 
     // Materials
     DefaultMaterial = nullptr;

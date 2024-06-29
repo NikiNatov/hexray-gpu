@@ -61,7 +61,7 @@ float3 CalculateSpotLight_Phong(Light light, float3 V, float3 N, float3 hitPosit
     float3 diffuseBRDF = albedo;
     
     // Specular BRDF
-    float specularTerm = pow(max(dot(V, reflect(-L, N)), 0.0), shininess);
+    float specularTerm = pow(max(dot(V, reflect(-L, N)), Epsilon), shininess);
     float3 specularBRDF = specularTerm * specular.rgb;
     
     return (diffuseBRDF + specularBRDF) * light.Color * light.Intensity * attenuation * spotIntensity * NDotL;

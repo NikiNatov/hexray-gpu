@@ -1,4 +1,5 @@
 #include "utils.h"
+#include "core/core.h"
 
 #include <cstdarg>
 #include <fstream>
@@ -99,4 +100,12 @@ std::vector<std::string> Tokenize(const std::string& s)
 		i = j;
 	}
 	return result;
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+bool AreAllBytesZero(void* data, size_t size)
+{
+	static uint8_t zeros[128] = { 0 };
+	HEXRAY_ASSERT(size < 128);
+	return memcmp(data, zeros, size) == 0;
 }

@@ -218,7 +218,8 @@ void Renderer::Render()
             MaterialPtr material = overrideMaterial ? overrideMaterial : meshMaterial;
 
             MaterialConstants& materialConstants = materials.emplace_back();
-            materialConstants.MaterialType = (uint32_t)material->GetType();
+            materialConstants.MaterialType = material->GetType();
+            materialConstants.AlbedoSamplerType = SamplerType::LinearClamp;
             material->GetProperty(MaterialPropertyType::AlbedoColor, materialConstants.AlbedoColor);
             material->GetProperty(MaterialPropertyType::EmissiveColor, materialConstants.EmissiveColor);
             material->GetProperty(MaterialPropertyType::RefractionColor, materialConstants.RefractionColor);
@@ -227,7 +228,10 @@ void Renderer::Render()
 
             TexturePtr albedoMap = nullptr;
             if (material->GetTexture(MaterialTextureType::Albedo, albedoMap))
+            {
                 materialConstants.AlbedoMapIndex = albedoMap ? albedoMap->GetSRV() : InvalidDescriptorIndex;
+                materialConstants.AlbedoSamplerType = albedoMap ? albedoMap->GetSamplerType() : SamplerType::LinearClamp;
+            }
 
             TexturePtr normalMap = nullptr;
             if (material->GetTexture(MaterialTextureType::Normal, normalMap))

@@ -57,6 +57,17 @@ enum MaterialType
     PBR = 2
 };
 
+// -----------------------------------------------------------------------
+enum SamplerType
+{
+    PointClamp = 0,
+    PointWrap = 1,
+    LinearClamp = 2,
+    LinearWrap = 3,
+    AnisoWrap = 4,
+};
+
+// -----------------------------------------------------------------------
 struct MaterialConstants
 {
     uint MaterialType;
@@ -70,12 +81,13 @@ struct MaterialConstants
     float Roughness;        // PBR
     float Metalness;        // PBR
     uint AlbedoMapIndex;
+    uint AlbedoSamplerType;
     uint NormalMapIndex;
     uint RoughnessMapIndex; // PBR
     uint MetalnessMapIndex; // PBR
 };
 
-static const uint c_MaterialConstantsStructSize = 108;
+static const uint c_MaterialConstantsStructSize = 112;
 
 // -----------------------------------------------------------------------
 struct GeometryConstants
@@ -180,9 +192,17 @@ struct ShadowRayPayload
 };
 
 // -----------------------------------------------------------------------
+struct SampleParams
+{
+    float2 TexCoord;
+    float2 Ddx;
+    float2 Ddy;
+};
+
+// -----------------------------------------------------------------------
 struct HitInfo
 {
-    float2 TexCoords;
+    SampleParams Sample;
     float3 WorldPosition;
     float3 WorldNormal;
     float3 WorldTangent;
@@ -311,6 +331,28 @@ Triangle GetTriangle(GeometryConstants geometry, uint triangleIndex)
     return tri;
 }
 
+// -----------------------------------------------------------------------
+float4 SampleTextureGrad(Texture2D texture, SamplerState samplerState, SampleParams sampleValues)
+{
+    //return texture.SampleLevel(samplerState, sampleValues.TexCoord, 0);
+    return texture.SampleGrad(samplerState, sampleValues.TexCoord, sampleValues.Ddx, sampleValues.Ddy);
+}
+
+// -----------------------------------------------------------------------
+float4 SampleTextureGrad(Texture2D texture, uint samplerType, SampleParams sampleValues)
+{
+    switch (samplerType)
+    {
+        case SamplerType::PointClamp: return SampleTextureGrad(texture, g_PointClampSampler, sampleValues);
+        case SamplerType::PointWrap: return SampleTextureGrad(texture, g_PointWrapSampler, sampleValues);
+        case SamplerType::LinearClamp: return SampleTextureGrad(texture, g_LinearClampSampler, sampleValues);
+        case SamplerType::LinearWrap: return SampleTextureGrad(texture, g_LinearWrapSampler, sampleValues);
+        case SamplerType::AnisoWrap: return SampleTextureGrad(texture, g_AnisoWrapSampler, sampleValues);
+    }
+
+    return SampleTextureGrad(texture, g_LinearClampSampler, sampleValues);
+}
+
 // Object space
 // -----------------------------------------------------------------------
 Vertex GetIntersectionPointOS(Triangle tri, float3 bary)
@@ -324,16 +366,19 @@ Vertex GetIntersectionPointOS(Triangle tri, float3 bary)
 }
 
 // -----------------------------------------------------------------------
-float3 GetNormalFromMap(Texture2D<float4> normalMap, HitInfo hitInfo, uint mipLevel)
+void ApplyNormalMap(Texture2D normalMap, inout HitInfo hitInfo)
 {
     // Note: If using DXT5n compression, different unpacking will be required!
     float3x3 TBNMatrix = float3x3(hitInfo.WorldTangent, hitInfo.WorldBitangent, hitInfo.WorldNormal);
-    float3 normalMapValue = normalMap.SampleLevel(g_LinearClampSampler, hitInfo.TexCoords, mipLevel).rgb * 2.0 - 1.0;
-    return normalize(mul(normalMapValue, TBNMatrix));
+    float3 normalMapValue = SampleTextureGrad(normalMap, g_LinearClampSampler, hitInfo.Sample).rgb * 2.0 - 1.0;
+
+    hitInfo.WorldNormal = normalize(mul(normalMapValue, TBNMatrix));
+    hitInfo.WorldBitangent = normalize(cross(hitInfo.WorldNormal, float3(0.0, 1.0, 0.0)));
+    hitInfo.WorldTangent = cross(hitInfo.WorldBitangent, hitInfo.WorldNormal);
 }
 
 // -----------------------------------------------------------------------
-HitInfo GetHitInfo(BuiltInTriangleIntersectionAttributes attr)
+HitInfo GetHitInfo(SceneConstants sceneConstants, BuiltInTriangleIntersectionAttributes attr)
 {
     uint geometryID = InstanceID();
     uint primitiveID = PrimitiveIndex();
@@ -343,11 +388,11 @@ HitInfo GetHitInfo(BuiltInTriangleIntersectionAttributes attr)
     Vertex ip = GetIntersectionPointOS(tri, float3(1.0 - attr.barycentrics.x - attr.barycentrics.y, attr.barycentrics.x, attr.barycentrics.y));
 
     HitInfo hitInfo;
-    hitInfo.TexCoords = ip.TexCoord;
     hitInfo.WorldPosition = WorldRayOrigin() + WorldRayDirection() * RayTCurrent();
     hitInfo.WorldNormal = normalize(mul((float3x3)ObjectToWorld4x3(), ip.Normal));
     hitInfo.WorldTangent = normalize(mul((float3x3)ObjectToWorld4x3(), ip.Tangent));
     hitInfo.WorldBitangent = normalize(mul((float3x3)ObjectToWorld4x3(), ip.Bitangent));
+    hitInfo.Sample = GetSampleParams(sceneConstants, tri, hitInfo.WorldPosition, hitInfo.WorldNormal, ip.TexCoord);
 
     return hitInfo;
 }

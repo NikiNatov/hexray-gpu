@@ -1,13 +1,6 @@
 #ifndef __COMMON_HLSLI__
 #define __COMMON_HLSLI__
 
-struct SampleGradValues
-{
-    float2 TexCoord;
-    float2 Ddx;
-    float2 Ddy;
-};
-
 float Pow2(float v)
 {
     return v * v;
@@ -40,12 +33,6 @@ void GenerateCameraRay(SceneConstants sceneConstants, uint2 index, inout float3 
     direction = rayDirectionWS;
 }
 
-float4 SampleTextureGrad(Texture2D<float4> texture, SamplerState samplerState, SampleGradValues sampleValues)
-{
-    //return texture.SampleLevel(samplerState, sampleValues.TexCoord, 0);
-    return texture.SampleGrad(samplerState, sampleValues.TexCoord, sampleValues.Ddx, sampleValues.Ddy);
-}
-
 float3 RayPlaneIntersection(float3 planeOrigin, float3 planeNormal, float3 rayOrigin, float3 rayDirection)
 {
     float t = dot(-planeNormal, rayOrigin - planeOrigin) / dot(planeNormal, rayDirection);
@@ -70,7 +57,7 @@ float3 ComputeBarycentricCoordinates(float3 pt, float3 v0, float3 v1, float3 v2)
     return float3(u, v, w);
 }
 
-SampleGradValues GetSamplingValues(SceneConstants sceneConstants, Triangle tri, float3 worldPosition, float3 worldNormal, float2 texCoord)
+SampleParams GetSampleParams(SceneConstants sceneConstants, Triangle tri, float3 worldPosition, float3 worldNormal, float2 texCoord)
 {
     // Better to implement this paper:
     // https://media.contentapi.ea.com/content/dam/ea/seed/presentations/2019-ray-tracing-gems-chapter-20-akenine-moller-et-al.pdf
@@ -109,7 +96,7 @@ SampleGradValues GetSamplingValues(SceneConstants sceneConstants, Triangle tri, 
     float2 ddx = mul(baryX, uvMat) - texCoord;
     float2 ddy = mul(baryY, uvMat) - texCoord;
     
-    SampleGradValues result;
+    SampleParams result;
     result.TexCoord = texCoord;
     result.Ddx = ddx;
     result.Ddy = ddy;

@@ -158,7 +158,7 @@ bool ParsedBlockImpl::GetProperty(const char* name, double& value, double minVal
 	return true;
 }
 
-void stripBracesAndCommas(char* s)
+void StripBracesAndCommas(char* s)
 {
 	int l = (int)strlen(s);
 	for (int i = 0; i < l; i++) {
@@ -170,7 +170,7 @@ void stripBracesAndCommas(char* s)
 bool ParsedBlockImpl::GetProperty(const char* name, glm::vec4& value, float minCompValue, float maxCompValue)
 {
 	PBEGIN;
-	stripBracesAndCommas(value_s);
+	StripBracesAndCommas(value_s);
 	glm::vec4 c;
 	if (3 != sscanf(value_s, "%f%f%f", &c.r, &c.g, &c.b)) throw SyntaxError(line, "Invalid color");
 	if (c.r < minCompValue || c.r > maxCompValue) throw SyntaxError(line, "Color R value outside the allowed bounds (%f .. %f)\n", minCompValue, maxCompValue);
@@ -183,7 +183,7 @@ bool ParsedBlockImpl::GetProperty(const char* name, glm::vec4& value, float minC
 bool ParsedBlockImpl::GetProperty(const char* name, glm::vec3& value)
 {
 	PBEGIN;
-	stripBracesAndCommas(value_s);
+	StripBracesAndCommas(value_s);
 	glm::vec3 v;
 	if (3 != sscanf(value_s, "%f%f%f", &v.x, &v.y, &v.z)) throw SyntaxError(line, "Invalid vector");
 	value = v;
@@ -257,7 +257,7 @@ void ParsedBlockImpl::GetProperty(TransformComponent& T)
 		{
 			m_Lines[i].recognized = true;
 			Get3Floats(m_Lines[i].line, m_Lines[i].propValue, x, y, z);
-			T.Rotation = { y, -x, z }; // Note: Map between both coord systems, rotation here: Z -> Y -> X, hexray: Z -> X -> Y
+			T.Rotation = { y, -x, -z }; // Note: Map between both coord systems, rotation here: Z -> Y -> X, hexray: Z -> X -> Y
 			continue;
 		}
 		if (!strcmp(m_Lines[i].propName, "translate"))

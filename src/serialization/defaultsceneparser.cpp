@@ -44,6 +44,7 @@ bool DefaultSceneParser::AddSceneElement(const std::string& className, const std
 		//pb.GetProperty("ambientLight", m_RendererDescription->AmbientLight);
 		//pb.GetProperty("tonemap", m_RendererDescription->EnableTonemap, false);
 
+		m_RendererDescription->EnableBloom = false;
 		m_RendererDescription->EnableACESTonemap = false;
 
 		Window* window = Application::GetInstance()->GetWindow();
@@ -81,16 +82,28 @@ bool DefaultSceneParser::AddSceneElement(const std::string& className, const std
 		//pb.GetProperty("autoFocus", &autoFocus);
 		//pb.GetProperty("stereoSeparation", &stereoSeparation, 0.0);
 
-		// For some reason the original scenes are more zoomed
-		camera.m_Position += camera.GetCameraFront() * 250.0f;
-		camera.m_MovementSpeed = 1130.f;
+		// TODO: For some reason the original scenes are more zoomed
 		camera.RecalculateProjection();
 		camera.RecalculateView();
 		return true;
 	}
 
 	// Textures
-	//if (className == "CheckerTexture") return new CheckerTexture;
+	if (className == "CheckerTexture")
+	{
+		glm::vec4 color1 = glm::vec4(glm::vec3(1.f), 1.f);
+		pb.GetProperty("color1", color1);
+
+		glm::vec4 color2 = glm::vec4(glm::vec3(1.f), 0.f);
+		pb.GetProperty("color2", color2);
+
+		float scalingNotImplemented = 20.f;
+		pb.GetProperty("scaling", scalingNotImplemented);
+
+		m_Textures[objectName] = DefaultResources::GetCheckerTexture(color1, color2);
+		return true;
+	}
+
 	//if (className == "Heightfield") return new Heightfield;
 	//if (className == "Bumps") return new Bumps;
 	//if (className == "Const") return new Const;
@@ -119,7 +132,7 @@ bool DefaultSceneParser::AddSceneElement(const std::string& className, const std
 	// Meshes
 	if (className == "Sphere")
 	{
-		glm::vec3 center = glm::vec3(0, 0, 0);
+		glm::vec3 center = glm::vec3(0.f);
 		pb.GetProperty("O", center);
 
 		float radius = 1.0f;
@@ -134,7 +147,7 @@ bool DefaultSceneParser::AddSceneElement(const std::string& className, const std
 	
 	if (className == "Cube")
 	{
-		glm::vec3 center = glm::vec3(0, 0, 0);
+		glm::vec3 center = glm::vec3(0.f);
 		pb.GetProperty("O", center);
 
 		float side = 1.0f;
@@ -152,7 +165,8 @@ bool DefaultSceneParser::AddSceneElement(const std::string& className, const std
 	//if (className == "CSGDiff") return new CSGDiff;
 	if (className == "Plane")
 	{
-		float y, limit;
+		float y = 0.f;
+		float limit = 1e23f;
 		pb.GetProperty("y", y);
 		pb.GetProperty("limit", limit);
 
@@ -176,7 +190,7 @@ bool DefaultSceneParser::AddSceneElement(const std::string& className, const std
 	// Shaders
 	if (className == "Lambert")
 	{
-		glm::vec4 color;
+		glm::vec4 color = glm::vec4(glm::vec3(0.5f), 1.0f);
 		pb.GetProperty("color", color);
 
 		TexturePtr texture;
@@ -191,16 +205,16 @@ bool DefaultSceneParser::AddSceneElement(const std::string& className, const std
 
 	if (className == "Phong")
 	{
-		glm::vec4 color;
+		glm::vec4 color = glm::vec4(glm::vec3(0.5f), 1.0f);
 		pb.GetProperty("color", color);
 
-		glm::vec4 specular;
+		glm::vec4 specular = glm::vec4(1.f);
 		pb.GetProperty("specular", specular);
 
 		TexturePtr texture;
 		pb.GetProperty("texture", texture);
 
-		float exponent;
+		float exponent = 10.f;
 		pb.GetProperty("exponent", exponent);
 
 		MaterialPtr material = std::make_shared<Material>(MaterialType::Phong);
@@ -212,9 +226,114 @@ bool DefaultSceneParser::AddSceneElement(const std::string& className, const std
 		return true;
 	}
 
-	//if (className == "Reflection") return new Reflection;
-	//if (className == "Refraction") return new Refraction;
-	//if (className == "Layered") return new Layered;
+	if (className == "Reflection")
+	{
+		glm::vec3 reflColor = glm::vec3(0.95f);
+		if (!pb.GetProperty("reflColor", reflColor))
+		{
+			float multiplier;
+			if (pb.GetProperty("multiplier", multiplier))
+			{
+				reflColor = glm::vec3(multiplier, multiplier, multiplier);
+			}
+		}
+
+		MaterialPtr material = std::make_shared<Material>(MaterialType::Lambert);
+		material->SetProperty(MaterialPropertyType::AlbedoColor, glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+		material->SetProperty(MaterialPropertyType::ReflectionColor, reflColor);
+		m_Materials[objectName] = material;
+
+		return true;
+	}
+
+	if (className == "Refraction")
+	{
+		glm::vec3 refrColor = glm::vec3(0.95f);
+		if (!pb.GetProperty("refrColor", refrColor))
+		{
+			float multiplier;
+			if (pb.GetProperty("multiplier", multiplier))
+			{
+				refrColor = glm::vec3(multiplier, multiplier, multiplier);
+			}
+		}
+
+		float ior = 1.33f;
+		pb.GetProperty("ior", ior);
+
+		MaterialPtr material = std::make_shared<Material>(MaterialType::Lambert);
+		material->SetProperty(MaterialPropertyType::AlbedoColor, glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+		material->SetProperty(MaterialPropertyType::RefractionColor, refrColor);
+		material->SetProperty(MaterialPropertyType::IndexOfRefraction, ior);
+		m_Materials[objectName] = material;
+		return true;
+	}
+
+	if (className == "Layered")
+	{
+		MaterialPtr layered = std::make_shared<Material>(MaterialType::Lambert);
+		for (int i = 0; i < pb.GetBlockLines(); i++)
+		{
+			char name[128];
+			char value[256];
+			int srcLine;
+			// fetch and parse all lines like "layer <shader>, <color>[, <texture>]"
+			pb.GetBlockLine(i, srcLine, name, value);
+			if (!strcmp(name, "layer"))
+			{
+				char materialName[200];
+				char textureName[200] = "";
+				bool err = false;
+				if (!GetFrontToken(value, materialName))
+				{
+					err = true;
+				}
+				else
+				{
+					StripPunctuation(materialName);
+				}
+				if (!strlen(value)) err = true;
+				if (!err && value[strlen(value) - 1] != ')')
+				{
+					if (!GetLastToken(value, textureName))
+					{
+						err = true;
+					}
+					else
+					{
+						StripPunctuation(textureName);
+					}
+				}
+				if (!err && !strcmp(textureName, "NULL")) strcpy(textureName, "");
+				MaterialPtr material = NULL;
+				TexturePtr texture = NULL;
+				if (!err)
+				{
+					material = FindMaterialByName(materialName);
+					err = (material == NULL);
+				}
+				if (!err && strlen(textureName))
+				{
+					texture = FindTextureByName(textureName);
+					err = (texture == NULL);
+				}
+				// texture blending not supported for now
+				//if (err) throw SyntaxError(srcLine, "Expected a line like `layer <shader>, <color>[, <texture>]'");
+				float x, y, z;
+				Get3Floats(srcLine, value, x, y, z);
+
+				for (uint32_t i = 0; i < uint32_t(MaterialPropertyType::Count); i++)
+				{
+					MaterialPropertyType property = MaterialPropertyType(i);
+					layered->TryCopyProperty(material, property);
+				}
+			}
+
+			m_Materials[objectName] = layered;
+		}
+		return true;
+	}
+
 	//if (className == "Fresnel") return new Fresnel;
 
 	// Lights

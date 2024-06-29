@@ -7,6 +7,8 @@
 
 #include "directx12.h"
 
+enum SamplerType;
+
 struct TextureDescription
 {
     DXGI_FORMAT Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -27,6 +29,9 @@ public:
     ~Texture();
 
     void UploadGPUData(uint8_t* pixels, bool keepCPUData = false);
+
+    inline void SetSamplerType(SamplerType type) { m_SamplerType = type; }
+    inline SamplerType GetSamplerType() const { return m_SamplerType; }
 
     DescriptorIndex GetSRV();
     DescriptorIndex GetRTV(uint32_t mip);
@@ -51,6 +56,7 @@ private:
     TextureDescription m_Description;
     ComPtr<ID3D12Resource2> m_Resource;
     DescriptorIndex m_SRVDescriptor;
+    SamplerType m_SamplerType;
     std::vector<DescriptorIndex> m_MipUAVDescriptors;
     std::vector<DescriptorIndex> m_MipRTVDescriptors;
     std::vector<DescriptorIndex> m_MipDSVDescriptors;

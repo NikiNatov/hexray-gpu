@@ -5,6 +5,11 @@
 
 class SceneParser;
 
+void Get3Floats(int srcLine, char* expression, float& d1, float& d2, float& d3);
+bool GetFrontToken(char* s, char* frontToken);
+bool GetLastToken(char* s, char* backToken);
+void StripPunctuation(char* s);
+
 class ParsedBlockImpl : public ParsedBlock
 {
 public:

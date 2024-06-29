@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/core.h"
+#include "core/utils.h"
 #include "rendering/texture.h"
 #include "asset/asset.h"
 #include "rendering/shaders/resources.h"
@@ -141,6 +142,12 @@ public:
     {
         uint32_t size, offset;
         if (!source->GetMaterialPropertyMetaData(propertyType, size, offset))
+        {
+            return false;
+        }
+
+        HEXRAY_ASSERT(m_PropertiesBuffer.size() == source->m_PropertiesBuffer.size());
+        if (AreAllBytesZero(source->m_PropertiesBuffer.data() + offset, size))
         {
             return false;
         }

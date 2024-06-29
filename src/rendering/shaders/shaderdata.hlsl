@@ -36,7 +36,7 @@ void RayGenShader()
     float3 rayDirection = mul(sceneConstants.InvViewMatrix, float4(normalize(pixelPositionVS.xyz / pixelPositionVS.w), 0.0)).xyz; // To World Space
     
     ColorRayPayload payload = TraceColorRay(rayOrigin, rayDirection, seed, 0, accelerationStructure);
-    
+
     // Accumulate color with previous frame
     renderTarget[rayID.xy] = ((sceneConstants.FrameIndex - 1) * prevFrameRenderTarget[rayID.xy] + payload.Color) / sceneConstants.FrameIndex;
 }
@@ -47,21 +47,19 @@ void ClosestHitShader_Color(inout ColorRayPayload payload, in BuiltInTriangleInt
     SceneConstants sceneConstants = g_Buffers[g_ResourceIndices.SceneBufferIndex].Load<SceneConstants>(0);
     RaytracingAccelerationStructure accelerationStructure = g_AccelerationStructures[g_ResourceIndices.AccelerationStructureIndex];
     
-    HitInfo hitInfo = GetHitInfo(attr);
+    HitInfo hitInfo = GetHitInfo(sceneConstants, attr);
     
     MaterialConstants material = GetMeshMaterial(InstanceID(), g_ResourceIndices.MaterialBufferIndex);
     if (material.NormalMapIndex != INVALID_DESCRIPTOR_INDEX)
     {
-        hitInfo.WorldNormal = GetNormalFromMap(g_Textures[material.NormalMapIndex], hitInfo, 0);
-        hitInfo.WorldBitangent = normalize(cross(hitInfo.WorldNormal, float3(0.0, 1.0, 0.0)));
-        hitInfo.WorldTangent = cross(hitInfo.WorldBitangent, hitInfo.WorldNormal);
+        ApplyNormalMap(g_Textures[material.NormalMapIndex], hitInfo);
     }
     
-    float4 albedo = material.AlbedoMapIndex != INVALID_DESCRIPTOR_INDEX ? g_Textures[material.AlbedoMapIndex].SampleLevel(g_LinearWrapSampler, hitInfo.TexCoords, 0) : material.AlbedoColor;
+    float4 albedo = material.AlbedoMapIndex != INVALID_DESCRIPTOR_INDEX ? SampleTextureGrad(g_Textures[material.AlbedoMapIndex], material.AlbedoSamplerType, hitInfo.Sample) : material.AlbedoColor;
     float3 finalColor = float3(0.0, 0.0, 0.0);
     
     finalColor += material.EmissiveColor.rgb;
-    
+
     // Direct lighting
     if (sceneConstants.NumLights > 0)
     {
@@ -94,8 +92,8 @@ void ClosestHitShader_Color(inout ColorRayPayload payload, in BuiltInTriangleInt
             }
             case MaterialType::PBR:
             {
-                float roughness = material.RoughnessMapIndex != INVALID_DESCRIPTOR_INDEX ? g_Textures[material.RoughnessMapIndex].SampleLevel(g_LinearWrapSampler, hitInfo.TexCoords, 0).r : material.Roughness;
-                float metalness = material.MetalnessMapIndex != INVALID_DESCRIPTOR_INDEX ? g_Textures[material.MetalnessMapIndex].SampleLevel(g_LinearWrapSampler, hitInfo.TexCoords, 0).r : material.Metalness;
+                float roughness = material.RoughnessMapIndex != INVALID_DESCRIPTOR_INDEX ? SampleTextureGrad(g_Textures[material.RoughnessMapIndex], g_LinearWrapSampler, hitInfo.Sample).r : material.Roughness;
+                float metalness = material.MetalnessMapIndex != INVALID_DESCRIPTOR_INDEX ? SampleTextureGrad(g_Textures[material.MetalnessMapIndex], g_LinearWrapSampler, hitInfo.Sample).r : material.Metalness;
                 finalColor += CalculateDirectLighting_PBR(hitInfo, WorldRayOrigin(), light, albedo.rgb, roughness, metalness);
                 break;
             }
@@ -104,7 +102,7 @@ void ClosestHitShader_Color(inout ColorRayPayload payload, in BuiltInTriangleInt
         finalColor *= isVisible;
         finalColor /= lightSampleProbability;
     }
-    
+
     // Indirect Light
     switch (material.MaterialType)
     {
@@ -122,13 +120,34 @@ void ClosestHitShader_Color(inout ColorRayPayload payload, in BuiltInTriangleInt
         }
         case MaterialType::PBR:
         {
-            float roughness = material.RoughnessMapIndex != INVALID_DESCRIPTOR_INDEX ? g_Textures[material.RoughnessMapIndex].SampleLevel(g_LinearWrapSampler, hitInfo.TexCoords, 0).r : material.Roughness;
-            float metalness = material.MetalnessMapIndex != INVALID_DESCRIPTOR_INDEX ? g_Textures[material.MetalnessMapIndex].SampleLevel(g_LinearWrapSampler, hitInfo.TexCoords, 0).r : material.Metalness;
+            float roughness = material.RoughnessMapIndex != INVALID_DESCRIPTOR_INDEX ? SampleTextureGrad(g_Textures[material.RoughnessMapIndex], g_LinearWrapSampler, hitInfo.Sample).r : material.Roughness;
+            float metalness = material.MetalnessMapIndex != INVALID_DESCRIPTOR_INDEX ? SampleTextureGrad(g_Textures[material.MetalnessMapIndex], g_LinearWrapSampler, hitInfo.Sample).r : material.Metalness;
             finalColor += CalculateIndirectLighting_PBR(hitInfo, payload.Seed, payload.RayDepth, WorldRayOrigin(), albedo.rgb, roughness, metalness, accelerationStructure);
             break;
         }
     }
-    
+
+    // Reflection
+    if (any(material.ReflectionColor))
+    {
+        float3 reflected = reflect(WorldRayDirection(), hitInfo.WorldNormal);
+        ColorRayPayload reflection = TraceColorRay(hitInfo.WorldPosition, reflected, payload.Seed, payload.RayDepth, accelerationStructure);
+        finalColor += reflection.Color.rgb * material.ReflectionColor;
+    }
+
+    // Refraction
+    if (material.IndexOfRefraction)
+    {
+        float3 rayDir = WorldRayDirection();
+        bool bIsEnteringGeometry = dot(rayDir, hitInfo.WorldNormal) < 0;
+        float3 refracted = bIsEnteringGeometry ? refract(rayDir, hitInfo.WorldNormal, 1.0 / material.IndexOfRefraction) : refract(rayDir, -hitInfo.WorldNormal, material.IndexOfRefraction);
+        if (any(refracted))
+        {
+            ColorRayPayload refraction = TraceColorRay(hitInfo.WorldPosition, refracted, payload.Seed, payload.RayDepth, accelerationStructure);
+            finalColor += refraction.Color.rgb * material.RefractionColor;
+        }
+    }
+
     payload.Color.rgb += finalColor;
 }
 

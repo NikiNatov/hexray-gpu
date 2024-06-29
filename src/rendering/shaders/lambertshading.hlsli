@@ -77,4 +77,22 @@ float3 CalculateIndirectLighting_Lambert(HitInfo hitInfo, inout uint seed, uint 
     return (diffuseBRDF * diffusePayload.Color.rgb * NDotL) / max(cosineSampleProbability, Epsilon);
 }
 
+//float3 CalculateIndirectLighting_Lambert(HitInfo hitInfo, inout uint seed, uint recursionDepth, float3 albedo, RaytracingAccelerationStructure accelerationStruct)
+//{
+//    float3 N = hitInfo.WorldNormal;
+//    
+//    // For diffuse lighting, pick a random cosine-weighted direction.
+//    float3 L = GetRandomDirectionCosineWeighted(seed, hitInfo.WorldNormal, hitInfo.WorldTangent, hitInfo.WorldBitangent);
+//    float NDotL = dot(N, L);
+//    float3 brdfColor = albedo * (1.0 / PI) * NDotL;
+//    float brdfPdf = 1.0 / (2.0 * PI);
+//
+//    ColorRayPayload diffusePayload = TraceColorRay(hitInfo.WorldPosition, L, seed, recursionDepth, accelerationStruct);
+//    float3 fromGI = diffusePayload.Color.rgb * (brdfColor / brdfPdf);
+//
+//    float3 eval = albedo * ((1.0 / PI) * abs(NDotL));
+//    
+//    return fromGI + eval;
+//}
+
 #endif // __LAMBERTSHADING_HLSLI__
