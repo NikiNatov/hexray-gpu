@@ -97,10 +97,11 @@ bool DefaultSceneParser::AddSceneElement(const std::string& className, const std
 		glm::vec4 color2 = glm::vec4(glm::vec3(1.f), 0.f);
 		pb.GetProperty("color2", color2);
 
-		float scalingNotImplemented = 20.f;
-		pb.GetProperty("scaling", scalingNotImplemented);
+		float scaling = 1.f;
+		pb.GetProperty("scaling", scaling);
 
 		m_Textures[objectName] = DefaultResources::GetCheckerTexture(color1, color2);
+		m_Textures[objectName]->SetScaling(scaling); // this is not correct as it is not part of the hash, fuck it
 		return true;
 	}
 

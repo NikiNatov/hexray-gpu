@@ -6,7 +6,7 @@
 
 // ------------------------------------------------------------------------------------------------------------------------------------
 Texture::Texture(const TextureDescription& description, const wchar_t* debugName)
-    : Asset(AssetType::Texture), m_Description(description), m_SamplerType(SamplerType::LinearClamp)
+    : Asset(AssetType::Texture), m_Description(description), m_SamplerType(SamplerType::LinearClamp), m_Scaling(1.0f)
 {
     CreateGPU(debugName);
 }

@@ -82,12 +82,13 @@ struct MaterialConstants
     float Metalness;        // PBR
     uint AlbedoMapIndex;
     uint AlbedoSamplerType;
+    float AlbedoMapScaling;
     uint NormalMapIndex;
     uint RoughnessMapIndex; // PBR
     uint MetalnessMapIndex; // PBR
 };
 
-static const uint c_MaterialConstantsStructSize = 112;
+static const uint c_MaterialConstantsStructSize = 116;
 
 // -----------------------------------------------------------------------
 struct GeometryConstants

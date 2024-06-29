@@ -33,6 +33,9 @@ public:
     inline void SetSamplerType(SamplerType type) { m_SamplerType = type; }
     inline SamplerType GetSamplerType() const { return m_SamplerType; }
 
+    inline void SetScaling(float scaling) { m_Scaling = scaling; }
+    inline float GetScaling() const { return m_Scaling; }
+
     DescriptorIndex GetSRV();
     DescriptorIndex GetRTV(uint32_t mip);
     DescriptorIndex GetDSV(uint32_t mip);
@@ -57,6 +60,7 @@ private:
     ComPtr<ID3D12Resource2> m_Resource;
     DescriptorIndex m_SRVDescriptor;
     SamplerType m_SamplerType;
+    float m_Scaling;
     std::vector<DescriptorIndex> m_MipUAVDescriptors;
     std::vector<DescriptorIndex> m_MipRTVDescriptors;
     std::vector<DescriptorIndex> m_MipDSVDescriptors;

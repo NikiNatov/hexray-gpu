@@ -50,6 +50,7 @@ void ClosestHitShader_Color(inout ColorRayPayload payload, in BuiltInTriangleInt
     HitInfo hitInfo = GetHitInfo(sceneConstants, attr);
     
     MaterialConstants material = GetMeshMaterial(InstanceID(), g_ResourceIndices.MaterialBufferIndex);
+    hitInfo.Sample.TexCoord /= material.AlbedoMapScaling; // not correct fuck it
     if (material.NormalMapIndex != INVALID_DESCRIPTOR_INDEX)
     {
         ApplyNormalMap(g_Textures[material.NormalMapIndex], hitInfo);
