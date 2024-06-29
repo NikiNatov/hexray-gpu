@@ -221,6 +221,9 @@ void Renderer::Render()
             materialConstants.MaterialType = (uint32_t)material->GetType();
             material->GetProperty(MaterialPropertyType::AlbedoColor, materialConstants.AlbedoColor);
             material->GetProperty(MaterialPropertyType::EmissiveColor, materialConstants.EmissiveColor);
+            material->GetProperty(MaterialPropertyType::RefractionColor, materialConstants.RefractionColor);
+            material->GetProperty(MaterialPropertyType::IndexOfRefraction, materialConstants.IndexOfRefraction);
+            material->GetProperty(MaterialPropertyType::ReflectionColor, materialConstants.ReflectionColor);
 
             TexturePtr albedoMap = nullptr;
             if (material->GetTexture(MaterialTextureType::Albedo, albedoMap))

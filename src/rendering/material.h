@@ -27,7 +27,14 @@ enum class MaterialPropertyType
 
     // PBR specific
     Roughness,
-    Metalness
+    Metalness,
+
+    RefractionColor,
+    IndexOfRefraction,
+
+    ReflectionColor,
+
+    Count,
 };
 
 enum class MaterialTextureType
@@ -43,8 +50,13 @@ enum class MaterialTextureType
 struct MaterialPropertyMetaData
 {
     MaterialPropertyType Type;
-    uint32_t Offset;
     uint32_t Size;
+
+    template <typename T>
+    inline static MaterialPropertyMetaData Create(MaterialPropertyType type)
+    {
+        return { type, sizeof(T) };
+    }
 };
 
 struct MaterialTextureMetaData
@@ -65,23 +77,23 @@ public:
     template<typename T>
     bool SetProperty(MaterialPropertyType propertyType, const T& value)
     {
-        const MaterialPropertyMetaData* metaData = GetMaterialPropertyMetaData(propertyType);
-        if (!metaData)
+        uint32_t size, offset;
+        if (!GetMaterialPropertyMetaData(propertyType, size, offset))
         {
             HEXRAY_ERROR("Material property with type {} does not exist for material type {}", (uint32_t)propertyType, (uint32_t)m_Type);
             return false;
         }
 
-        if (metaData->Size != sizeof(T))
+        if (size != sizeof(T))
         {
             HEXRAY_ERROR("Size of property with type {} does not match the size of the value type!", (uint32_t)propertyType);
             return false;
         }
 
-        if (value == *(T*)(&m_PropertiesBuffer[metaData->Offset]))
+        if (value == *(T*)(&m_PropertiesBuffer[offset]))
             return true;
 
-        memcpy(m_PropertiesBuffer.data() + metaData->Offset, &value, metaData->Size);
+        memcpy(m_PropertiesBuffer.data() + offset, &value, size);
         return true;
     }
 
@@ -101,20 +113,39 @@ public:
     template<typename T>
     bool GetProperty(MaterialPropertyType propertyType, T& outData) const
     {
-        const MaterialPropertyMetaData* metaData = GetMaterialPropertyMetaData(propertyType);
-        if (!metaData)
+        uint32_t size, offset;
+        if (!GetMaterialPropertyMetaData(propertyType, size, offset))
         {
             HEXRAY_ERROR("Material property with type {} does not exist for material type {}", (uint32_t)propertyType, (uint32_t)m_Type);
             return false;
         }
 
-        if (metaData->Size != sizeof(T))
+        if (size != sizeof(T))
         {
             HEXRAY_ERROR("Size of property with type {} does not match the size of the value type!", (uint32_t)propertyType);
             return false;
         }
 
-        outData = *(T*)(&m_PropertiesBuffer[metaData->Offset]);
+        // Backwards compatibility
+        if (m_PropertiesBuffer.size() <= offset)
+        {
+            memset(&outData, 0, sizeof(outData));
+            return false;
+        }
+
+        outData = *(T*)(&m_PropertiesBuffer[offset]);
+        return true;
+    }
+
+    bool TryCopyProperty(const MaterialPtr& source, MaterialPropertyType propertyType)
+    {
+        uint32_t size, offset;
+        if (!source->GetMaterialPropertyMetaData(propertyType, size, offset))
+        {
+            return false;
+        }
+
+        memcpy(m_PropertiesBuffer.data() + offset, source->m_PropertiesBuffer.data() + offset, size);
         return true;
     }
 
@@ -131,13 +162,18 @@ public:
         return true;
     }
 
-    inline bool HasProperty(MaterialPropertyType propertyType) const { return GetMaterialPropertyMetaData(propertyType) != nullptr; }
+    inline bool HasProperty(MaterialPropertyType propertyType) const
+    {
+        uint32_t dummySize, dummyOffset;
+        return GetMaterialPropertyMetaData(propertyType, dummySize, dummyOffset);
+    }
+
     inline bool HasTexture(MaterialTextureType textureType) const { return GetMaterialTextureMetaData(textureType) != nullptr; }
 
     inline MaterialType GetType() const { return m_Type; }
     inline bool GetFlag(MaterialFlags flag) const { return (m_Flags & flag) != MaterialFlags::None; }
 private:
-    const MaterialPropertyMetaData* GetMaterialPropertyMetaData(MaterialPropertyType propertyType) const;
+    bool GetMaterialPropertyMetaData(MaterialPropertyType propertyType, uint32_t& outSize, uint32_t& outOffset) const;
     const MaterialTextureMetaData* GetMaterialTextureMetaData(MaterialTextureType textureType) const;
 private:
     MaterialType m_Type;

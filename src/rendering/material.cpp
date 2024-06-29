@@ -4,28 +4,37 @@ std::unordered_map<MaterialType, std::vector<MaterialPropertyMetaData>> Material
     { 
         MaterialType::Lambert,
         {
-            MaterialPropertyMetaData{ MaterialPropertyType::AlbedoColor, 0, 16 }, // type, offset, size
-            MaterialPropertyMetaData{ MaterialPropertyType::EmissiveColor, 16, 16 },
+            MaterialPropertyMetaData::Create<glm::vec4>(MaterialPropertyType::AlbedoColor),
+            MaterialPropertyMetaData::Create<glm::vec4>(MaterialPropertyType::EmissiveColor),
+            MaterialPropertyMetaData::Create<glm::vec3>(MaterialPropertyType::RefractionColor),
+            MaterialPropertyMetaData::Create<float>(MaterialPropertyType::IndexOfRefraction),
+            MaterialPropertyMetaData::Create<glm::vec3>(MaterialPropertyType::ReflectionColor),
         },
     },
 
     {
         MaterialType::Phong,
         {
-            MaterialPropertyMetaData{ MaterialPropertyType::AlbedoColor, 0, 16 },
-            MaterialPropertyMetaData{ MaterialPropertyType::EmissiveColor, 16, 16 },
-            MaterialPropertyMetaData{ MaterialPropertyType::SpecularColor, 32, 16 },
-            MaterialPropertyMetaData{ MaterialPropertyType::Shininess, 48, 4 },
+            MaterialPropertyMetaData::Create<glm::vec4>(MaterialPropertyType::AlbedoColor),
+            MaterialPropertyMetaData::Create<glm::vec4>(MaterialPropertyType::EmissiveColor),
+            MaterialPropertyMetaData::Create<glm::vec4>(MaterialPropertyType::SpecularColor),
+            MaterialPropertyMetaData::Create<float>(MaterialPropertyType::Shininess),
+            MaterialPropertyMetaData::Create<glm::vec3>(MaterialPropertyType::RefractionColor),
+            MaterialPropertyMetaData::Create<float>(MaterialPropertyType::IndexOfRefraction),
+            MaterialPropertyMetaData::Create<glm::vec3>(MaterialPropertyType::ReflectionColor),
         },
     },
 
     {
         MaterialType::PBR,
         {
-            MaterialPropertyMetaData{ MaterialPropertyType::AlbedoColor, 0, 16 },
-            MaterialPropertyMetaData{ MaterialPropertyType::EmissiveColor, 16, 16 },
-            MaterialPropertyMetaData{ MaterialPropertyType::Roughness, 32, 4 },
-            MaterialPropertyMetaData{ MaterialPropertyType::Metalness, 36, 4 },
+            MaterialPropertyMetaData::Create<glm::vec4>(MaterialPropertyType::AlbedoColor),
+            MaterialPropertyMetaData::Create<glm::vec4>(MaterialPropertyType::EmissiveColor),
+            MaterialPropertyMetaData::Create<float>(MaterialPropertyType::Roughness),
+            MaterialPropertyMetaData::Create<float>(MaterialPropertyType::Metalness),
+            MaterialPropertyMetaData::Create<glm::vec3>(MaterialPropertyType::RefractionColor),
+            MaterialPropertyMetaData::Create<float>(MaterialPropertyType::IndexOfRefraction),
+            MaterialPropertyMetaData::Create<glm::vec3>(MaterialPropertyType::ReflectionColor),
         },
     },
 };
@@ -69,6 +78,7 @@ Material::Material(MaterialType type,MaterialFlags flags)
     }
 
     m_PropertiesBuffer.resize(propertiesBufferSize);
+    memset(m_PropertiesBuffer.data(), 0, propertiesBufferSize);
 
     uint32_t textureCount = ms_MaterialTypeTextures.at(m_Type).size();
     m_Textures.resize(textureCount);
@@ -84,17 +94,22 @@ void Material::SetFlag(MaterialFlags flag, bool state)
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
-const MaterialPropertyMetaData* Material::GetMaterialPropertyMetaData(MaterialPropertyType propertyType) const
+bool Material::GetMaterialPropertyMetaData(MaterialPropertyType propertyType, uint32_t& outSize, uint32_t& outOffset) const
 {
+    uint32_t offset = 0;
     for (const MaterialPropertyMetaData& metaData : ms_MaterialTypeProperties.at(m_Type))
     {
         if (metaData.Type == propertyType)
         {
-            return &metaData;
+            outSize = metaData.Size;
+            outOffset = offset;
+            return true;
         }
+
+        offset += metaData.Size;
     }
 
-    return nullptr;
+    return false;
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------

@@ -60,8 +60,11 @@ enum MaterialType
 struct MaterialConstants
 {
     uint MaterialType;
+    float3 ReflectionColor;
     float4 AlbedoColor;
     float4 EmissiveColor;
+    float3 RefractionColor;
+    float  IndexOfRefraction;
     float4 SpecularColor;   // Phong
     float Shininess;        // Phong
     float Roughness;        // PBR
@@ -72,7 +75,7 @@ struct MaterialConstants
     uint MetalnessMapIndex; // PBR
 };
 
-static const uint c_MaterialConstantsStructSize = 80;
+static const uint c_MaterialConstantsStructSize = 108;
 
 // -----------------------------------------------------------------------
 struct GeometryConstants
