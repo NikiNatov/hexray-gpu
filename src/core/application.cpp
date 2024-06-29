@@ -447,7 +447,6 @@ void Application::EndFrame()
 void Application::CompileShaders()
 {
     std::filesystem::path sourceDirectory = "src/rendering/shaders";
-    std::filesystem::path destinationDirectory = GetExecutablePath().parent_path();
 
     std::vector<std::pair<std::filesystem::path, std::wstring>> shaders = {
         { "shaderdata.hlsl", L"lib_6_5" },
