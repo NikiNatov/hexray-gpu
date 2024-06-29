@@ -37,6 +37,7 @@ struct ShaderResource
 struct ShaderCompilerInput
 {
 	std::filesystem::path SourcePath;
+	std::filesystem::path DestinationDirectory;
 	std::wstring EntryPoint;
 	std::wstring ShaderVersion;
 	ShaderCompileFlags Flags;

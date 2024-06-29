@@ -9,6 +9,7 @@
 
 #include <dxc/d3d12shader.h>
 #include <dxc/dxcapi.h>
+#include <fstream>
 
 
 #ifndef HR
@@ -53,6 +54,10 @@ void CompileHLSL_DXC(const ShaderCompilerInput& input, ShaderCompilerResult& res
 		if (!compiler) result.Errors.emplace_back("Missing IDxcCompiler3");
 		return;
 	}
+
+	std::wstring directory = input.SourcePath.parent_path().wstring();
+	std::wstring destinationPDBPath = input.DestinationDirectory / input.SourcePath.stem();
+	destinationPDBPath += L".pdb";
 	
 	std::vector<const wchar_t*> args;
 	
@@ -67,6 +72,9 @@ void CompileHLSL_DXC(const ShaderCompilerInput& input, ShaderCompilerResult& res
 	{
 		args.emplace_back(DXC_ARG_DEBUG);
 		args.emplace_back(DXC_ARG_OPTIMIZATION_LEVEL0);
+		args.emplace_back(DXC_ARG_DEBUG_NAME_FOR_SOURCE);
+		args.emplace_back(L"-Fd");
+		args.emplace_back(destinationPDBPath.c_str());
 	}
 	
 	if (input.Flags & SCF_Release)
@@ -82,7 +90,6 @@ void CompileHLSL_DXC(const ShaderCompilerInput& input, ShaderCompilerResult& res
 
 
 	// -I Include directory
-	std::wstring directory = input.SourcePath.parent_path().wstring();
 	args.emplace_back(L"-I");
 	args.emplace_back(directory.c_str());
 	
@@ -172,6 +179,41 @@ void CompileHLSL_DXC(const ShaderCompilerInput& input, ShaderCompilerResult& res
 	//	
 	//ExtractHLSLReflection(result, reflector);
 
-	result.Code.resize(resultBlob->GetBufferSize());
-	memcpy(result.Code.data(), resultBlob->GetBufferPointer(), resultBlob->GetBufferSize());
+	if (input.DestinationDirectory.empty())
+	{
+		result.Code.resize(resultBlob->GetBufferSize());
+		memcpy(result.Code.data(), resultBlob->GetBufferPointer(), resultBlob->GetBufferSize());
+	}
+	else
+	{
+		{
+			std::filesystem::path destinationShaderPath = input.DestinationDirectory / input.SourcePath.stem();
+			destinationShaderPath += ".cso";
+			std::ofstream ofs(destinationShaderPath, std::ios::out | std::ios::binary | std::ios::trunc);
+			if (!ofs)
+			{
+				result.Errors.emplace_back(Printf("ShaderCompiler: Failed creating/opening shader file %s", destinationShaderPath.string().c_str()));
+				return;
+			}
+
+			ofs.write((const char*)resultBlob->GetBufferPointer(), resultBlob->GetBufferSize());
+			ofs.close();
+		}
+
+		// Write out the pdb if there is one
+		ComPtr<IDxcBlob> pdbBlob;
+		compileResult->GetOutput(DXC_OUT_PDB, IID_PPV_ARGS(&pdbBlob), nullptr);
+		if (pdbBlob && pdbBlob->GetBufferSize() > 0 && pdbBlob->GetBufferPointer())
+		{
+			std::ofstream ofs(destinationPDBPath, std::ios::out | std::ios::binary | std::ios::trunc);
+			if (!ofs)
+			{
+				result.Errors.emplace_back(Printf("ShaderCompiler: Failed creating/opening PDB file %s", destinationPDBPath.c_str()));
+				return;
+			}
+
+			ofs.write((const char*)pdbBlob->GetBufferPointer(), pdbBlob->GetBufferSize());
+			ofs.close();
+		}
+	}
 }

@@ -464,6 +464,7 @@ void Application::CompileShaders()
     compileInput.Flags = SCF_Release;
 #endif
 
+    compileInput.DestinationDirectory = GetExecutablePath().parent_path();
     compileInput.Defines.emplace_back(L"HLSL");
     std::wstring maxRayRecursionDepth = L"MAX_RAY_RECURSION_DEPTH=" + ToWString(std::to_string(m_RendererDescription.RayRecursionDepth - 1));
     compileInput.Defines.emplace_back(maxRayRecursionDepth.c_str());
@@ -489,18 +490,6 @@ void Application::CompileShaders()
             }
             continue;
         }
-
-        std::filesystem::path destinationPath = destinationDirectory / shaderDesc.first.stem();
-        destinationPath += ".cso";
-        std::ofstream ofs(destinationPath, std::ios::out | std::ios::binary | std::ios::trunc);
-        if (!ofs)
-        {
-            HEXRAY_ERROR("ShaderCompiler: Failed creating/opening shader file {}", destinationPath.string());
-            continue;
-        }
-
-        ofs.write((const char*)compileResult.Code.data(), compileResult.Code.size());
-        ofs.close();
     }
 }
 
