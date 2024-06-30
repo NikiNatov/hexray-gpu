@@ -109,4 +109,25 @@ uint ComputeMipLevel(float2 texCoords)
     float2 dy = ddy(texCoords);
     return 0.5 * log2(max(dot(dx, dx), dot(dy, dy)));
 }
+
+float FresnelSchlickApprox(float ior, float NoI)
+{
+    if (NoI > 0.0)
+    {
+        ior = 1.0 / ior;
+    }
+    else
+    {
+        NoI = -NoI;
+    }
+
+    float f = Pow2((1.0f - ior) / (1.0 + ior));
+    float x = 1.0 - NoI;
+    return f + (1.0 - f) * Pow5(x);
+}
+
+float3 FaceForward(float3 ray, float3 n)
+{
+    return (dot(ray, n) < 0) ? n : -n;
+}
 #endif // __COMMON_HLSLI__

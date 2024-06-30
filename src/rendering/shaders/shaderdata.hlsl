@@ -128,26 +128,36 @@ void ClosestHitShader_Color(inout ColorRayPayload payload, in BuiltInTriangleInt
         }
     }
 
+    float3 rayDir = WorldRayDirection();
+    float3 reflectionColor = float3(0, 0, 0);
+    float3 refractionColor = float3(0, 0, 0);
+    float TLerp = 1.0f;
+
     // Reflection
-    if (any(material.ReflectionColor))
+    bool bHasReflection = any(material.ReflectionColor);
+    if (bHasReflection)
     {
-        float3 reflected = reflect(WorldRayDirection(), hitInfo.WorldNormal);
+        float3 reflected = reflect(rayDir, FaceForward(rayDir, hitInfo.WorldNormal));
         ColorRayPayload reflection = TraceColorRay(hitInfo.WorldPosition, reflected, payload.Seed, payload.RayDepth, accelerationStructure);
-        finalColor += reflection.Color.rgb * material.ReflectionColor;
+        reflectionColor = reflection.Color.rgb * material.ReflectionColor;
     }
 
     // Refraction
     if (material.IndexOfRefraction)
     {
-        float3 rayDir = WorldRayDirection();
-        bool bIsEnteringGeometry = dot(rayDir, hitInfo.WorldNormal) < 0;
+        float NoI = clamp(dot(rayDir, hitInfo.WorldNormal), -1.0, 1.0);
+        bool bIsEnteringGeometry = NoI < 0;
         float3 refracted = bIsEnteringGeometry ? refract(rayDir, hitInfo.WorldNormal, 1.0 / material.IndexOfRefraction) : refract(rayDir, -hitInfo.WorldNormal, material.IndexOfRefraction);
         if (any(refracted))
         {
             ColorRayPayload refraction = TraceColorRay(hitInfo.WorldPosition, refracted, payload.Seed, payload.RayDepth, accelerationStructure);
-            finalColor += refraction.Color.rgb * material.RefractionColor;
+            refractionColor = refraction.Color.rgb * material.RefractionColor;
+
+            TLerp = bHasReflection ? FresnelSchlickApprox(material.IndexOfRefraction, NoI) : 0.0;
         }
     }
+
+    finalColor += lerp(refractionColor, reflectionColor, TLerp);
 
     payload.Color.rgb += finalColor;
 }
