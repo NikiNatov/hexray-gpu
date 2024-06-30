@@ -171,7 +171,7 @@ bool DefaultSceneParser::AddSceneElement(const std::string& className, const std
 		pb.GetProperty("y", y);
 		pb.GetProperty("limit", limit);
 
-		MeshPtr mesh = AssetManager::GetAsset<Mesh>(AssetImporter::ImportMeshAsset("data/meshes/cube.obj", noFlipMeshOptions));
+		MeshPtr mesh = AssetManager::GetAsset<Mesh>(AssetImporter::ImportMeshAsset("data/meshes/plane.obj", noFlipMeshOptions));
 		m_Meshes[objectName] = mesh;
 		m_MeshesTransforms[mesh].Translation = { 0, y, 0 };
 		m_MeshesTransforms[mesh].Scale = { limit, 1, limit };
@@ -360,14 +360,14 @@ bool DefaultSceneParser::AddSceneElement(const std::string& className, const std
 
 		float power;
 		pb.GetProperty("power", power);
-		power /= 1000000;
+		power /= 100000;
 
 		MaterialPtr material = std::make_shared<Material>(MaterialType::Lambert);
 		material->SetProperty(MaterialPropertyType::AlbedoColor, emissive);
 		material->SetProperty(MaterialPropertyType::EmissiveColor, emissive * power);
 
 		MeshComponent& mc = e.AddComponent<MeshComponent>();
-		mc.Mesh = AssetManager::GetAsset<Mesh>(AssetImporter::ImportMeshAsset("data/meshes/cube.obj", noFlipMeshOptions));
+		mc.Mesh = AssetManager::GetAsset<Mesh>(AssetImporter::ImportMeshAsset("data/meshes/plane.obj", noFlipMeshOptions));
 		mc.OverrideMaterialTable = std::make_shared<MaterialTable>(1);
 		mc.OverrideMaterialTable->SetMaterial(0, material);
 		return true;
