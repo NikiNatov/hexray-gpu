@@ -115,11 +115,12 @@ struct Light
     float3 Direction;
     float3 Color;
     float Intensity;
-    float ConeAngle;
+    float ConeAngleMin;
+    float ConeAngleMax;
     float3 AttenuationFactors;
 };
 
-static const uint c_LightStructSize = 60;
+static const uint c_LightStructSize = 64;
 
 // -----------------------------------------------------------------------
 // ---------------------------- Post FX ----------------------------------

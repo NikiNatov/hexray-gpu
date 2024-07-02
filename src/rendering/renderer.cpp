@@ -113,7 +113,7 @@ void Renderer::SubmitPointLight(const glm::vec3& color, const glm::vec3& positio
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
-void Renderer::SubmitSpotLight(const glm::vec3& color, const glm::vec3& position, const glm::vec3& direction, float intensity, float coneAngle, const glm::vec3& attenuationFactors)
+void Renderer::SubmitSpotLight(const glm::vec3& color, const glm::vec3& position, const glm::vec3& direction, float intensity, float coneAngleMin, float coneAngleMax, const glm::vec3& attenuationFactors)
 {
     Light& light = m_Lights.emplace_back();
     light.LightType = LightType::SpotLight;
@@ -121,7 +121,8 @@ void Renderer::SubmitSpotLight(const glm::vec3& color, const glm::vec3& position
     light.Position = { position.x, position.y, position.z };
     light.Direction = { direction.x, direction.y, direction.z };
     light.Intensity = intensity;
-    light.ConeAngle = coneAngle;
+    light.ConeAngleMin = cos(coneAngleMin);
+    light.ConeAngleMax = cos(coneAngleMax);
     light.AttenuationFactors = attenuationFactors;
 
     m_SceneConstants.NumLights++;

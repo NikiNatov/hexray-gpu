@@ -80,10 +80,8 @@ float3 CalculateSpotLight_PBR(Light light, float3 V, float3 N, float3 hitPositio
     float3 lightToSurfaceNormalized = lightToSurface / distance;
 
     // Calculate spot intensity
-    float minCos = cos(light.ConeAngle);
-    float maxCos = (minCos + 1.0f) / 2.0f;
     float cosAngle = dot(light.Direction.xyz, lightToSurfaceNormalized);
-    float spotIntensity = smoothstep(minCos, maxCos, cosAngle);
+    float spotIntensity = smoothstep(light.ConeAngleMax, light.ConeAngleMin, cosAngle);
     
     // Calculate color
     float3 L = -lightToSurfaceNormalized;

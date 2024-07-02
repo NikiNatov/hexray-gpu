@@ -110,12 +110,13 @@ struct SpotLightComponent
 {
 	glm::vec3 Color = glm::vec3(1.0f);
 	glm::vec3 Direction = glm::vec3(0.0f);
-	float ConeAngle = 30.0f;
+	float ConeAngleMin = 30.0f;
+	float ConeAngleMax = 40.0f;
 	float Intensity = 1.0f;
 	glm::vec3 AttenuationFactors = { 1.0f, 1.0f, 1.0f };
 
 	SpotLightComponent() = default;
 	SpotLightComponent(const SpotLightComponent& other) = default;
-	SpotLightComponent(const glm::vec3& color, const glm::vec3& direction, float coneAngle, float intensity, const glm::vec3& attenuationFactors = glm::vec3(1.0f, 1.0f, 1.0f))
-		: Color(color), Direction(direction), ConeAngle(coneAngle), Intensity(intensity), AttenuationFactors(attenuationFactors) {}
+	SpotLightComponent(const glm::vec3& color, const glm::vec3& direction, float coneAngleMin, float coneAngleMax, float intensity, const glm::vec3& attenuationFactors = glm::vec3(1.0f, 1.0f, 1.0f))
+		: Color(color), Direction(direction), ConeAngleMin(coneAngleMin), ConeAngleMax(coneAngleMax), Intensity(intensity), AttenuationFactors(attenuationFactors) {}
 };

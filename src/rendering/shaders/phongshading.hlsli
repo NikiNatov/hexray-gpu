@@ -47,14 +47,14 @@ float3 CalculateSpotLight_Phong(Light light, float3 V, float3 N, float3 hitPosit
     float distance = length(lightToSurface);
     float attenuation = 1.0 / max(light.AttenuationFactors[0] + light.AttenuationFactors[1] * distance + light.AttenuationFactors[2] * distance * distance, Epsilon);
     
-    // Calculate spot intensity
-    float minCos = cos(light.ConeAngle);
-    float maxCos = (minCos + 1.0) / 2.0;
-    float cosAngle = dot(light.Direction.xyz, normalize(lightToSurface));
-    float spotIntensity = smoothstep(minCos, maxCos, cosAngle);
+    float3 lightToSurfaceNormalized = lightToSurface / distance;
 
+    // Calculate spot intensity
+    float cosAngle = dot(light.Direction.xyz, lightToSurfaceNormalized);
+    float spotIntensity = smoothstep(light.ConeAngleMax, light.ConeAngleMin, cosAngle);
+    
     // Calculate color
-    float3 L = normalize(-lightToSurface);
+    float3 L = -lightToSurfaceNormalized;
     float NDotL = max(dot(N, L), 0.0);
     
     // Diffuse BRDF

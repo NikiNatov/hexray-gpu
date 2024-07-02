@@ -348,6 +348,19 @@ bool DefaultSceneParser::AddSceneElement(const std::string& className, const std
 		return true;
 	}
 
+	if (className == "SpotLight")
+	{
+		Entity e = m_Scene->CreateEntity(objectName);
+		auto& light = e.AddComponent<SpotLightComponent>();
+		pb.GetProperty("color", light.Color);
+		pb.GetProperty("power", light.Intensity);
+		pb.GetProperty("dir", light.Direction);
+		pb.GetProperty("innerAngle", light.ConeAngleMin);
+		pb.GetProperty("outerAngle", light.ConeAngleMax);
+		pb.GetProperty("pos", e.GetComponent<TransformComponent>().Translation);
+		return true;
+	}
+
 	if (className == "RectLight")
 	{
 		Entity e = m_Scene->CreateEntity(objectName);

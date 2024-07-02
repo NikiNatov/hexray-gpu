@@ -37,24 +37,6 @@ Entities:
       Scale: [0.0500000007, 0.0500000007, 0.0500000007]
     MeshComponent:
       Mesh: 15599247349166970429
-  - Entity: 9781792816327191898
-    TagComponent:
-      Tag: Spot Light
-    SceneHierarchyComponent:
-      Parent: 0
-      FirstChild: 0
-      NextSibling: 0
-      PreviousSibling: 0
-    TransformComponent:
-      Translation: [12, 4, 4]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    SpotLightComponent:
-      Color: [0, 1, 1]
-      Direction: [0, -0.44721359, -0.89442718]
-      ConeAngle: 30
-      Intensity: 30
-      AttenuationFactors: [0.5, 0.5, 0.5]
   - Entity: 14736099928219977754
     TagComponent:
       Tag: Pink Point Light

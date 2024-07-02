@@ -216,7 +216,8 @@ void SceneSerializer::Serialize(const std::filesystem::path& filepath, const std
 		out << YAML::BeginMap;
 		SERIALIZE_VARIABLE(slc, Color);
 		SERIALIZE_VARIABLE(slc, Direction);
-		SERIALIZE_VARIABLE(slc, ConeAngle);
+		SERIALIZE_VARIABLE(slc, ConeAngleMin);
+		SERIALIZE_VARIABLE(slc, ConeAngleMax);
 		SERIALIZE_VARIABLE(slc, Intensity);
 		SERIALIZE_VARIABLE(slc, AttenuationFactors);
 		out << YAML::EndMap;
@@ -349,7 +350,8 @@ bool SceneSerializer::Deserialize(const std::filesystem::path& filepath, std::sh
 				SpotLightComponent& slc = deserializedEntity.AddComponent<SpotLightComponent>();
 				DESERIALIZE_VARIABLE(slc, Color, spotLightComponent);
 				DESERIALIZE_VARIABLE(slc, Direction, spotLightComponent);
-				DESERIALIZE_VARIABLE(slc, ConeAngle, spotLightComponent);
+				DESERIALIZE_VARIABLE(slc, ConeAngleMin, spotLightComponent);
+				DESERIALIZE_VARIABLE(slc, ConeAngleMax, spotLightComponent);
 				DESERIALIZE_VARIABLE(slc, Intensity, spotLightComponent);
 				DESERIALIZE_VARIABLE(slc, AttenuationFactors, spotLightComponent);
 			}

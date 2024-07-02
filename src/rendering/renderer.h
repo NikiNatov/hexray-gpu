@@ -34,7 +34,7 @@ public:
     void BeginScene(const Camera& camera, const std::shared_ptr<Texture>& environmentMap);
     void SubmitDirectionalLight(const glm::vec3& color, const glm::vec3& direction, float intensity);
     void SubmitPointLight(const glm::vec3& color, const glm::vec3& position, float intensity, const glm::vec3& attenuationFactors);
-    void SubmitSpotLight(const glm::vec3& color, const glm::vec3& position, const glm::vec3& direction, float intensity, float coneAngle, const glm::vec3& attenuationFactors);
+    void SubmitSpotLight(const glm::vec3& color, const glm::vec3& position, const glm::vec3& direction, float intensity, float coneAngleMin, float coneAngleMax, const glm::vec3& attenuationFactors);
     void SubmitMesh(const std::shared_ptr<Mesh>& mesh, const glm::mat4& transform, const std::shared_ptr<MaterialTable>& overrideMaterialTable);
     void SetViewportSize(uint32_t width, uint32_t height);
     void Render();

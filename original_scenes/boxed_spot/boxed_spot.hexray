@@ -1,0 +1,190 @@
+GlobalSettings {
+	frameWidth          640
+	frameHeight         480
+	ambientLight        (0.15, 0.15, 0.15)
+	maxTraceDepth 8
+	wantAA true
+	//prepassSamples 100
+	//gi            on
+	numPaths      32
+}
+
+Camera camera {
+	pos          (-30, 22, -40)
+	yaw           -34.4
+	pitch        -22.9
+	roll          0.0
+	fov           90
+	aspectRatio   1.333
+}
+/*
+Camera camera_l_small {
+	pos          (-40, 28, 47)
+	yaw          -90
+	pitch        0
+	roll          0.0
+	fov           90
+	aspectRatio   1.333
+}
+*/
+//////////////////////// LIGHTS ////////////////////////////////////////////
+
+/*
+RectLight l2 {
+	xSubd 4
+	ySubd 4
+	translate	(50, 50, -20)
+	scale   (8, 8, 8)
+	color	(1, 1, 1)
+	power   4000
+	rotate  (0, 45, 0)
+}
+*/
+
+PointLight l2 {
+	pos (50, 50, -20)
+	color (1, 1, 1)
+	power 150
+}
+
+SpotLight mylight {
+	color   (1, 1, 1)
+	power   700
+	pos     (50, 50, -20)
+	dir     (-0.727, -0.582, 0.364)
+	innerAngle 13.8
+	outerAngle 15.5
+}
+
+
+//////////////////////// GEOMETRIES ////////////////////////////////////////
+
+Plane wall {
+	y      0
+	limit   64
+}
+
+Mesh teapot {
+	file			"geom/teapot_hires.obj"
+}
+
+Mesh heart {
+	file			"geom/heart.obj"
+	autoSmooth      on
+}
+
+Mesh dice {
+	file			"geom/truncated_cube.obj"
+	faceted			true
+}
+
+BumpTexture diceBump {
+	file			"texture/zar-bump.bmp"
+	strength		8
+}
+
+//////////////////////// TEXTURES & SHADERS  ///////////////////////////////
+
+CheckerTexture checker {
+	color1   (0.5, 0.5, 0.25)
+	color2   (0.25, 0.25, 0.25)
+	scaling  8
+}
+
+Lambert floorShader {
+	texture  checker
+}
+
+BitmapTexture diceTexture {
+	file "texture/zar-texture.bmp"
+	scaling 1
+	assumedGamma 1.5
+}
+
+Lambert white_flat {
+	color (0.7, 0.7, 0.7)
+}
+
+Lambert gray {
+	color (0.5, 0.5, 0.5)
+}
+
+Lambert red {
+	color (0.9, 0.1, 0.1)
+}
+
+Phong plastic {
+	color (0.4, 0.6, 0.9)
+	exponent 133
+}
+
+Phong diceShader {
+	texture		diceTexture
+	exponent	64
+}
+
+
+///////////////////////// NODES /////////////////////////////////////////////////
+
+Node floor {
+	geometry  wall
+	shader    floorShader
+}
+
+Node ceiling {
+	geometry	wall
+	shader		gray
+	rotate          (0, 0, 180)
+	translate	(0, 60, 0)
+}
+
+Node wall_PositiveX {
+	geometry	wall
+	shader		red
+	rotate		(0, 0, -90)
+	translate	(64, 0, 0)
+}
+
+Node wall_NegativeX {
+	geometry	wall
+	shader		gray
+	rotate		(0, 0, 90)
+	translate	(-64, 0, 0)
+}
+
+Node wall_PositiveZ {
+	geometry	wall
+	shader		gray
+	rotate		(0, -90, 0)
+	translate	(0, 0, 64)
+}
+
+Node wall_NegativeZ {
+	geometry	wall
+	shader		gray
+	rotate		(0, 90, 0)
+	translate	(0, 0, -64)
+}
+
+Node zarche {
+	geometry	dice
+	shader		diceShader
+	scale		(2, 2, 2)
+	translate	(0, 8, 0)
+	bump		diceBump
+}
+
+Node teapotNode {
+	geometry   teapot
+	shader     plastic
+	translate  (0, 16, 0)
+	rotate     (120.3, 0, 0)
+	scale      (7.5, 7.5, 7.5)
+}
+
+Node heartNode {
+	geometry    heart
+	shader      plastic
+	translate   (0, 6.7, -22)
+	scale       (3, 3, 3)
+}
