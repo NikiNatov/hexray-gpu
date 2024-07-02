@@ -388,11 +388,13 @@ HitInfo GetHitInfo(SceneConstants sceneConstants, BuiltInTriangleIntersectionAtt
     Triangle tri = GetTriangle(geometry, primitiveID);
     Vertex ip = GetIntersectionPointOS(tri, float3(1.0 - attr.barycentrics.x - attr.barycentrics.y, attr.barycentrics.x, attr.barycentrics.y));
 
+    float3x3 objectToWorld = (float3x3)ObjectToWorld3x4();
+    
     HitInfo hitInfo;
     hitInfo.WorldPosition = WorldRayOrigin() + WorldRayDirection() * RayTCurrent();
-    hitInfo.WorldNormal = normalize(mul((float3x3)ObjectToWorld4x3(), ip.Normal));
-    hitInfo.WorldTangent = normalize(mul((float3x3)ObjectToWorld4x3(), ip.Tangent));
-    hitInfo.WorldBitangent = normalize(mul((float3x3)ObjectToWorld4x3(), ip.Bitangent));
+    hitInfo.WorldNormal = normalize(mul(objectToWorld, ip.Normal));
+    hitInfo.WorldTangent = normalize(mul(objectToWorld, ip.Tangent));
+    hitInfo.WorldBitangent = normalize(mul(objectToWorld, ip.Bitangent));
     hitInfo.Sample = GetSampleParams(sceneConstants, tri, hitInfo.WorldPosition, hitInfo.WorldNormal, ip.TexCoord);
 
     return hitInfo;

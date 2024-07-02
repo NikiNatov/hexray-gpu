@@ -345,8 +345,6 @@ bool DefaultSceneParser::AddSceneElement(const std::string& className, const std
 		pb.GetProperty("color", light.Color);
 		pb.GetProperty("power", light.Intensity);
 		pb.GetProperty("pos", e.GetComponent<TransformComponent>().Translation);
-
-		light.Intensity /= 1000000;
 		return true;
 	}
 
@@ -360,14 +358,13 @@ bool DefaultSceneParser::AddSceneElement(const std::string& className, const std
 
 		float power;
 		pb.GetProperty("power", power);
-		power /= 100000;
 
 		MaterialPtr material = std::make_shared<Material>(MaterialType::Lambert);
 		material->SetProperty(MaterialPropertyType::AlbedoColor, emissive);
 		material->SetProperty(MaterialPropertyType::EmissiveColor, emissive * power);
 
 		MeshComponent& mc = e.AddComponent<MeshComponent>();
-		mc.Mesh = AssetManager::GetAsset<Mesh>(AssetImporter::ImportMeshAsset("data/meshes/plane.obj", noFlipMeshOptions));
+		mc.Mesh = AssetManager::GetAsset<Mesh>(AssetImporter::ImportMeshAsset("data/meshes/halfplane.obj", noFlipMeshOptions));
 		mc.OverrideMaterialTable = std::make_shared<MaterialTable>(1);
 		mc.OverrideMaterialTable->SetMaterial(0, material);
 		return true;

@@ -33,7 +33,8 @@ RectLight {
 	// Power (for DI):
 	//power 125000
 	// Power (for GI):
-	power 375000       // x3
+	//power 375000       // x3
+	power 3.75
 }
 
 //////////////////////// GEOMETRIES ////////////////////////////////////////
