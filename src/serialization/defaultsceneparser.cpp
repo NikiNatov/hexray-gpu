@@ -69,6 +69,8 @@ bool DefaultSceneParser::AddSceneElement(const std::string& className, const std
 	if (className == "Camera")
 	{
 		auto& camera = m_Scene->GetCamera();
+		camera.m_Position = glm::vec3(0.0f);
+		camera.m_MovementSpeed *= 10;
 		pb.GetRequiredProperty("pos", camera.m_Position);
 		pb.GetProperty("aspectRatio", camera.m_AspectRatio, 1e-6);
 		pb.GetProperty("fov", camera.m_PerspectiveFOV, 0.0001, 179);
@@ -138,6 +140,7 @@ bool DefaultSceneParser::AddSceneElement(const std::string& className, const std
 
 		float radius = 1.0f;
 		pb.GetProperty("R", radius);
+		radius *= 2.f;
 
 		MeshPtr mesh = AssetManager::GetAsset<Mesh>(AssetImporter::ImportMeshAsset("data/meshes/sphere.fbx", noFlipMeshOptions));
 		m_Meshes[objectName] = mesh;
@@ -167,7 +170,7 @@ bool DefaultSceneParser::AddSceneElement(const std::string& className, const std
 	if (className == "Plane")
 	{
 		float y = 0.f;
-		float limit = 1e23f;
+		float limit = 1000;
 		pb.GetProperty("y", y);
 		pb.GetProperty("limit", limit);
 
