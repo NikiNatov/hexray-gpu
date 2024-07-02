@@ -1,6 +1,7 @@
 #include "scene.h"
 
 #include "scene/component.h"
+#include "rendering/defaultresources.h"
 
 // ------------------------------------------------------------------------------------------------------------------------------------
 Scene::Scene(const std::string& name)
@@ -112,11 +113,7 @@ void Scene::OnRender(const std::shared_ptr<Renderer>& renderer)
         auto view = m_Registry.view<SkyLightComponent>();
         entt::entity skyLightEntity = view.back();
 
-        if (skyLightEntity == entt::null)
-        {
-            HEXRAY_WARNING("Trying to render a scene with no sky lighting");
-        }
-        else
+        if (skyLightEntity != entt::null)
         {
             auto& slc = view.get<SkyLightComponent>(skyLightEntity);
 
@@ -153,7 +150,7 @@ void Scene::OnRender(const std::shared_ptr<Renderer>& renderer)
         for (auto entity : view)
         {
             auto [slc, tc] = view.get<SpotLightComponent, TransformComponent>(entity);
-            renderer->SubmitSpotLight(slc.Color, tc.Translation, glm::normalize(slc.Direction), slc.Intensity, glm::radians(slc.ConeAngle), slc.AttenuationFactors);
+            renderer->SubmitSpotLight(slc.Color, tc.Translation, glm::normalize(slc.Direction), slc.Intensity, glm::radians(slc.ConeAngleMin), glm::radians(slc.ConeAngleMax), slc.AttenuationFactors);
         }
     }
 
