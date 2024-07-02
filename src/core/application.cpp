@@ -252,6 +252,9 @@ Application::Application(const ApplicationDescription& description)
     GetModuleFileName(nullptr, exePath, MAX_PATH);
     m_ExecutablePath = exePath;
 
+    // Set working dir to root repo dir
+    SetCurrentDirectory(m_ExecutablePath.parent_path().parent_path().parent_path().string().c_str());
+
     Logger::Initialize();
 
     // Create window
